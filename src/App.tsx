@@ -1,35 +1,35 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Login from './pages/Auth/Login';
+import Dashboard from './pages/Intelligence/Dashboard';
+import ProtectedRoute from './components/layout/ProtectedRoute';
+import { useAppSelector } from './store/store';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <Router>
+      <Routes>
+        {/* Public Route */}
+        <Route 
+          path="/login" 
+          element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" />} 
+        />
+
+        {/* Protected Routes - Only accessible after Login successful */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          
+          {/* Future Workflow Routes */}
+          {/* <Route path="/leads" element={<Leads />} /> cite: 5 */}
+          {/* <Route path="/finance" element={<Finance />} /> cite: 72 */}
+        </Route>
+
+        {/* Default Redirect */}
+        <Route path="*" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} />
+      </Routes>
+    </Router>
+  );
 }
 
-export default App
+export default App;
