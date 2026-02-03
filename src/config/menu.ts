@@ -51,5 +51,10 @@ export const SIDEBAR_MENU: MenuItem[] = [
     title: 'Finance & Billing', 
     path: '/finance', 
     roles: ['ADMIN', 'FINANCE'] // cite: 72
-  }
+  },
+  { 
+    title: 'Employees', 
+    path: '/employees', 
+    roles: ['ADMIN'] // Restricted to Admin access
+  },
 ];

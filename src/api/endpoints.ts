@@ -2,12 +2,22 @@ export const ENDPOINTS = {
   AUTH: {
     LOGIN: '/login',
     LOGOUT: '/logout',
+    REGISTER: '/register',
+    EMPLOYEES: '/users',
     PROFILE: '/user/profile',
   },
   ROLES: {
     BASE: '/roles',
     DETAIL: (id: number) => `/roles/${id}`,
   },  
+  DEPARTMENTS: {
+    BASE: '/departments',
+    DETAIL: (id: number) => `/departments/${id}`,
+  },
+  DESIGNATIONS: {
+    BASE: '/designations',
+    DETAIL: (id: number) => `/designations/${id}`,
+  },
   LEADS: {
     CAPTURE: '/leads/capture',       // cite: 6
     ASSIGN: '/leads/auto-assignment', // cite: 7

@@ -4,6 +4,14 @@ import Dashboard from './pages/Intelligence/Dashboard';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import DashboardLayout from './components/layout/DashboardLayout';
 import RoleManagement from './pages/Settings/RoleManagement';
+import LeadsPage from './pages/Leads/LeadsPage';
+
+import DepartmentsPage from './pages/Settings/DepartmentsPage';
+import DesignationsPage from './pages/Settings/DesignationsPage';
+
+import EmployeesPage from './pages/Employees/EmployeesPage';
+import EmployeeRegistration from './pages/Employees/EmployeeRegistration';
+
 import { useAppSelector } from './store/store';
 
 function App() {
@@ -19,6 +27,11 @@ function App() {
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/settings/roles" element={<RoleManagement />} />
+            <Route path="/settings/departments" element={<DepartmentsPage />} />
+            <Route path="/settings/designations" element={<DesignationsPage />} />
+            <Route path="/employees" element={<EmployeesPage />} />
+            <Route path="/employees/register" element={<EmployeeRegistration />} />
+            <Route path="/leads" element={<LeadsPage />} />
             {/* Add more workflow routes here as you build them */}
           </Route>
         </Route>

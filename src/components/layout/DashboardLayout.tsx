@@ -1,15 +1,20 @@
+import { useState } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { Outlet } from 'react-router-dom';
 
 const DashboardLayout = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans">
-      <Sidebar />
-      <div className="flex-1 ml-64 flex flex-col">
-        <Header />
-        <main className="p-8">
-          <Outlet /> {/* This renders the Dashboard or other pages */}
+      <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+      
+      {/* Content Area - ml-0 on mobile, ml-64 on desktop */}
+      <div className="flex-1 lg:ml-64 flex flex-col min-w-0 transition-all duration-300">
+        <Header onMenuClick={() => setSidebarOpen(true)} />
+        <main className="p-4 lg:p-8">
+          <Outlet />
         </main>
       </div>
     </div>
