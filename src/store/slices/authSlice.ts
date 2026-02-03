@@ -27,20 +27,18 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     // Corrected to handle the nested user structure from your API
-    setLoginData: (state, action: PayloadAction<{ user: User; token: string }>) => {
-      const { user, token } = action.payload;
-      
-      state.user = user;
-      state.token = token;
-      // Extract role_name from the user object
-      state.roleName = user.role_name; 
-      state.isAuthenticated = true;
+   setLoginData: (state, action: PayloadAction<{ user: User; token: string }>) => {
+  const { user, token } = action.payload;
+  state.user = user;
+  state.token = token;
+  // Use the exact string 'Admin' as returned by your API response
+  state.roleName = user.role_name; 
+  state.isAuthenticated = true;
 
-      // Persistence for session
-      localStorage.setItem('token', token);
-      localStorage.setItem('role_name', user.role_name); 
-      localStorage.setItem('user', JSON.stringify(user));
-    },
+  localStorage.setItem('token', token);
+  localStorage.setItem('role_name', user.role_name); 
+  localStorage.setItem('user', JSON.stringify(user));
+},
     logout: (state) => {
       state.user = null;
       state.token = null;

@@ -68,6 +68,13 @@ export const registerEmployee = async (data: RegistrationData) => {
 };
 
 export const getEmployees = async () => {
-  const response = await apiClient.get(ENDPOINTS.AUTH.EMPLOYEES); // Use the correct endpoint path
-  return response.data;
+  try {
+    const response = await apiClient.get(ENDPOINTS.AUTH.EMPLOYEES);
+    return response.data;
+  } catch (error: any) {
+    if (error.response?.status === 403) {
+      console.warn("Permission Error: Your account role does not have 'Admin' privileges on the server.");
+    }
+    throw error;
+  }
 };
