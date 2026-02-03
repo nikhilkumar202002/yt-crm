@@ -12,24 +12,23 @@ const Login = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
-  const handleLogin = async (e: React.FormEvent) => {
+const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       const data = await loginUser({ email, password });
-      dispatch(setLoginData({
-        user: data.user,
-        token: data.token,
-        role_name: data.role_name
-      }));
+dispatch(setLoginData({
+  user: data.user, // Passes the object containing role_name
+  token: data.token
+}));
       navigate('/dashboard'); 
     } catch (error: any) {
       alert(error.response?.data?.message || 'Login failed');
     } finally {
       setLoading(false);
     }
-  };
+};
 
   return (
     <div className="flex min-h-screen font-sans">

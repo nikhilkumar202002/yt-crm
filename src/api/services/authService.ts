@@ -30,9 +30,10 @@ export interface Employee {
   created_at: string;
 }
 
+// Update the loginUser function to ensure it returns the data required for the slice
 export const loginUser = async (credentials: any) => {
   const response = await apiClient.post(ENDPOINTS.AUTH.LOGIN, credentials);
-  return response.data;
+  return response.data; 
 };
 
 export const getLeadTracking = async () => {

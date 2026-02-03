@@ -12,8 +12,9 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
-  const { roleName } = useAppSelector((state) => state.auth);
+ const { roleName } = useAppSelector((state) => state.auth);
   const location = useLocation();
+
   const currentRole = roleName?.toUpperCase() || '';
 
   const iconMap: Record<string, any> = {
@@ -29,7 +30,7 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
     'Employees': <ShieldCheck size={18} />,
   };
 
-  const filteredMenu = SIDEBAR_MENU.filter(item => 
+ const filteredMenu = SIDEBAR_MENU.filter(item => 
     item.roles.includes(currentRole as any)
   );
 

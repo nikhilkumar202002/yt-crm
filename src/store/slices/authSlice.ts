@@ -4,7 +4,8 @@ interface User {
   id: number;
   name: string;
   email: string;
-  role_id: number;
+  role_id: string | number;
+  role_name: string; // Added to interface for better typing
 }
 
 interface AuthState {
@@ -25,16 +26,20 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    setLoginData: (state, action: PayloadAction<{ user: User; token: string; role_name: string }>) => {
-      state.user = action.payload.user;
-      state.token = action.payload.token;
-      state.roleName = action.payload.role_name;
+    // Corrected to handle the nested user structure from your API
+    setLoginData: (state, action: PayloadAction<{ user: User; token: string }>) => {
+      const { user, token } = action.payload;
+      
+      state.user = user;
+      state.token = token;
+      // Extract role_name from the user object
+      state.roleName = user.role_name; 
       state.isAuthenticated = true;
 
-      // Persistence for session [cite: 48]
-      localStorage.setItem('token', action.payload.token);
-      localStorage.setItem('role_name', action.payload.role_name);
-      localStorage.setItem('user', JSON.stringify(action.payload.user));
+      // Persistence for session
+      localStorage.setItem('token', token);
+      localStorage.setItem('role_name', user.role_name); 
+      localStorage.setItem('user', JSON.stringify(user));
     },
     logout: (state) => {
       state.user = null;
