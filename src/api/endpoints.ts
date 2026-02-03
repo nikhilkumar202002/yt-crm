@@ -4,6 +4,10 @@ export const ENDPOINTS = {
     LOGOUT: '/logout',
     PROFILE: '/user/profile',
   },
+  ROLES: {
+    BASE: '/roles',
+    DETAIL: (id: number) => `/roles/${id}`,
+  },  
   LEADS: {
     CAPTURE: '/leads/capture',       // cite: 6
     ASSIGN: '/leads/auto-assignment', // cite: 7

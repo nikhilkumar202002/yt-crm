@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './pages/Auth/Login';
 import Dashboard from './pages/Intelligence/Dashboard';
 import ProtectedRoute from './components/layout/ProtectedRoute';
+import DashboardLayout from './components/layout/DashboardLayout';
+import RoleManagement from './pages/Settings/RoleManagement';
 import { useAppSelector } from './store/store';
 
 function App() {
@@ -10,22 +12,17 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Public Route */}
-        <Route 
-          path="/login" 
-          element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" />} 
-        />
+        <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" />} />
 
-        {/* Protected Routes - Only accessible after Login successful */}
+        {/* Layout wraps all protected content */}
         <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          
-          {/* Future Workflow Routes */}
-          {/* <Route path="/leads" element={<Leads />} /> cite: 5 */}
-          {/* <Route path="/finance" element={<Finance />} /> cite: 72 */}
+          <Route element={<DashboardLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/settings/roles" element={<RoleManagement />} />
+            {/* Add more workflow routes here as you build them */}
+          </Route>
         </Route>
 
-        {/* Default Redirect */}
         <Route path="*" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} />
       </Routes>
     </Router>
