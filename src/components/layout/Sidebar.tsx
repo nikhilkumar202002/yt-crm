@@ -16,7 +16,6 @@ interface SidebarProps {
 const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
   const { roleName } = useAppSelector((state) => state.auth);
   const location = useLocation();
-  // State to track which top-level menu is expanded
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
 
   const currentRole = roleName?.toUpperCase() || '';
@@ -35,9 +34,12 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
     'Settings': <Settings size={18} />,
   };
 
-  const filteredMenu = SIDEBAR_MENU.filter(item => 
-    item.roles.includes(currentRole as any)
-  );
+const filteredMenu = SIDEBAR_MENU
+    .filter(item => item.roles.includes(currentRole as any))
+    .map(item => ({
+      ...item,
+      submenu: item.submenu?.filter(sub => sub.roles.includes(currentRole as any))
+    }));
 
   const toggleExpand = (title: string) => {
     setExpandedMenu(expandedMenu === title ? null : title);
@@ -78,19 +80,18 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
             </p>
             <div className="space-y-1">
               {filteredMenu.map((item) => {
+
                 const hasSubmenu = item.submenu && item.submenu.length > 0;
                 const isActive = location.pathname.startsWith(item.path);
                 const isExpanded = expandedMenu === item.title;
 
-                if (hasSubmenu) {
+              if (hasSubmenu) {
                   return (
                     <div key={item.title} className="space-y-1">
                       <button
                         onClick={() => toggleExpand(item.title)}
                         className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
-                          isActive && !isExpanded
-                            ? 'bg-slate-800 text-white' 
-                            : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'
+                          isActive ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'
                         }`}
                       >
                         <div className="flex items-center gap-3">
@@ -104,20 +105,21 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
                       
                       {isExpanded && (
                         <div className="ml-9 space-y-1 animate-in slide-in-from-top-1 duration-200">
-                          {item.submenu?.map((sub) => (
-                            <Link
-                              key={sub.path}
-                              to={sub.path}
-                              onClick={() => setIsOpen(false)}
-                              className={`flex items-center py-2 text-xs font-medium transition-all ${
-                                location.pathname === sub.path 
-                                  ? 'text-blue-500 font-bold' 
-                                  : 'text-slate-500 hover:text-slate-200'
-                              }`}
-                            >
-                              {sub.title}
-                            </Link>
-                          ))}
+                          {item.submenu?.map((sub) => {
+                            const isSubActive = location.pathname === sub.path;
+                            return (
+                              <Link
+                                key={sub.path}
+                                to={sub.path}
+                                onClick={() => setIsOpen(false)}
+                                className={`flex items-center py-2 text-xs font-medium transition-all ${
+                                  isSubActive ? 'text-blue-500 font-bold' : 'text-slate-500 hover:text-slate-200'
+                                }`}
+                              >
+                                {sub.title}
+                              </Link>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -146,7 +148,7 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
           </div>
         </nav>
 
-        <div className="p-4 border-t border-slate-800">
+        <div className="p-4 border-t border-slate-800 mt-auto">
           <div className="bg-slate-800/40 border border-slate-700/50 p-4 rounded-2xl">
             <div className="flex items-center gap-3">
               <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center text-green-500">

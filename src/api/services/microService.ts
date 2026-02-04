@@ -81,3 +81,30 @@ export const assignLeads = async (data: { lead_ids: number[], user_id: number, s
   const response = await apiClient.post('/lead-assigns', data); //
   return response.data;
 };
+
+export const getAssignedLeads = async (page: number = 1) => {
+  const response = await apiClient.get(`/lead-assigns?page=${page}`);
+  return response.data;
+};
+
+/**
+ * Update the status of an assigned lead.
+ * Endpoint: PUT /lead-assigns/{id}/status
+ */
+export const updateLeadStatus = async (id: number, status: string) => {
+  const response = await apiClient.put(`/lead-assigns/${id}/status`, { 
+    user_status: status.toLowerCase() //
+  });
+  return response.data;
+};
+
+/**
+ * Update the comment/description.
+ * Payload format: { "user_comment": "text here" }
+ */
+export const updateLeadComment = async (id: number, comment: string) => {
+  const response = await apiClient.put(`/lead-assigns/${id}/comment`, { 
+    user_comment: comment //
+  });
+  return response.data;
+};

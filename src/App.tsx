@@ -12,6 +12,8 @@ import DesignationsPage from './pages/Settings/DesignationsPage';
 import EmployeesPage from './pages/Employees/EmployeesPage';
 import EmployeeRegistration from './pages/Employees/EmployeeRegistration';
 
+import AssignedLeadsPage from './pages/Leads/AssignedLeadsPage';
+
 import { useAppSelector } from './store/store';
 
 function App() {
@@ -32,6 +34,7 @@ function App() {
             <Route path="/employees" element={<EmployeesPage />} />
             <Route path="/employees/register" element={<EmployeeRegistration />} />
             <Route path="/leads" element={<LeadsPage />} />
+            <Route path="/leads/assigned" element={<AssignedLeadsPage />} />
             {/* Add more workflow routes here as you build them */}
           </Route>
         </Route>
