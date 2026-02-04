@@ -108,3 +108,10 @@ export const updateLeadComment = async (id: number, comment: string) => {
   });
   return response.data;
 };
+
+export const updateLeadRequirements = async (id: number, requirements: string[]) => {
+  const response = await apiClient.put(`/lead-assigns/${id}/requirements`, { 
+    lead_requirements: requirements 
+  }); 
+  return response.data;
+};
