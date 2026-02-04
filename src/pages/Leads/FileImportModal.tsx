@@ -1,13 +1,14 @@
 import React, { useRef, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { Upload, FileText, X, CheckCircle2 } from 'lucide-react';
+import { Upload, FileSpreadsheet, X, CheckCircle2 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
 
 interface FileImportModalProps {
   onImport: (file: File) => void;
+  isLoading?: boolean;
 }
 
-export const FileImportModal = ({ onImport }: FileImportModalProps) => {
+export const FileImportModal = ({ onImport, isLoading }: FileImportModalProps) => {
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -15,10 +16,11 @@ export const FileImportModal = ({ onImport }: FileImportModalProps) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       const extension = selectedFile.name.split('.').pop()?.toLowerCase();
-      if (extension === 'csv' || extension === 'xml') {
+      // Updated: Now accepts .xlsx, .csv, and .xml
+      if (['xlsx', 'csv', 'xml'].includes(extension || '')) {
         setFile(selectedFile);
       } else {
-        alert('Please upload only CSV or XML files.');
+        alert('Please upload a valid .xlsx, .csv, or .xml file.');
       }
     }
   };
@@ -53,7 +55,7 @@ export const FileImportModal = ({ onImport }: FileImportModalProps) => {
               type="file" 
               ref={fileInputRef} 
               className="hidden" 
-              accept=".csv, .xml"
+              accept=".xlsx, .csv, .xml"
               onChange={handleFileChange} 
             />
             
@@ -63,15 +65,15 @@ export const FileImportModal = ({ onImport }: FileImportModalProps) => {
                   <CheckCircle2 size={20} />
                 </div>
                 <p className="text-[11px] font-bold text-slate-700">{file.name}</p>
-                <p className="text-[9px] text-slate-400 mt-1 uppercase tracking-widest">File Ready for Import</p>
+                <p className="text-[9px] text-slate-400 mt-1 uppercase tracking-widest">Excel File Ready</p>
               </>
             ) : (
               <>
                 <div className="h-10 w-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-3">
-                  <FileText size={20} />
+                  <FileSpreadsheet size={20} />
                 </div>
-                <p className="text-[11px] font-bold text-slate-700">Click to upload or drag and drop</p>
-                <p className="text-[9px] text-slate-400 mt-1 uppercase tracking-widest">Supports CSV and XML</p>
+                <p className="text-[11px] font-bold text-slate-700">Click to upload .xlsx file</p>
+                <p className="text-[9px] text-slate-400 mt-1 uppercase tracking-widest">Supports XLSX, CSV and XML</p>
               </>
             )}
           </div>
@@ -83,7 +85,8 @@ export const FileImportModal = ({ onImport }: FileImportModalProps) => {
             <Button 
               variant="primary" 
               className="flex-1" 
-              disabled={!file}
+              disabled={!file || isLoading}
+              isLoading={isLoading}
               onClick={() => file && onImport(file)}
             >
               Confirm Import

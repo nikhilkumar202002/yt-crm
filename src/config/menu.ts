@@ -4,6 +4,7 @@ export interface MenuItem {
   title: string;
   path: string;
   roles: UserRole[];
+  submenu?: MenuItem[];
 }
 
 export const SIDEBAR_MENU: MenuItem[] = [
@@ -56,5 +57,15 @@ export const SIDEBAR_MENU: MenuItem[] = [
     title: 'Employees', 
     path: '/employees', 
     roles: ['ADMIN'] // Restricted to Admin access
+  },
+  {
+    title: 'Settings',
+    path: '/settings',
+    roles: ['ADMIN'], // Restricted to Admin access
+    submenu: [
+      { title: 'Role Management', path: '/settings/roles', roles: ['ADMIN'] },
+      { title: 'Departments', path: '/settings/departments', roles: ['ADMIN'] },
+      { title: 'Designations', path: '/settings/designations', roles: ['ADMIN'] },
+    ]
   },
 ];

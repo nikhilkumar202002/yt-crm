@@ -1,7 +1,9 @@
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, Rocket, Layers, 
-  Palette, FolderOpen, Zap, PieChart, CreditCard, ShieldCheck, X 
+  Palette, FolderOpen, Zap, PieChart, CreditCard, 
+  ShieldCheck, X, Settings, ChevronDown, ChevronRight 
 } from 'lucide-react';
 import { useAppSelector } from '../../store/store';
 import { SIDEBAR_MENU } from '../../config/menu';
@@ -12,8 +14,10 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
- const { roleName } = useAppSelector((state) => state.auth);
+  const { roleName } = useAppSelector((state) => state.auth);
   const location = useLocation();
+  // State to track which top-level menu is expanded
+  const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
 
   const currentRole = roleName?.toUpperCase() || '';
 
@@ -28,11 +32,16 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
     'Intelligence': <PieChart size={18} />, 
     'Finance & Billing': <CreditCard size={18} />, 
     'Employees': <ShieldCheck size={18} />,
+    'Settings': <Settings size={18} />,
   };
 
- const filteredMenu = SIDEBAR_MENU.filter(item => 
+  const filteredMenu = SIDEBAR_MENU.filter(item => 
     item.roles.includes(currentRole as any)
   );
+
+  const toggleExpand = (title: string) => {
+    setExpandedMenu(expandedMenu === title ? null : title);
+  };
 
   return (
     <>
@@ -44,7 +53,6 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
         onClick={() => setIsOpen(false)}
       />
 
-      {/* Sidebar Container */}
       <aside className={`fixed left-0 top-0 h-screen bg-slate-900 z-[70] font-sans border-r border-slate-800 transition-transform duration-300 ease-in-out w-64 
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
@@ -55,7 +63,6 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
             </div>
             <h1 className="text-white text-xl font-bold tracking-tight">CRM</h1>
           </div>
-          {/* Explicitly colored close button for mobile visibility */}
           <button 
             onClick={() => setIsOpen(false)} 
             className="lg:hidden p-2 text-white hover:bg-slate-800 rounded-lg transition-colors"
@@ -71,19 +78,66 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
             </p>
             <div className="space-y-1">
               {filteredMenu.map((item) => {
-                const isActive = location.pathname === item.path;
+                const hasSubmenu = item.submenu && item.submenu.length > 0;
+                const isActive = location.pathname.startsWith(item.path);
+                const isExpanded = expandedMenu === item.title;
+
+                if (hasSubmenu) {
+                  return (
+                    <div key={item.title} className="space-y-1">
+                      <button
+                        onClick={() => toggleExpand(item.title)}
+                        className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
+                          isActive && !isExpanded
+                            ? 'bg-slate-800 text-white' 
+                            : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className={isActive ? 'text-blue-500' : 'text-slate-500'}>
+                            {iconMap[item.title]}
+                          </span>
+                          <span className="text-sm font-semibold">{item.title}</span>
+                        </div>
+                        {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                      </button>
+                      
+                      {isExpanded && (
+                        <div className="ml-9 space-y-1 animate-in slide-in-from-top-1 duration-200">
+                          {item.submenu?.map((sub) => (
+                            <Link
+                              key={sub.path}
+                              to={sub.path}
+                              onClick={() => setIsOpen(false)}
+                              className={`flex items-center py-2 text-xs font-medium transition-all ${
+                                location.pathname === sub.path 
+                                  ? 'text-blue-500 font-bold' 
+                                  : 'text-slate-500 hover:text-slate-200'
+                              }`}
+                            >
+                              {sub.title}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
                 return (
                   <Link
                     key={item.path}
                     to={item.path}
                     onClick={() => setIsOpen(false)}
                     className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
-                      isActive 
+                      location.pathname === item.path 
                         ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' 
                         : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'
                     }`}
                   >
-                    <span className={isActive ? 'text-white' : 'text-slate-500'}>{iconMap[item.title]}</span>
+                    <span className={location.pathname === item.path ? 'text-white' : 'text-slate-500'}>
+                      {iconMap[item.title]}
+                    </span>
                     <span className="text-sm font-semibold">{item.title}</span>
                   </Link>
                 );
@@ -92,7 +146,6 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
           </div>
         </nav>
 
-        {/* Finalized Secure Access Footer */}
         <div className="p-4 border-t border-slate-800">
           <div className="bg-slate-800/40 border border-slate-700/50 p-4 rounded-2xl">
             <div className="flex items-center gap-3">

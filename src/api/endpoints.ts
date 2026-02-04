@@ -19,9 +19,9 @@ export const ENDPOINTS = {
     DETAIL: (id: number) => `/designations/${id}`,
   },
   LEADS: {
-    CAPTURE: '/leads/capture',       // cite: 6
-    ASSIGN: '/leads/auto-assignment', // cite: 7
-    QUALIFY: '/leads/qualification',  // cite: 9
+    BASE: '/leads',
+    UPLOAD: '/leads/upload',
+    DETAIL: (id: number) => `/leads/${id}`,  // cite: 9
   },
   CAMPAIGNS: {
     SETUP: '/campaigns/setup',       // cite: 27

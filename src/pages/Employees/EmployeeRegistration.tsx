@@ -22,16 +22,26 @@ const EmployeeRegistration = () => {
   });
 
   useEffect(() => {
-    const loadSelectData = async () => {
-      const [depts, desgs, roles] = await Promise.all([
+  const loadSelectData = async () => {
+    try {
+      const [deptsRes, desgsRes, rolesRes] = await Promise.all([
         getDepartments(),
         getDesignations(),
         getRoles()
       ]);
-      setOrgData({ departments: depts.data, designations: desgs.data, roles: roles.data });
-    };
-    loadSelectData();
-  }, []);
+      setOrgData({ 
+        departments: deptsRes?.data?.data || deptsRes?.data || [], 
+        designations: desgsRes?.data?.data || desgsRes?.data || [], 
+        roles: rolesRes?.data?.data || rolesRes?.data || [] 
+      });
+    } catch (error) {
+      console.error("Error loading registration data:", error);
+      // Fallback to empty arrays to prevent .map() crashes
+      setOrgData({ departments: [], designations: [], roles: [] });
+    }
+  };
+  loadSelectData();
+}, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

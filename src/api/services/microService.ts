@@ -49,3 +49,35 @@ export const deleteDesignation = async (id: number) => {
   const response = await apiClient.delete(ENDPOINTS.DESIGNATIONS.DETAIL(id));
   return response.data;
 };
+
+// Leads Management
+export const getLeads = async (page: number = 1) => {
+  const response = await apiClient.get(`${ENDPOINTS.LEADS.BASE}?page=${page}`);
+  return response.data;
+};
+
+export const getLeadDetail = async (id: number) => {
+  const response = await apiClient.get(ENDPOINTS.LEADS.DETAIL(id));
+  return response.data;
+};
+
+export const deleteLead = async (id: number) => {
+  const response = await apiClient.delete(ENDPOINTS.LEADS.DETAIL(id));
+  return response.data;
+};
+
+export const uploadLeads = async (file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await apiClient.post(ENDPOINTS.LEADS.UPLOAD, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+export const assignLeads = async (data: { lead_ids: number[], user_id: number, status: string }) => {
+  const response = await apiClient.post('/lead-assigns', data); //
+  return response.data;
+};
