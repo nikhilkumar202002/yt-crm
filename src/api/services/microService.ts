@@ -165,3 +165,22 @@ export const createProposal = async (leadAssignId: number, file: File) => {
   });
   return response.data;
 };
+
+export const updateProposalFile = async (proposalId: number, file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await apiClient.post(`/proposals/${proposalId}`, formData, {
+    headers: { 
+      'Content-Type': 'multipart/form-data'
+    },
+    params: {
+      _method: 'PUT' 
+    }
+  });
+  return response.data;
+};
+
+export const acceptProposal = async (proposalId: number) => {
+  const response = await apiClient.patch(`/proposals/${proposalId}/accept`);
+  return response.data;
+};

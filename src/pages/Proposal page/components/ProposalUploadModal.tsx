@@ -2,23 +2,44 @@ import React, { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X, Upload, CheckCircle2, FileText, Loader2 } from 'lucide-react';
 import { Button } from '../../../components/common/Button';
-import { createProposal } from '../../../api/services/microService';
+import { createProposal, updateProposalFile } from '../../../api/services/microService';
 
-export const ProposalUploadModal = ({ isOpen, onOpenChange, leadId, onSuccess }: any) => {
+interface ProposalUploadModalProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  leadId: number | null;
+  proposalId?: number | null; // Tracks if we are updating an existing file
+  onSuccess: () => void;
+}
+
+export const ProposalUploadModal = ({ 
+  isOpen, 
+  onOpenChange, 
+  leadId, 
+  proposalId, // Receive from parent
+  onSuccess 
+}: ProposalUploadModalProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
   const handleUpload = async () => {
-    if (!file || !leadId) return;
+    if (!file) return;
     try {
       setUploading(true);
-      // Calls the API with lead_assign_id and the file object
-      await createProposal(Number(leadId), file);
+      
+      if (proposalId) {
+        // Logic: Use PUT if proposalId exists
+        await updateProposalFile(Number(proposalId), file);
+      } else {
+        // Logic: Use POST for new uploads
+        await createProposal(Number(leadId), file);
+      }
+
       onSuccess(); // Refresh table in parent
       onOpenChange(false);
       setFile(null);
     } catch (error) {
-      alert("Failed to upload proposal. Please try again.");
+      alert("Failed to save proposal. Please try again.");
     } finally {
       setUploading(false);
     }
@@ -34,9 +55,11 @@ export const ProposalUploadModal = ({ isOpen, onOpenChange, leadId, onSuccess }:
           <div className="flex justify-between items-center mb-8">
             <div>
               <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest">
-                Upload Proposal
+                {proposalId ? 'Update Proposal' : 'Upload Proposal'}
               </h2>
-              <p className="text-[10px] text-slate-400 font-bold mt-1">Lead ID: #{leadId}</p>
+              <p className="text-[10px] text-slate-400 font-bold mt-1">
+                {proposalId ? `Proposal ID: #${proposalId}` : `Lead ID: #${leadId}`}
+              </p>
             </div>
             <Dialog.Close className="text-slate-400 hover:text-slate-600 transition-colors">
               <X size={20} />
@@ -76,7 +99,7 @@ export const ProposalUploadModal = ({ isOpen, onOpenChange, leadId, onSuccess }:
                   </div>
                   <div className="text-center">
                     <label className="text-xs font-black text-blue-600 cursor-pointer hover:text-blue-700 tracking-tight">
-                      Click to choose PDF
+                      {proposalId ? 'Choose New PDF' : 'Click to choose PDF'}
                       <input 
                         type="file" 
                         className="hidden" 
@@ -101,9 +124,9 @@ export const ProposalUploadModal = ({ isOpen, onOpenChange, leadId, onSuccess }:
               {uploading ? (
                 <div className="flex items-center gap-2">
                   <Loader2 className="animate-spin" size={16} /> 
-                  Uploading...
+                  Processing...
                 </div>
-              ) : 'Submit Proposal'}
+              ) : proposalId ? 'Update PDF' : 'Submit Proposal'}
             </Button>
           </div>
         </Dialog.Content>
