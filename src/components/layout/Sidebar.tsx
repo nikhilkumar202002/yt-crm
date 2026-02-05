@@ -3,7 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, Rocket, Layers, 
   Palette, FolderOpen, Zap, PieChart, CreditCard, 
-  ShieldCheck, X, Settings, ChevronDown, ChevronRight 
+  ShieldCheck, X, Settings, ChevronDown, ChevronRight,
+  FileText // Added for Proposal
 } from 'lucide-react';
 import { useAppSelector } from '../../store/store';
 import { SIDEBAR_MENU } from '../../config/menu';
@@ -20,10 +21,12 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
 
   const currentRole = roleName?.toUpperCase() || '';
 
-  const iconMap: Record<string, any> = {
+  // Icon mapping updated to include 'Proposal'
+  const iconMap: Record<string, JSX.Element> = {
     'Dashboard': <LayoutDashboard size={18} />,
     'Leads & Pipeline': <Users size={18} />, 
     'Strategy & Pitch': <Rocket size={18} />, 
+    'Proposal': <FileText size={18} />, // New Proposal Menu Icon
     'Campaign Setup': <Layers size={18} />, 
     'Creative Workflow': <Palette size={18} />, 
     'Asset Hub': <FolderOpen size={18} />, 
@@ -34,7 +37,7 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
     'Settings': <Settings size={18} />,
   };
 
-const filteredMenu = SIDEBAR_MENU
+  const filteredMenu = SIDEBAR_MENU
     .filter(item => item.roles.includes(currentRole as any))
     .map(item => ({
       ...item,
@@ -47,7 +50,6 @@ const filteredMenu = SIDEBAR_MENU
 
   return (
     <>
-      {/* Mobile Overlay */}
       <div 
         className={`fixed inset-0 bg-black/60 z-[60] lg:hidden transition-opacity duration-300 ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -80,12 +82,11 @@ const filteredMenu = SIDEBAR_MENU
             </p>
             <div className="space-y-1">
               {filteredMenu.map((item) => {
-
                 const hasSubmenu = item.submenu && item.submenu.length > 0;
                 const isActive = location.pathname.startsWith(item.path);
                 const isExpanded = expandedMenu === item.title;
 
-              if (hasSubmenu) {
+                if (hasSubmenu) {
                   return (
                     <div key={item.title} className="space-y-1">
                       <button
@@ -96,7 +97,7 @@ const filteredMenu = SIDEBAR_MENU
                       >
                         <div className="flex items-center gap-3">
                           <span className={isActive ? 'text-blue-500' : 'text-slate-500'}>
-                            {iconMap[item.title]}
+                            {iconMap[item.title] || <Layers size={18} />}
                           </span>
                           <span className="text-sm font-semibold">{item.title}</span>
                         </div>
@@ -105,7 +106,7 @@ const filteredMenu = SIDEBAR_MENU
                       
                       {isExpanded && (
                         <div className="ml-9 space-y-1 animate-in slide-in-from-top-1 duration-200">
-                          {item.submenu?.map((sub) => {
+                          {item.submenu?.map((sub: any) => {
                             const isSubActive = location.pathname === sub.path;
                             return (
                               <Link
@@ -138,7 +139,7 @@ const filteredMenu = SIDEBAR_MENU
                     }`}
                   >
                     <span className={location.pathname === item.path ? 'text-white' : 'text-slate-500'}>
-                      {iconMap[item.title]}
+                      {iconMap[item.title] || <Layers size={18} />}
                     </span>
                     <span className="text-sm font-semibold">{item.title}</span>
                   </Link>
