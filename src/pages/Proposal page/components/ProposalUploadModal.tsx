@@ -1,0 +1,113 @@
+import React, { useState } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { X, Upload, CheckCircle2, FileText, Loader2 } from 'lucide-react';
+import { Button } from '../../../components/common/Button';
+import { createProposal } from '../../../api/services/microService';
+
+export const ProposalUploadModal = ({ isOpen, onOpenChange, leadId, onSuccess }: any) => {
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleUpload = async () => {
+    if (!file || !leadId) return;
+    try {
+      setUploading(true);
+      // Calls the API with lead_assign_id and the file object
+      await createProposal(Number(leadId), file);
+      onSuccess(); // Refresh table in parent
+      onOpenChange(false);
+      setFile(null);
+    } catch (error) {
+      alert("Failed to upload proposal. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <Dialog.Root open={isOpen} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110]" />
+        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-white rounded-3xl p-8 shadow-2xl z-[120] font-sans animate-in zoom-in-95 duration-200">
+          
+          {/* Header */}
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest">
+                Upload Proposal
+              </h2>
+              <p className="text-[10px] text-slate-400 font-bold mt-1">Lead ID: #{leadId}</p>
+            </div>
+            <Dialog.Close className="text-slate-400 hover:text-slate-600 transition-colors">
+              <X size={20} />
+            </Dialog.Close>
+          </div>
+
+          <div className="space-y-6">
+            {/* File Dropzone / Upload Box */}
+            <div 
+              className={`relative border-2 border-dashed rounded-3xl p-10 transition-all flex flex-col items-center justify-center gap-4 ${
+                file 
+                ? 'border-green-400 bg-green-50/50' 
+                : 'border-slate-200 hover:border-blue-400 bg-slate-50'
+              }`}
+            >
+              {file ? (
+                <>
+                  <div className="h-16 w-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-green-500 border border-green-100">
+                    <CheckCircle2 size={32} />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[11px] font-black text-green-800 line-clamp-1 max-w-[200px] uppercase tracking-tighter">
+                      {file.name}
+                    </p>
+                    <button 
+                      onClick={() => setFile(null)} 
+                      className="text-[10px] text-red-500 font-black uppercase mt-2 hover:underline tracking-widest"
+                    >
+                      Remove File
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="h-16 w-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-slate-300 border border-slate-100">
+                    <FileText size={32} />
+                  </div>
+                  <div className="text-center">
+                    <label className="text-xs font-black text-blue-600 cursor-pointer hover:text-blue-700 tracking-tight">
+                      Click to choose PDF
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        accept="application/pdf" 
+                        onChange={(e) => setFile(e.target.files?.[0] || null)}
+                      />
+                    </label>
+                    <p className="text-[9px] text-slate-400 font-bold mt-2 uppercase tracking-widest">
+                      Max file size 10MB
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Action Button */}
+            <Button 
+              disabled={!file || uploading} 
+              className="w-full h-12 rounded-2xl text-[11px] font-black uppercase tracking-[0.15em] shadow-lg shadow-blue-500/20"
+              onClick={handleUpload}
+            >
+              {uploading ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="animate-spin" size={16} /> 
+                  Uploading...
+                </div>
+              ) : 'Submit Proposal'}
+            </Button>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+};

@@ -148,3 +148,20 @@ export const deleteService = async (id: number) => {
   const response = await apiClient.delete(`/services/${id}`);
   return response.data;
 };
+
+// Campaigns
+export const getProposals = async (page: number = 1) => {
+  const response = await apiClient.get(`/proposals?page=${page}`);
+  return response.data;
+};
+
+export const createProposal = async (leadAssignId: number, file: File) => {
+  const formData = new FormData();
+  formData.append('lead_assign_id', leadAssignId.toString());
+  formData.append('file', file);
+  
+  const response = await apiClient.post('/proposals', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+  return response.data;
+};
