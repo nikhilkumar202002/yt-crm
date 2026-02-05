@@ -24,12 +24,14 @@ export const LeadDescriptionModal = ({
   requirements, onRequirementsChange, selectedServiceIds, onServiceIdsChange,
   otherService, onOtherServiceChange, onSave, isAdminOrHead, availableServices = [] 
 }: LeadDescriptionModalProps) => {
+
   const [newReq, setNewReq] = useState('');
 
-  // Check if "Others" is currently selected by name or placeholder ID
-  const isOthersSelected = selectedServiceIds.some(id => {
+  // Improved check: find if any selected ID belongs to a service named "Others"
+ const isOthersSelected = selectedServiceIds.some(id => {
     const service = availableServices.find(s => s.id === id);
-    return service?.name.toLowerCase() === 'others' || id === 999;
+    const name = service?.name.toLowerCase() || '';
+    return name === 'other' || name === 'others';
   });
 
   const toggleService = (id: number, name: string) => {
@@ -40,8 +42,9 @@ export const LeadDescriptionModal = ({
     
     onServiceIdsChange(nextIds);
 
-    // Sync predefined services to the visual requirements list (excluding 'Others')
-    if (name.toLowerCase() !== 'others') {
+    // Sync only standard services to visual badges (exclude placeholder "Other" items)
+    const lowerName = name.toLowerCase();
+    if (lowerName !== 'other' && lowerName !== 'others') {
       if (!isSelected && !requirements.includes(name)) {
         onRequirementsChange([...requirements, name]);
       } else if (isSelected) {
@@ -50,13 +53,14 @@ export const LeadDescriptionModal = ({
     }
   };
 
-  // Logic to add 'Other Service' text to Requirements on Enter
-  const handleOtherServiceSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
+
+const handleOtherServiceSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (otherService.trim() && !requirements.includes(otherService.trim())) {
-        onRequirementsChange([...requirements, otherService.trim()]);
-        onOtherServiceChange(''); // Clear box after adding to list
+      const trimmedValue = otherService.trim();
+      if (trimmedValue && !requirements.includes(trimmedValue)) {
+        onRequirementsChange([...requirements, trimmedValue]);
+        // Do not clear onOtherServiceChange here if you need it for the specific API payload
       }
     }
   };
@@ -73,47 +77,47 @@ export const LeadDescriptionModal = ({
             <Dialog.Close className="text-slate-400 hover:text-slate-600"><X size={16} /></Dialog.Close>
           </div>
           
-          <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
-            {!isAdminOrHead && (
-              <div className="space-y-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
-                  <Layers size={10}/> Select Services
-                </label>
-                <div className="grid grid-cols-1 gap-1.5 max-h-32 overflow-y-auto">
-                  {availableServices.map(s => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => toggleService(s.id, s.name)}
-                      className={`flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-bold transition-all border ${
-                        selectedServiceIds.includes(s.id) 
-                        ? 'bg-blue-600 text-white border-blue-700' 
-                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      {s.name}
-                      {selectedServiceIds.includes(s.id) && <Check size={12} />}
-                    </button>
-                  ))}
-                </div>
+         <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+      {!isAdminOrHead && (
+        <div className="space-y-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+          <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+            <Layers size={10}/> Select Services
+          </label>
+          <div className="grid grid-cols-1 gap-1.5 max-h-32 overflow-y-auto">
+            {availableServices.map(s => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => toggleService(s.id, s.name)}
+                className={`flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-bold transition-all border ${
+                  selectedServiceIds.includes(s.id) 
+                  ? 'bg-blue-600 text-white border-blue-700' 
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                {s.name}
+                {selectedServiceIds.includes(s.id) && <Check size={12} />}
+              </button>
+            ))}
+          </div>
 
-                {/* Display input field when "Others" is selected in the list above */}
-                {isOthersSelected && (
-                  <div className="space-y-1 animate-in slide-in-from-top-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
-                      <Settings2 size={10}/> Specify Other Service
-                    </label>
-                    <input 
-                      className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500/20"
-                      placeholder="Type service and press Enter..."
-                      value={otherService}
-                      onChange={(e) => onOtherServiceChange(e.target.value)}
-                      onKeyDown={handleOtherServiceSubmit}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
+          {/* Input field appears if "Other" or "Others" is selected in the list above */}
+          {isOthersSelected && (
+            <div className="space-y-1 animate-in slide-in-from-top-1">
+              <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                <Settings2 size={10}/> Specify Other Service
+              </label>
+              <input 
+                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500/20"
+                placeholder="Type service and press Enter to list..."
+                value={otherService}
+                onChange={(e) => onOtherServiceChange(e.target.value)}
+                onKeyDown={handleOtherServiceSubmit}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Requirements List</label>
