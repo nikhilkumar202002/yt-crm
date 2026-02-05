@@ -79,6 +79,7 @@ export const SIDEBAR_MENU: MenuItem[] = [
       { title: 'Role Management', path: '/settings/roles', roles: ['ADMIN'] },
       { title: 'Departments', path: '/settings/departments', roles: ['ADMIN'] },
       { title: 'Designations', path: '/settings/designations', roles: ['ADMIN'] },
+      { title: 'Services', path: '/settings/services', roles: ['ADMIN'] },
     ]
   },
 ];

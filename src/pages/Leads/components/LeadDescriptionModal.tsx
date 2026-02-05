@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, Save, MessageSquare, Plus } from 'lucide-react';
+import { X, Save, MessageSquare, Layers, Settings2, Check } from 'lucide-react';
 import { Button } from '../../../components/common/Button';
 
 interface LeadDescriptionModalProps {
@@ -8,28 +8,57 @@ interface LeadDescriptionModalProps {
   onOpenChange: (open: boolean) => void;
   comment: string;
   onCommentChange: (text: string) => void;
-  requirements: string[]; // Added
-  onRequirementsChange: (reqs: string[]) => void; // Added
+  requirements: string[];
+  onRequirementsChange: (reqs: string[]) => void;
+  selectedServiceIds: number[];
+  onServiceIdsChange: (ids: number[]) => void;
+  otherService: string;
+  onOtherServiceChange: (text: string) => void;
   onSave: () => void;
   isAdminOrHead: boolean;
+  availableServices: any[];
 }
 
 export const LeadDescriptionModal = ({ 
   isOpen, onOpenChange, comment, onCommentChange, 
-  requirements, onRequirementsChange, onSave, isAdminOrHead 
+  requirements, onRequirementsChange, selectedServiceIds, onServiceIdsChange,
+  otherService, onOtherServiceChange, onSave, isAdminOrHead, availableServices = [] 
 }: LeadDescriptionModalProps) => {
   const [newReq, setNewReq] = useState('');
 
-  const addReq = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && newReq.trim()) {
-      e.preventDefault();
-      onRequirementsChange([...requirements, newReq.trim()]);
-      setNewReq('');
+  // Check if "Others" is currently selected by name or placeholder ID
+  const isOthersSelected = selectedServiceIds.some(id => {
+    const service = availableServices.find(s => s.id === id);
+    return service?.name.toLowerCase() === 'others' || id === 999;
+  });
+
+  const toggleService = (id: number, name: string) => {
+    const isSelected = selectedServiceIds.includes(id);
+    const nextIds = isSelected 
+      ? selectedServiceIds.filter(sid => sid !== id) 
+      : [...selectedServiceIds, id];
+    
+    onServiceIdsChange(nextIds);
+
+    // Sync predefined services to the visual requirements list (excluding 'Others')
+    if (name.toLowerCase() !== 'others') {
+      if (!isSelected && !requirements.includes(name)) {
+        onRequirementsChange([...requirements, name]);
+      } else if (isSelected) {
+        onRequirementsChange(requirements.filter(r => r !== name));
+      }
     }
   };
 
-  const removeReq = (index: number) => {
-    onRequirementsChange(requirements.filter((_, i) => i !== index));
+  // Logic to add 'Other Service' text to Requirements on Enter
+  const handleOtherServiceSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (otherService.trim() && !requirements.includes(otherService.trim())) {
+        onRequirementsChange([...requirements, otherService.trim()]);
+        onOtherServiceChange(''); // Clear box after adding to list
+      }
+    }
   };
 
   return (
@@ -44,38 +73,79 @@ export const LeadDescriptionModal = ({
             <Dialog.Close className="text-slate-400 hover:text-slate-600"><X size={16} /></Dialog.Close>
           </div>
           
-          <div className="space-y-4">
-            {/* Requirements Section */}
+          <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+            {!isAdminOrHead && (
+              <div className="space-y-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                  <Layers size={10}/> Select Services
+                </label>
+                <div className="grid grid-cols-1 gap-1.5 max-h-32 overflow-y-auto">
+                  {availableServices.map(s => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => toggleService(s.id, s.name)}
+                      className={`flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-bold transition-all border ${
+                        selectedServiceIds.includes(s.id) 
+                        ? 'bg-blue-600 text-white border-blue-700' 
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {s.name}
+                      {selectedServiceIds.includes(s.id) && <Check size={12} />}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Display input field when "Others" is selected in the list above */}
+                {isOthersSelected && (
+                  <div className="space-y-1 animate-in slide-in-from-top-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                      <Settings2 size={10}/> Specify Other Service
+                    </label>
+                    <input 
+                      className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500/20"
+                      placeholder="Type service and press Enter..."
+                      value={otherService}
+                      onChange={(e) => onOtherServiceChange(e.target.value)}
+                      onKeyDown={handleOtherServiceSubmit}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Requirements List</label>
               <div className="flex flex-wrap gap-1.5 p-2 bg-slate-50 border border-slate-200 rounded-xl min-h-[45px]">
                 {requirements.map((req, i) => (
                   <span key={i} className="px-2 py-0.5 bg-blue-600 text-white rounded text-[9px] font-bold flex items-center gap-1">
                     {req}
-                    {!isAdminOrHead && <X size={10} className="cursor-pointer" onClick={() => removeReq(i)} />}
+                    {!isAdminOrHead && <X size={10} className="cursor-pointer" onClick={() => onRequirementsChange(requirements.filter((_, idx) => idx !== i))} />}
                   </span>
                 ))}
                 {!isAdminOrHead && (
                   <input 
                     className="bg-transparent border-none outline-none text-[10px] flex-1 min-w-[60px]"
-                    placeholder="Type & Press Enter..."
+                    placeholder="Add custom requirement..."
                     value={newReq}
                     onChange={(e) => setNewReq(e.target.value)}
-                    onKeyDown={addReq}
+                    onKeyDown={(e) => {
+                      if(e.key === 'Enter' && newReq.trim()) {
+                        onRequirementsChange([...requirements, newReq.trim()]);
+                        setNewReq('');
+                      }
+                    }}
                   />
                 )}
               </div>
             </div>
 
-            {/* Comment Section */}
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Follow-up Note</label>
               <textarea
                 readOnly={isAdminOrHead}
-                className={`w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm min-h-[120px] outline-none transition-all ${
-                  !isAdminOrHead ? 'focus:ring-2 focus:ring-blue-500 focus:bg-white' : 'cursor-default'
-                }`}
-                placeholder="Enter description..."
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm min-h-[100px] outline-none focus:ring-2 focus:ring-blue-500/20"
                 value={comment}
                 onChange={(e) => onCommentChange(e.target.value)}
               />
@@ -83,7 +153,11 @@ export const LeadDescriptionModal = ({
           </div>
 
           {!isAdminOrHead && (
-            <div className="mt-4"><Button variant="primary" size="sm" className="w-full" onClick={onSave}><Save size={14} className="mr-2" /> Save Changes</Button></div>
+            <div className="mt-4">
+              <Button variant="primary" size="sm" className="w-full" onClick={onSave}>
+                <Save size={14} className="mr-2" /> Save Changes
+              </Button>
+            </div>
           )}
         </Dialog.Content>
       </Dialog.Portal>
