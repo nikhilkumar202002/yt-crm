@@ -15,31 +15,51 @@ const ServicesPage = () => {
   // Updated state to track which service we are adding a sub-category to
   const [subModal, setSubModal] = useState({ isOpen: false, serviceId: null as number | null });
 
-  const fetchServices = useCallback(async (page: number) => {
-    try {
-      setLoading(true);
-      const [servicesRes, subServicesRes] = await Promise.all([
-        getServices(page),
-        getSubServices(1)
-      ]);
+ const fetchServices = useCallback(async (page: number) => {
+  try {
+    setLoading(true);
+    
+    // 1. Concurrent fetch: Main Services (current page) and first page of Sub-Services
+    const [servicesRes, initialSubRes] = await Promise.all([
+      getServices(page),
+      getSubServices(1)
+    ]);
 
-      const mainServices = servicesRes?.data?.data || [];
-      const allSubServices = subServicesRes?.data?.data || [];
+    let allSubServices = initialSubRes?.data?.data || [];
+    const totalSubPages = initialSubRes?.data?.last_page || 1;
 
-      const mergedData = mainServices.map((service: any) => ({
-        ...service,
-        sub_services: allSubServices.filter((sub: any) => Number(sub.service_id) === Number(service.id))
-      }));
-      
-      setServices(mergedData);
-      setPagination(servicesRes?.data);
-      setCurrentPage(servicesRes?.data?.current_page || 1);
-    } catch (error) {
-      console.error("Fetch failed", error);
-    } finally {
-      setLoading(false);
+    // 2. Aggregate all remaining pages of Sub-Services to ensure full data coverage
+    if (totalSubPages > 1) {
+      const remainingPageRequests = [];
+      for (let i = 2; i <= totalSubPages; i++) {
+        remainingPageRequests.push(getSubServices(i));
+      }
+      const additionalPages = await Promise.all(remainingPageRequests);
+      additionalPages.forEach(res => {
+        allSubServices = [...allSubServices, ...(res?.data?.data || [])];
+      });
     }
-  }, []);
+
+    const mainServices = servicesRes?.data?.data || [];
+
+    // 3. Group all aggregated sub-categories by their parent service_id
+    const mergedData = mainServices.map((service: any) => ({
+      ...service,
+      sub_services: allSubServices.filter(
+        (sub: any) => Number(sub.service_id) === Number(service.id)
+      )
+    }));
+    
+    setServices(mergedData);
+    setPagination(servicesRes?.data);
+    setCurrentPage(servicesRes?.data?.current_page || 1);
+  } catch (error) {
+    console.error("Aggregation failed", error);
+    setServices([]);
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   useEffect(() => { fetchServices(currentPage); }, [currentPage, fetchServices]);
 
@@ -109,25 +129,41 @@ const ServicesPage = () => {
                     <p className="text-[10px] text-slate-400 mt-0.5 truncate max-w-[140px] italic">{item.description}</p>
                   </td>
                   
-                  <td className="px-6 py-4">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {item.sub_services?.map((sub: any) => (
-                        <div key={sub.id} className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-[9px] font-bold uppercase group/tag">
-                          {sub.name}
-                          <button onClick={() => handleDeleteSubCategory(sub.id)} className="hover:text-red-500 p-0.5"><X size={10} strokeWidth={3} /></button>
-                        </div>
-                      ))}
-                      
-                      {/* INLINE PLUS ICON FOR SUB-SERVICE */}
-                      <button 
-                        onClick={() => setSubModal({ isOpen: true, serviceId: item.id })}
-                        className="p-1 text-slate-300 hover:text-blue-600 transition-colors"
-                        title="Add Sub-Category"
-                      >
-                        <PlusCircle size={16} />
-                      </button>
-                    </div>
-                  </td>
+                <td className="px-6 py-4">
+  <div className="flex flex-wrap items-center gap-1.5">
+    {/* Map through the merged sub_services array */}
+    {item.sub_services && item.sub_services.length > 0 ? (
+      item.sub_services.map((sub: any) => (
+        <div 
+          key={sub.id} 
+          className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-[9px] font-bold uppercase group/tag"
+        >
+          {sub.name}
+          {/* Individual delete button with optimistic UI removal */}
+          <button 
+            onClick={() => handleDeleteSubCategory(sub.id)} 
+            className="hover:text-red-500 transition-colors p-0.5"
+            title="Delete Sub-Service"
+          >
+            <X size={10} strokeWidth={3} />
+          </button>
+        </div>
+      ))
+    ) : (
+      /* Fallback if no sub-categories are matched */
+      <span className="text-[10px] text-slate-300 italic font-medium">None linked</span>
+    )}
+    
+    {/* Inline Plus Icon to trigger creation for this specific Service ID */}
+    <button 
+      onClick={() => setSubModal({ isOpen: true, serviceId: item.id })}
+      className="p-1 text-slate-300 hover:text-blue-600 transition-colors flex items-center justify-center ml-1"
+      title="Add Sub-Category"
+    >
+      <PlusCircle size={16} />
+    </button>
+  </div>
+</td>
 
                   <td className="px-6 py-4 text-center">
                     <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase border ${
