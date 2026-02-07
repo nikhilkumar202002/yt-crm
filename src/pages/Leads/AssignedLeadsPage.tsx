@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { MessageSquare, Loader2, ChevronLeft, ChevronRight, Mail, Phone, User, Filter, AlertCircle, XCircle } from 'lucide-react';
+import { MessageSquare, Loader2, ChevronLeft, ChevronRight, Mail, Phone, User, Filter, CheckCircle2, Clock, ChevronDown } from 'lucide-react';
 import { useAppSelector } from '../../store/store';
 import { 
   getAssignedLeads, 
   updateLeadStatus, 
   updateLeadComment, 
   getServices, 
-  updateLeadServices 
+  updateLeadServices,
+  getProposals 
 } from '../../api/services/microService';
 import { LeadDescriptionModal } from './components/LeadDescriptionModal';
 import { Button } from '../../components/common/Button';
@@ -20,41 +21,37 @@ const AssignedLeadsPage = () => {
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedReq, setSelectedReq] = useState<string>(''); 
-  const [allPossibleRequirements, setAllPossibleRequirements] = useState<string[]>([]);
+  const [selectedService, setSelectedService] = useState<string>(''); 
 
-  const [commentModal, setCommentModal] = useState<{
-    isOpen: boolean, id: number | null, text: string, requirements: string[], 
-    serviceIds: number[], otherService: string
-  }>({
-    isOpen: false, id: null, text: '', requirements: [], serviceIds: [], otherService: ''
+  const [commentModal, setCommentModal] = useState({
+    isOpen: false, id: null as number | null, text: '', requirements: [] as string[], 
+    serviceIds: [] as number[], otherService: ''
   });
 
-  const fetchData = useCallback(async (page: number, requirement: string = '') => {
+  const fetchData = useCallback(async (page: number, serviceFilter: string = '') => {
     try {
       setLoading(true);
-      // Fetch assignments and the global services list
-      const [assignmentsRes, servicesRes] = await Promise.all([
-        getAssignedLeads(page, requirement),
-        getServices(1)
+      const [leadsRes, servicesRes, proposalsRes] = await Promise.all([
+        getAssignedLeads(page, serviceFilter),
+        getServices(1),
+        getProposals(1)
       ]);
       
-      const fetchedAssignments = assignmentsRes?.data?.data || [];
-      setAssignments(fetchedAssignments);
-      setAvailableServices(servicesRes?.data?.data || []);
-      setPagination(assignmentsRes?.data);
-      setCurrentPage(assignmentsRes?.data?.current_page || 1);
+      const rawLeads = leadsRes?.data?.data || [];
+      const proposalsMap = proposalsRes?.data?.data || [];
 
-      // Extract unique requirements for the filter dropdown
-      if (fetchedAssignments.length > 0) {
-        setAllPossibleRequirements(prev => {
-          const newReqs = fetchedAssignments.flatMap((item: any) => [
-            ...(item.lead_requirements || []),
-            ...(item.lead_requirements_history?.flatMap((h: any) => h.new_requirements || []) || [])
-          ]);
-          return Array.from(new Set([...prev, ...newReqs])).filter(Boolean).sort();
-        });
-      }
+      const merged = rawLeads.map((lead: any) => {
+        const proposal = proposalsMap.find((p: any) => Number(p.lead_assign_id) === Number(lead.id));
+        return {
+          ...lead,
+          is_approved: !!proposal?.is_accepted 
+        };
+      });
+
+      setAssignments(merged);
+      setAvailableServices(servicesRes?.data?.data || []);
+      setPagination(leadsRes?.data);
+      setCurrentPage(leadsRes?.data?.current_page || 1);
     } catch (error) {
       console.error("Data fetch failed", error);
     } finally {
@@ -63,234 +60,218 @@ const AssignedLeadsPage = () => {
   }, []);
 
   useEffect(() => { 
-    fetchData(currentPage, selectedReq); 
-  }, [currentPage, selectedReq, fetchData]);
-
-  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedReq(e.target.value);
-    setCurrentPage(1); 
-  };
+    fetchData(currentPage, selectedService); 
+  }, [currentPage, selectedService, fetchData]);
 
   const handleStatusChange = async (id: number, newStatus: string) => {
     if (newStatus === "") return;
     try {
       await updateLeadStatus(id, newStatus.toLowerCase());
-      fetchData(currentPage, selectedReq); 
+      fetchData(currentPage, selectedService); 
     } catch (error) { alert("Error updating status"); }
   };
 
   const handleSaveData = async () => {
-  if (!commentModal.id) return;
-  try {
-    // FIX: Filter out the placeholder ID (999) before sending to API
-    const validServiceIds = commentModal.serviceIds.filter(id => id !== 999);
-
-    await Promise.all([
-      updateLeadComment(commentModal.id, commentModal.text),
-      updateLeadServices(commentModal.id, validServiceIds, commentModal.otherService)
-    ]);
-
-    setCommentModal(prev => ({ ...prev, isOpen: false }));
-    fetchData(currentPage, selectedReq);
-  } catch (error) { 
-    alert("Failed to save data. Please check if 'Other Service' details are required."); 
-  }
-};
+    if (!commentModal.id) return;
+    try {
+      const validServiceIds = commentModal.serviceIds.filter(id => id !== 999);
+      await Promise.all([
+        updateLeadComment(commentModal.id, commentModal.text),
+        updateLeadServices(commentModal.id, validServiceIds, commentModal.otherService)
+      ]);
+      setCommentModal(prev => ({ ...prev, isOpen: false }));
+      fetchData(currentPage, selectedService);
+    } catch (error) { alert("Failed to save data."); }
+  };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 font-sans">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+    <div className="space-y-5 animate-in fade-in duration-500 font-sans">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Assigned Leads</h1>
-          <p className="text-[11px] text-slate-500 font-medium">Manage and track follow-ups</p>
+          <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-none">Assigned Leads</h1>
+          <p className="text-[10px] text-slate-400 font-bold mt-1.5 uppercase tracking-widest">Workflow Management</p>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-           <div className="relative group w-full sm:w-auto">
-              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-              <select
-                value={selectedReq}
-                onChange={handleFilterChange}
-                className="w-full sm:w-auto pl-9 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-[11px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 shadow-sm appearance-none cursor-pointer min-w-[200px]"
-              >
-                <option value="">All Requirements</option>
-                {allPossibleRequirements.map(req => (
-                  <option key={req} value={req}>{req}</option>
-                ))}
-              </select>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                <ChevronLeft className="-rotate-90" size={12} />
-              </div>
-           </div>
-           {selectedReq && (
-              <button 
-                onClick={() => { setSelectedReq(''); setCurrentPage(1); }}
-                className="p-2.5 text-slate-400 hover:text-red-500 bg-white border border-slate-200 rounded-xl transition-colors shadow-sm"
-              >
-                <XCircle size={16} />
-              </button>
-           )}
+        <div className="relative w-full sm:w-64 group">
+          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={13} />
+          <select
+            value={selectedService}
+            onChange={(e) => { setSelectedService(e.target.value); setCurrentPage(1); }}
+            className="w-full pl-9 pr-8 py-1.5 bg-white border border-slate-200 rounded-md text-[11px] font-semibold text-slate-700 outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer"
+          >
+            <option value="">All Services</option>
+            {availableServices.map((service) => (
+              <option key={service.id} value={service.name}>{service.name}</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={12} />
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden relative min-h-[450px]">
-        {loading ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-[1px] z-10">
-            <Loader2 className="animate-spin text-blue-600 mb-2" size={24} />
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-slate-50/50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                <tr>
-                  <th className="px-6 py-4 w-16 text-center">#</th>
-                  <th className="px-6 py-4 min-w-[200px]">Lead Identity</th>
-                  {isAdminOrHead && <th className="px-6 py-4">Assignment Info</th>}
-                  <th className="px-6 py-4 text-center">Lead Status</th>
-                  <th className="px-6 py-4">Requirements & Services</th>
-                  <th className="px-6 py-4">Last note</th>
-                  <th className="px-6 py-4 text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {assignments.length > 0 ? assignments.map((item, index) => {
-                  const slNo = pagination ? (pagination.from + index) : (index + 1);
-                  const leadData = item.lead?.lead_data;
-
-                  return (
-                    <tr key={item.id} className="hover:bg-blue-50/20 transition-colors group">
-                      <td className="px-6 py-4 text-center text-[11px] font-bold text-slate-400">{slNo}</td>
-                      <td className="px-6 py-4">
-                        <p className="text-xs font-bold text-slate-900 leading-none mb-2 truncate max-w-[150px]">
-                          {leadData?.full_name || 'Anonymous Lead'}
-                        </p>
-                        <div className="flex flex-col gap-1.5">
-                          <span className="text-[10px] text-slate-500 flex items-center gap-2">
-                            <Mail size={12} className="text-blue-400" /> {leadData?.email || 'N/A'}
-                          </span>
-                          {/* Corrected: Fetching phone from nested lead data */}
-                          <span className="text-[10px] text-slate-500 font-bold flex items-center gap-2">
-                            <Phone size={12} className="text-green-500" /> {leadData?.phone || leadData?.phone_number || 'N/A'}
-                          </span>
-                        </div>
-                      </td>
-                      
-                      {isAdminOrHead && (
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col gap-2">
-                            <div className="flex items-center gap-2">
-                              <div className="h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                                <User size={12} />
-                              </div>
-                              <span className="text-[11px] font-bold text-slate-700">{item.user?.name}</span>
-                            </div>
-                            <span className="w-fit px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 text-[8px] font-black uppercase border border-slate-200">
-                              {item.status || 'assigned'}
-                            </span>
-                          </div>
-                        </td>
-                      )}
-
-                      <td className="px-6 py-4 text-center">
-                        {isAdminOrHead ? (
-                          <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black border uppercase shadow-sm ${
-                            item.user_status?.toLowerCase() === 'hot' ? 'bg-red-500 text-white border-red-600' :
-                            'bg-slate-100 text-slate-400'
-                          }`}>{item.user_status || 'New'}</span>
-                        ) : (
-                          <select 
-                            value={item.user_status?.toLowerCase() || ''}
-                            onChange={(e) => handleStatusChange(item.id, e.target.value)}
-                            className="text-[10px] font-bold p-1.5 rounded-lg border outline-none bg-white focus:ring-2 focus:ring-blue-500/20"
-                          >
-                            <option value="">Status</option>
-                            <option value="hot">🔥 Hot</option>
-                            <option value="warm">⚡ Warm</option>
-                            <option value="cold">❄️ Cold</option>
-                          </select>
-                        )}
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <div className="flex flex-wrap gap-1.5 max-w-[200px]">
-                          {/* Merged View: Predefined Services */}
-                          {item.services?.map((s: any) => (
-                            <span key={s.id} className="px-2 py-0.5 rounded-md border text-[9px] font-bold bg-indigo-50 text-indigo-600 border-indigo-100">
-                              {s.name}
-                            </span>
-                          ))}
-                          {/* Merged View: Other Service text */}
-                          {item.other_service && (
-                            <span className="px-2 py-0.5 rounded-md border text-[9px] font-bold bg-purple-50 text-purple-600 border-purple-100">
-                              {item.other_service}
-                            </span>
-                          )}
-                          {/* Merged View: General Requirements */}
-                          {item.lead_requirements?.map((req: string, i: number) => (
-                            <span key={i} className="px-2 py-0.5 rounded-md border text-[9px] font-bold bg-blue-50 text-blue-600 border-blue-100 shadow-sm">
-                              {req}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <p className="text-[10px] text-slate-600 line-clamp-2 italic font-medium max-w-[180px]">
-                          {item.user_comment ? `"${item.user_comment}"` : 'Pending follow-up...'}
-                        </p>
-                      </td>
-
-                      <td className="px-6 py-4 text-center">
-                        <button 
-                          onClick={() => setCommentModal({ 
-                            isOpen: true, 
-                            id: item.id, 
-                            text: item.user_comment || '', 
-                            requirements: item.lead_requirements || [],
-                            serviceIds: item.services?.map((s: any) => s.id) || [],
-                            otherService: item.other_service || ''
-                          })}
-                          className="p-2.5 rounded-xl border bg-blue-600 text-white hover:bg-blue-700 transition-all shadow-sm"
-                        >
-                          <MessageSquare size={16} />
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                }) : (
-                  <tr>
-                    <td colSpan={ isAdminOrHead ? 7 : 6 } className="px-6 py-20 text-center text-slate-400 italic text-sm">
-                       No results found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+      {/* Main Table Container */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200/60 overflow-hidden relative">
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/60 backdrop-blur-[1px] z-10">
+            <Loader2 className="animate-spin text-blue-600" size={20} />
           </div>
         )}
 
-        {/* Pagination Section */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-slate-50/50 border-b border-slate-100">
+              <tr className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                <th className="px-5 py-3 w-12 text-center">#</th>
+                <th className="px-5 py-3">Lead Identity</th>
+                {isAdminOrHead && <th className="px-5 py-3">Assignee</th>}
+                <th className="px-5 py-3 text-center">Status</th>
+                <th className="px-5 py-3 text-center">Approval</th>
+                <th className="px-5 py-3">Services</th>
+                <th className="px-5 py-3">Notes</th>
+                <th className="px-5 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {assignments.length > 0 ? assignments.map((item, index) => {
+                const slNo = pagination ? (pagination.from + index) : (index + 1);
+                
+                // DATA MAPPING FIX
+                const leadData = item.lead?.lead_data;
+                const phoneNumber = leadData?.phone_number || leadData?.phone || 'N/A';
+                
+                const isLocked = !!item.is_approved;
+
+                return (
+                  <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="px-5 py-3 text-center text-[10px] font-medium text-slate-400">{slNo}</td>
+                    <td className="px-5 py-3">
+                      <p className="text-[11px] font-bold text-slate-900 leading-none truncate max-w-[150px]">
+                        {leadData?.full_name || 'N/A'}
+                      </p>
+                      <div className="flex flex-col gap-0.5 mt-1.5 text-[9px] text-slate-400 font-medium">
+                        <span className="flex items-center gap-1">
+                          <Mail size={10} className="text-slate-300"/> 
+                          {leadData?.email || 'N/A'}
+                        </span>
+                        <span className="flex items-center gap-1 font-bold text-slate-500">
+                          <Phone size={10} className="text-blue-400/60"/> 
+                          {phoneNumber}
+                        </span>
+                      </div>
+                    </td>
+
+                    {isAdminOrHead && (
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded bg-slate-100 flex items-center justify-center text-[10px] text-slate-600 font-bold border border-slate-200 uppercase">
+                            {item.user?.name?.charAt(0)}
+                          </div>
+                          <span className="text-[10px] font-bold text-slate-600">{item.user?.name}</span>
+                        </div>
+                      </td>
+                    )}
+
+                    <td className="px-5 py-3 text-center">
+                      {isAdminOrHead || isLocked ? (
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold border uppercase tracking-tighter ${
+                          item.user_status?.toLowerCase() === 'hot' 
+                            ? 'bg-red-50 text-red-600 border-red-100' 
+                            : 'bg-slate-50 text-slate-500 border-slate-200'
+                        }`}>
+                          {item.user_status || 'New'}
+                        </span>
+                      ) : (
+                        <select 
+                          value={item.user_status?.toLowerCase() || ''}
+                          onChange={(e) => handleStatusChange(item.id, e.target.value)}
+                          className="text-[10px] font-bold py-0.5 px-1 rounded border border-slate-200 outline-none bg-white focus:border-blue-500 uppercase cursor-pointer"
+                        >
+                          <option value="">Set</option>
+                          <option value="hot">Hot</option>
+                          <option value="warm">Warm</option>
+                          <option value="cold">Cold</option>
+                        </select>
+                      )}
+                    </td>
+
+                    <td className="px-5 py-3 text-center">
+                      {item.is_approved ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 text-green-600 text-[9px] font-bold border border-green-100">
+                          <CheckCircle2 size={10}/> Approved
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-50 text-slate-400 rounded-full text-[9px] font-bold border border-slate-100">
+                          <Clock size={10}/> Pending
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="px-5 py-3">
+                      <div className="flex flex-wrap gap-1 max-w-[160px]">
+                        {item.services?.map((s: any) => (
+                          <span key={s.id} className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100 text-[8px] font-bold uppercase tracking-tighter">
+                            {s.name}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+
+                    <td className="px-5 py-3">
+                      <p className="text-[10px] text-slate-500 line-clamp-1 italic max-w-[140px] font-medium">
+                        {item.user_comment ? `"${item.user_comment}"` : '—'}
+                      </p>
+                    </td>
+
+                    <td className="px-5 py-3 text-right">
+                      <button 
+                        onClick={() => setCommentModal({ 
+                          isOpen: true, id: item.id, text: item.user_comment || '', 
+                          requirements: item.lead_requirements || [],
+                          serviceIds: item.services?.map((s: any) => s.id) || [],
+                          otherService: item.other_service || ''
+                        })}
+                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all active:scale-90"
+                      >
+                        <MessageSquare size={15} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              }) : (
+                <tr>
+                  <td colSpan={isAdminOrHead ? 8 : 7} className="px-5 py-12 text-center text-[11px] text-slate-400 italic font-medium">
+                    No leads assigned yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination Footer */}
         {!loading && pagination && pagination.last_page > 1 && (
-          <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              Records {pagination.from} - {pagination.to} of {pagination.total}
+          <div className="px-5 py-2.5 border-t border-slate-50 flex items-center justify-between bg-slate-50/30">
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+              Showing {pagination.from}-{pagination.to} of {pagination.total}
             </p>
-            <div className="flex gap-2">
+            <div className="flex gap-1.5">
               <Button 
-                variant="secondary" size="sm" 
+                variant="secondary" 
+                size="sm" 
                 disabled={!pagination.prev_page_url} 
-                onClick={() => setCurrentPage(prev => prev - 1)}
-                className="h-9 w-9 p-0 rounded-lg flex items-center justify-center"
+                onClick={() => setCurrentPage(prev => prev - 1)} 
+                className="h-7 w-7 p-0 border-slate-200 bg-white"
               >
-                <ChevronLeft size={16} />
+                <ChevronLeft size={14} />
               </Button>
               <Button 
-                variant="secondary" size="sm" 
+                variant="secondary" 
+                size="sm" 
                 disabled={!pagination.next_page_url} 
-                onClick={() => setCurrentPage(prev => prev + 1)}
-                className="h-9 w-9 p-0 rounded-lg flex items-center justify-center"
+                onClick={() => setCurrentPage(prev => prev + 1)} 
+                className="h-7 w-7 p-0 border-slate-200 bg-white"
               >
-                <ChevronRight size={16} />
+                <ChevronRight size={14} />
               </Button>
             </div>
           </div>

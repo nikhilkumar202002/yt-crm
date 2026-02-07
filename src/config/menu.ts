@@ -36,6 +36,11 @@ export const SIDEBAR_MENU: MenuItem[] = [
     path: '/proposals',
     roles: ['ADMIN', 'DM HEAD']
   },
+  {
+    title: 'Clients',
+    path: '/clients',
+    roles: ['ADMIN', 'DM HEAD', 'DM EXECUTIVE']
+  },
   { 
     title: 'Strategy & Pitch', 
     path: '/strategy', 

@@ -8,6 +8,8 @@ export interface OrgUnit {
   status: boolean | number;
 }
 
+
+
 // Departments CRUD
 export const getDepartments = async () => {
   const response = await apiClient.get(ENDPOINTS.DEPARTMENTS.BASE);
@@ -182,5 +184,63 @@ export const updateProposalFile = async (proposalId: number, file: File) => {
 
 export const acceptProposal = async (proposalId: number) => {
   const response = await apiClient.patch(`/proposals/${proposalId}/accept`);
+  return response.data;
+};
+
+/**
+ * List all clients.
+ * GET /clients
+ */
+export const getClients = async (page: number = 1) => {
+  const response = await apiClient.get('/clients', {
+    params: { page }
+  });
+  return response.data;
+};
+
+/**
+ * View a single client's details.
+ * GET /clients/{id}
+ */
+export const getClientById = async (clientId: number) => {
+  const response = await apiClient.get(`/clients/${clientId}`);
+  return response.data;
+};
+
+/**
+ * Edit an existing client.
+ * PUT /clients/{id}
+ */
+
+export const createClient = async (clientData: {
+  name: string;
+  email: string;
+  company_name: string;
+  contact_number_1: string;
+  contact_number_2?: string;
+  status: boolean;
+}) => {
+  const response = await apiClient.post('/clients', clientData);
+  return response.data;
+};
+
+export const updateClient = async (clientId: number, clientData: Partial<{
+  name: string;
+  email: string;
+  company_name: string;
+  contact_number_1: string;
+  contact_number_2: string;
+  status: boolean;
+}>) => {
+  const response = await apiClient.put(`/clients/${clientId}`, clientData);
+  return response.data;
+};
+
+/**
+ * Delete a client.
+ * DELETE /clients/{id}
+ */
+export const deleteClient = async (clientId: number) => {
+  const response = await apiClient.delete(`/clients/${clientId}`);
   return response.data;
 };

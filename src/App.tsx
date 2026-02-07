@@ -16,6 +16,7 @@ import AssignedLeadsPage from './pages/Leads/AssignedLeadsPage';
 import ServicesPage from './pages/Settings/ServicesPage';
 
 import ProposalPage from './pages/Proposal page/ProposalPage';
+import ClientPage from './pages/clients/ClientPage';
 
 
 import { useAppSelector } from './store/store';
@@ -41,6 +42,7 @@ function App() {
             <Route path="/leads/assigned" element={<AssignedLeadsPage />} />
             <Route path="/settings/services" element={<ServicesPage />} />
             <Route path="/proposals" element={<ProposalPage />} />
+            <Route path="/clients" element={<ClientPage />} />
             
           </Route>
         </Route>
