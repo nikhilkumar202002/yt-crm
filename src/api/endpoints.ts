@@ -23,6 +23,22 @@ export const ENDPOINTS = {
     UPLOAD: '/leads/upload',
     DETAIL: (id: number) => `/leads/${id}`,  // cite: 9
   },
+PROPOSALS: {
+    BASE: '/proposals',
+    DETAIL: (id: number) => `/proposals/${id}`,
+    ACCEPT: (id: number) => `/proposals/${id}/accept`,
+    UPDATE_DETAILS: (id: number) => `/proposals/${id}/details`,
+  },
+  SERVICES: {
+    BASE: '/services',
+    DETAIL: (id: number) => `/services/${id}`,
+  },
+
+  SUB_SERVICES: {
+    BASE: '/sub-services',
+    DETAIL: (id: number) => `/sub-services/${id}`,
+  },
+  
   CAMPAIGNS: {
     SETUP: '/campaigns/setup',       // cite: 27
     EXECUTION: '/campaigns/execute',  // cite: 51

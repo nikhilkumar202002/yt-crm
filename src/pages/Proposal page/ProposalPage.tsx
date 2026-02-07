@@ -1,22 +1,25 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  FileText, Phone, Mail, User, 
+  FileText, Phone, Mail, User, Settings2,
   UploadCloud, Loader2, ChevronLeft, ChevronRight, Clock, Flame
 } from 'lucide-react';
+import { useAppSelector } from '../../store/store';
 import { getAssignedLeads, getProposals, acceptProposal } from '../../api/services/microService';
 import { ProposalUploadModal } from './components/ProposalUploadModal';
+import { ProposalDetailsModal } from './components/ProposalDetailsModal';
 import { Button } from '../../components/common/Button';
 
 const ProposalPage = () => {
+  const { roleName } = useAppSelector((state) => state.auth);
+  // Roles allowed to see financial data and add details
+  const isFinancePrivileged = ['ADMIN', 'DM HEAD', 'ACCOUNTANT'].includes(roleName?.toUpperCase() || '');
+
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [uploadModal, setUploadModal] = useState({ 
-    isOpen: false, 
-    leadId: null as number | null,
-    proposalId: null as number | null 
-  });
+  const [uploadModal, setUploadModal] = useState({ isOpen: false, leadId: null as number | null, proposalId: null as number | null });
+  const [detailsModal, setDetailsModal] = useState({ isOpen: false, proposalId: null as number | null });
 
   const fetchData = useCallback(async (page: number, silent = false) => {
     try {
@@ -42,7 +45,12 @@ const ProposalPage = () => {
           ...lead,
           proposal_file_url: existingProposal?.file_url || null,
           proposal_id: existingProposal?.id || null,
-          proposal_is_accepted: !!existingProposal?.is_accepted 
+          proposal_is_accepted: !!existingProposal?.is_accepted,
+          // Delivery & Price data
+          creatives_nos: existingProposal?.creatives_nos || 0,
+          videos_nos: existingProposal?.videos_nos || 0,
+          amount: Number(existingProposal?.amount || 0),
+          gst_percentage: Number(existingProposal?.gst_percentage || 18)
         };
       });
 
@@ -80,7 +88,6 @@ const ProposalPage = () => {
 
   return (
     <div className="space-y-5 animate-in fade-in duration-500 font-sans">
-      {/* Page Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-none flex items-center gap-2">
@@ -92,7 +99,6 @@ const ProposalPage = () => {
         </div>
       </div>
 
-      {/* Main Table Container */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200/60 overflow-hidden relative">
         {loading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[1px] z-10 py-20">
@@ -108,10 +114,16 @@ const ProposalPage = () => {
                 <th className="px-5 py-3 w-12 text-center">#</th>
                 <th className="px-5 py-3">Lead Identity</th>
                 <th className="px-5 py-3 text-center">Priority</th>
+                {isFinancePrivileged && (
+                  <>
+                    <th className="px-5 py-3 text-center">Output</th>
+                    <th className="px-5 py-3 text-right">Total Amount</th>
+                  </>
+                )}
                 <th className="px-5 py-3">Assignee</th>
-                <th className="px-5 py-3">Service Scope</th>
+                <th className="px-5 py-3">Services Scope</th>
                 <th className="px-5 py-3 text-center">Approval</th>
-                <th className="px-5 py-3">Document</th>
+                <th className="px-5 py-3 text-center">Document</th>
                 <th className="px-5 py-3 text-right">Actions</th>
               </tr>
             </thead>
@@ -119,10 +131,10 @@ const ProposalPage = () => {
               {leads.length > 0 ? leads.map((item, index) => {
                 const slNo = pagination ? (pagination.from + index) : (index + 1);
                 const leadData = item.lead?.lead_data;
-                
-                // DATA FIX: Phone mapping
                 const displayPhone = leadData?.phone_number || leadData?.phone || 'N/A';
+                const displayEmail = leadData?.email || 'N/A'; // Fixed Email fetching
                 const isAccepted = !!item.proposal_is_accepted;
+                const totalWithGst = item.amount + (item.amount * (item.gst_percentage / 100));
 
                 return (
                   <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
@@ -137,17 +149,27 @@ const ProposalPage = () => {
                            <Phone size={10} className="text-blue-400/60"/> {displayPhone}
                         </span>
                         <span className="flex items-center gap-1">
-                           <Mail size={10} className="text-slate-300"/> {leadData?.email || 'N/A'}
+                           <Mail size={10} className="text-slate-300"/> {displayEmail}
                         </span>
                       </div>
                     </td>
 
-                    {/* NEW SEPARATE COLUMN: Priority Status */}
                     <td className="px-5 py-3 text-center">
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-50 text-red-600 border border-red-100 rounded-full text-[8px] font-black uppercase tracking-tighter shadow-sm animate-pulse">
                         <Flame size={8} fill="currentColor" /> Hot
                       </span>
                     </td>
+
+                    {isFinancePrivileged && (
+                      <>
+                        <td className="px-5 py-3 text-center">
+                          <div className="text-[10px] font-bold text-slate-700">{item.creatives_nos}C / {item.videos_nos}V</div>
+                        </td>
+                        <td className="px-5 py-3 text-right">
+                          <span className="text-[10px] font-black text-slate-900">₹{totalWithGst.toLocaleString()}</span>
+                        </td>
+                      </>
+                    )}
 
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2">
@@ -160,6 +182,7 @@ const ProposalPage = () => {
 
                     <td className="px-5 py-3">
                       <div className="flex flex-wrap gap-1 max-w-[180px]">
+                        {/* Fixed Services fetching */}
                         {item.services?.map((s: any) => (
                           <span key={s.id} className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100 text-[8px] font-bold uppercase tracking-tighter">
                             {s.name}
@@ -173,7 +196,7 @@ const ProposalPage = () => {
                       </div>
                     </td>
 
-                    <td className="px-5 py-3">
+                    <td className="px-5 py-3 text-center">
                       <div className="flex flex-col items-center gap-1">
                         {item.proposal_id ? (
                           <div className="flex items-center gap-2">
@@ -192,45 +215,56 @@ const ProposalPage = () => {
                           </div>
                         ) : (
                           <span className="text-[9px] text-slate-300 italic font-medium flex items-center gap-1">
-                            <Clock size={10} /> Needs PDF
+                            <Clock size={10} /> Pending PDF
                           </span>
                         )}
                       </div>
                     </td>
 
-                    <td className="px-5 py-3">
+                    <td className="px-5 py-3 text-center">
                       {item.proposal_file_url ? (
                         <a 
                           href={item.proposal_file_url} 
                           target="_blank" 
                           rel="noreferrer"
-                          className="flex items-center gap-1.5 text-blue-600 font-bold text-[10px] bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded border border-blue-100 w-fit transition-all shadow-sm"
+                          className="flex items-center gap-1.5 text-blue-600 font-bold text-[10px] bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded border border-blue-100 w-fit transition-all shadow-sm mx-auto"
                         >
-                          <FileText size={12} /> View PDF
+                          <FileText size={12} /> View
                         </a>
                       ) : (
-                        <span className="text-[9px] text-slate-300 font-bold uppercase">Missing</span>
+                        <span className="text-[9px] text-slate-300 font-bold uppercase tracking-tighter">Missing</span>
                       )}
                     </td>
 
                     <td className="px-5 py-3 text-right">
-                      <button 
-                        onClick={() => setUploadModal({ 
-                          isOpen: true, 
-                          leadId: item.id, 
-                          proposalId: item.proposal_id 
-                        })}
-                        className="inline-flex items-center gap-1 text-slate-400 hover:text-blue-600 transition-colors p-1.5 group"
-                      >
-                        <UploadCloud size={14} className="group-hover:scale-110 transition-transform" />
-                        <span className="text-[10px] font-bold uppercase">{item.proposal_file_url ? 'Revise' : 'Upload'}</span>
-                      </button>
+                      <div className="flex justify-end gap-1.5">
+                        {/* Details Modal Trigger: Visible only if approved and privileged */}
+                        {isAccepted && isFinancePrivileged && (
+                          <button 
+                            onClick={() => setDetailsModal({ isOpen: true, proposalId: item.proposal_id })} 
+                            className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-md transition-all" 
+                            title="Add Details"
+                          >
+                            <Settings2 size={14} />
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => setUploadModal({ 
+                            isOpen: true, 
+                            leadId: item.id, 
+                            proposalId: item.proposal_id 
+                          })}
+                          className="inline-flex items-center gap-1 text-slate-400 hover:text-blue-600 transition-colors p-1.5 group"
+                        >
+                          <UploadCloud size={14} className="group-hover:scale-110 transition-transform" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
               }) : (
                 <tr>
-                  <td colSpan={8} className="px-5 py-12 text-center text-[11px] text-slate-400 italic font-medium">
+                  <td colSpan={10} className="px-5 py-12 text-center text-[11px] text-slate-400 italic font-medium">
                     No hot leads found requiring proposals.
                   </td>
                 </tr>
@@ -239,7 +273,7 @@ const ProposalPage = () => {
           </table>
         </div>
 
-        {/* High Density Pagination Footer */}
+        {/* Pagination Footer */}
         {!loading && pagination && pagination.last_page > 1 && (
           <div className="px-5 py-2.5 border-t border-slate-50 flex items-center justify-between bg-slate-50/30">
             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
@@ -274,6 +308,13 @@ const ProposalPage = () => {
         onOpenChange={(open) => setUploadModal({ ...uploadModal, isOpen: open })}
         leadId={uploadModal.leadId}
         proposalId={uploadModal.proposalId}
+        onSuccess={() => fetchData(currentPage, true)} 
+      />
+
+      <ProposalDetailsModal 
+        isOpen={detailsModal.isOpen} 
+        onOpenChange={(open) => setDetailsModal({ ...detailsModal, isOpen: open })} 
+        proposalId={detailsModal.proposalId} 
         onSuccess={() => fetchData(currentPage, true)} 
       />
     </div>

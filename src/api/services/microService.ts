@@ -8,7 +8,20 @@ export interface OrgUnit {
   status: boolean | number;
 }
 
+export interface ProposalDetailsPayload {
+  creatives_nos: number;
+  videos_nos: number;
+  description: string;
+  amount: number;
+  gst_percentage: number;
+}
 
+export interface SubServicePayload {
+  name: string;
+  description: string;
+  status: boolean;
+  service_id: number; // Assuming sub-services are linked to a parent service
+}
 
 // Departments CRUD
 export const getDepartments = async () => {
@@ -127,33 +140,64 @@ export const getServices = async (page: number = 1) => {
   return response.data;
 };
 
-/**
- * POST Create a new service
- */
 export const createService = async (data: { name: string; description: string; status: boolean }) => {
   const response = await apiClient.post('/services', data);
   return response.data;
 };
 
-/**
- * PUT Update an existing service
- */
 export const updateService = async (id: number, data: { name: string; description: string; status: boolean }) => {
   const response = await apiClient.put(`/services/${id}`, data);
   return response.data;
 };
 
-/**
- * DELETE a service
- */
 export const deleteService = async (id: number) => {
   const response = await apiClient.delete(`/services/${id}`);
   return response.data;
 };
 
-// Campaigns
+/**
+ * GET All sub-services with optional pagination
+ */
+export const getSubServices = async (page: number = 1) => {
+  const response = await apiClient.get(`${ENDPOINTS.SUB_SERVICES.BASE}?page=${page}`);
+  return response.data;
+};
+
+/**
+ * GET a single sub-service by ID
+ */
+export const getSubServiceById = async (id: number) => {
+  const response = await apiClient.get(ENDPOINTS.SUB_SERVICES.DETAIL(id));
+  return response.data;
+};
+
+/**
+ * POST Create a new sub-service
+ */
+export const createSubService = async (data: SubServicePayload) => {
+  const response = await apiClient.post(ENDPOINTS.SUB_SERVICES.BASE, data);
+  return response.data;
+};
+
+/**
+ * PATCH Update an existing sub-service
+ */
+export const updateSubService = async (id: number, data: Partial<SubServicePayload>) => {
+  const response = await apiClient.patch(ENDPOINTS.SUB_SERVICES.DETAIL(id), data);
+  return response.data;
+};
+
+/**
+ * DELETE a sub-service
+ */
+export const deleteSubService = async (id: number) => {
+  const response = await apiClient.delete(ENDPOINTS.SUB_SERVICES.DETAIL(id));
+  return response.data;
+};
+
+// Campaigns / Proposals
 export const getProposals = async (page: number = 1) => {
-  const response = await apiClient.get(`/proposals?page=${page}`);
+  const response = await apiClient.get(`${ENDPOINTS.PROPOSALS.BASE}?page=${page}`); // cite: 13
   return response.data;
 };
 
@@ -162,7 +206,7 @@ export const createProposal = async (leadAssignId: number, file: File) => {
   formData.append('lead_assign_id', leadAssignId.toString());
   formData.append('file', file);
   
-  const response = await apiClient.post('/proposals', formData, {
+  const response = await apiClient.post(ENDPOINTS.PROPOSALS.BASE, formData, { // cite: 13, 14
     headers: { 'Content-Type': 'multipart/form-data' }
   });
   return response.data;
@@ -171,7 +215,9 @@ export const createProposal = async (leadAssignId: number, file: File) => {
 export const updateProposalFile = async (proposalId: number, file: File) => {
   const formData = new FormData();
   formData.append('file', file);
-  const response = await apiClient.post(`/proposals/${proposalId}`, formData, {
+  
+  // Using POST with _method: 'PUT' for compatibility with multipart form data on some backends
+  const response = await apiClient.post(ENDPOINTS.PROPOSALS.DETAIL(proposalId), formData, { // cite: 13, 14
     headers: { 
       'Content-Type': 'multipart/form-data'
     },
@@ -183,7 +229,19 @@ export const updateProposalFile = async (proposalId: number, file: File) => {
 };
 
 export const acceptProposal = async (proposalId: number) => {
-  const response = await apiClient.patch(`/proposals/${proposalId}/accept`);
+  const response = await apiClient.patch(ENDPOINTS.PROPOSALS.ACCEPT(proposalId)); // cite: 13, 14
+  return response.data;
+};
+
+/*
+ * Update detailed metrics and pricing for a proposal.
+ * PATCH /proposals/{id}/details
+ */
+export const updateProposalDetails = async (proposalId: number, details: ProposalDetailsPayload) => {
+  const response = await apiClient.patch(
+    ENDPOINTS.PROPOSALS.UPDATE_DETAILS(proposalId), 
+    details
+  );
   return response.data;
 };
 
