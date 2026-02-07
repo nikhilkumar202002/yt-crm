@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, Save, MessageSquare, Layers, Settings2, Check } from 'lucide-react';
+import { X, Save, MessageSquare, Layers, Settings2, Check, ChevronRight, Tag } from 'lucide-react';
 import { Button } from '../../../components/common/Button';
 
 interface LeadDescriptionModalProps {
@@ -12,6 +12,8 @@ interface LeadDescriptionModalProps {
   onRequirementsChange: (reqs: string[]) => void;
   selectedServiceIds: number[];
   onServiceIdsChange: (ids: number[]) => void;
+  selectedSubServiceIds: number[]; 
+  onSubServiceIdsChange: (ids: number[]) => void; 
   otherService: string;
   onOtherServiceChange: (text: string) => void;
   onSave: () => void;
@@ -22,17 +24,15 @@ interface LeadDescriptionModalProps {
 export const LeadDescriptionModal = ({ 
   isOpen, onOpenChange, comment, onCommentChange, 
   requirements, onRequirementsChange, selectedServiceIds, onServiceIdsChange,
+  selectedSubServiceIds, onSubServiceIdsChange,
   otherService, onOtherServiceChange, onSave, isAdminOrHead, availableServices = [] 
 }: LeadDescriptionModalProps) => {
 
-  const [newReq, setNewReq] = useState('');
-
-  // Improved check: find if any selected ID belongs to a service named "Others"
- const isOthersSelected = selectedServiceIds.some(id => {
-    const service = availableServices.find(s => s.id === id);
-    const name = service?.name.toLowerCase() || '';
-    return name === 'other' || name === 'others';
-  });
+  const subServicesToDisplay = useMemo(() => {
+    return availableServices
+      .filter(service => selectedServiceIds.includes(service.id))
+      .flatMap(service => service.sub_services || []);
+  }, [availableServices, selectedServiceIds]);
 
   const toggleService = (id: number, name: string) => {
     const isSelected = selectedServiceIds.includes(id);
@@ -42,127 +42,160 @@ export const LeadDescriptionModal = ({
     
     onServiceIdsChange(nextIds);
 
-    // Sync only standard services to visual badges (exclude placeholder "Other" items)
-    const lowerName = name.toLowerCase();
-    if (lowerName !== 'other' && lowerName !== 'others') {
-      if (!isSelected && !requirements.includes(name)) {
-        onRequirementsChange([...requirements, name]);
-      } else if (isSelected) {
-        onRequirementsChange(requirements.filter(r => r !== name));
-      }
+    if (isSelected) {
+      const parentService = availableServices.find(s => s.id === id);
+      const childIds = parentService?.sub_services?.map((ss: any) => ss.id) || [];
+      onSubServiceIdsChange(selectedSubServiceIds.filter(ssid => !childIds.includes(ssid)));
+      
+      const childNames = parentService?.sub_services?.map((ss: any) => ss.name) || [];
+      onRequirementsChange(requirements.filter(r => r !== name && !childNames.includes(r)));
+    } else {
+      if (!requirements.includes(name)) onRequirementsChange([...requirements, name]);
     }
   };
 
-
-const handleOtherServiceSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      const trimmedValue = otherService.trim();
-      if (trimmedValue && !requirements.includes(trimmedValue)) {
-        onRequirementsChange([...requirements, trimmedValue]);
-        // Do not clear onOtherServiceChange here if you need it for the specific API payload
-      }
+  const toggleSubService = (id: number, name: string) => {
+    const isSelected = selectedSubServiceIds.includes(id);
+    const nextIds = isSelected 
+      ? selectedSubServiceIds.filter(sid => sid !== id) 
+      : [...selectedSubServiceIds, id];
+    
+    onSubServiceIdsChange(nextIds);
+    
+    if (!isSelected && !requirements.includes(name)) {
+      onRequirementsChange([...requirements, name]);
+    } else if (isSelected) {
+      onRequirementsChange(requirements.filter(r => r !== name));
     }
+  };
+
+  // Helper function to determine badge style
+  const getBadgeStyle = (reqName: string) => {
+    // Check if it's a main service
+    const isMain = availableServices.some(s => s.name === reqName);
+    
+    if (isMain) {
+      // Main Service: Blue Theme
+      return "bg-blue-50 border-blue-200 text-blue-700";
+    }
+    // Sub Service (or custom): Indigo/Purple Theme
+    return "bg-indigo-50 border-indigo-200 text-indigo-700";
   };
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[110]" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-white rounded-2xl p-6 shadow-2xl z-[120] font-sans">
-          <div className="flex justify-between items-center mb-4">
-            <Dialog.Title className="text-xs font-bold text-slate-900 uppercase tracking-widest flex items-center gap-2">
-              <MessageSquare size={14} className="text-blue-500" /> Lead Management
-            </Dialog.Title>
-            <Dialog.Close className="text-slate-400 hover:text-slate-600"><X size={16} /></Dialog.Close>
+        <Dialog.Overlay className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110]" />
+        
+        <Dialog.Content 
+          aria-describedby={undefined} 
+          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl z-[120] font-sans focus:outline-none flex flex-col max-h-[90vh]"
+        >
+          
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Settings2 size={18} className="text-blue-600" />
+              </div>
+              <Dialog.Title className="text-xs font-black text-slate-900 uppercase tracking-widest">
+                Service Alignment
+              </Dialog.Title>
+            </div>
+            <Dialog.Close className="p-1 hover:bg-slate-100 rounded-full transition-colors"><X size={18} /></Dialog.Close>
           </div>
           
-         <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
-      {!isAdminOrHead && (
-        <div className="space-y-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
-          <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
-            <Layers size={10}/> Select Services
-          </label>
-          <div className="grid grid-cols-1 gap-1.5 max-h-32 overflow-y-auto">
-            {availableServices.map(s => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => toggleService(s.id, s.name)}
-                className={`flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-bold transition-all border ${
-                  selectedServiceIds.includes(s.id) 
-                  ? 'bg-blue-600 text-white border-blue-700' 
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                {s.name}
-                {selectedServiceIds.includes(s.id) && <Check size={12} />}
-              </button>
-            ))}
-          </div>
+          <div className="space-y-6 overflow-y-auto flex-1 pr-1 custom-scrollbar">
+            
+            <div className="space-y-5">
+              
+              {/* 1. MAIN SERVICE */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5 ml-1">
+                  <Layers size={10} className="text-blue-500" /> 1. Main Category
+                </label>
+                <div className="space-y-1 max-h-32 overflow-y-auto p-1 bg-slate-50 rounded-xl border border-slate-100">
+                  {availableServices.map(s => (
+                    <div 
+                      key={s.id} 
+                      onClick={() => toggleService(s.id, s.name)}
+                      className={`flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-bold cursor-pointer transition-all mb-0.5 ${
+                        selectedServiceIds.includes(s.id) ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      <span className="truncate">{s.name}</span>
+                      {selectedServiceIds.includes(s.id) && <Check size={12} strokeWidth={3} />}
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-          {/* Input field appears if "Other" or "Others" is selected in the list above */}
-          {isOthersSelected && (
-            <div className="space-y-1 animate-in slide-in-from-top-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
-                <Settings2 size={10}/> Specify Other Service
-              </label>
-              <input 
-                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500/20"
-                placeholder="Type service and press Enter to list..."
-                value={otherService}
-                onChange={(e) => onOtherServiceChange(e.target.value)}
-                onKeyDown={handleOtherServiceSubmit}
-              />
-            </div>
-          )}
-        </div>
-      )}
+              {/* 2. SUB SERVICE */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5 ml-1">
+                  <ChevronRight size={10} className="text-indigo-500" /> 2. Specific Sub-Services
+                </label>
+                <div className="space-y-1 max-h-32 overflow-y-auto p-1 bg-slate-50 rounded-xl border border-slate-100">
+                  {subServicesToDisplay.length > 0 ? (
+                    subServicesToDisplay.map((ss: any) => (
+                      <div 
+                        key={ss.id} 
+                        onClick={() => toggleSubService(ss.id, ss.name)}
+                        className={`flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-bold cursor-pointer transition-all mb-0.5 ${
+                          selectedSubServiceIds.includes(ss.id) ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        <span className="truncate">{ss.name}</span>
+                        {selectedSubServiceIds.includes(ss.id) && <Check size={12} strokeWidth={3} />}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-3 text-[10px] text-slate-400 italic text-center">Select a main category to see sub-services</div>
+                  )}
+                </div>
+              </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Requirements List</label>
-              <div className="flex flex-wrap gap-1.5 p-2 bg-slate-50 border border-slate-200 rounded-xl min-h-[45px]">
-                {requirements.map((req, i) => (
-                  <span key={i} className="px-2 py-0.5 bg-blue-600 text-white rounded text-[9px] font-bold flex items-center gap-1">
-                    {req}
-                    {!isAdminOrHead && <X size={10} className="cursor-pointer" onClick={() => onRequirementsChange(requirements.filter((_, idx) => idx !== i))} />}
-                  </span>
-                ))}
-                {!isAdminOrHead && (
-                  <input 
-                    className="bg-transparent border-none outline-none text-[10px] flex-1 min-w-[60px]"
-                    placeholder="Add custom requirement..."
-                    value={newReq}
-                    onChange={(e) => setNewReq(e.target.value)}
-                    onKeyDown={(e) => {
-                      if(e.key === 'Enter' && newReq.trim()) {
-                        onRequirementsChange([...requirements, newReq.trim()]);
-                        setNewReq('');
-                      }
-                    }}
-                  />
-                )}
+              {/* 3. BADGES - WITH SEPARATE COLORS */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5 ml-1">
+                  <Tag size={10} className="text-emerald-500" /> 3. Requirements Scope
+                </label>
+                <div className="flex flex-wrap gap-1.5 p-3 bg-slate-50 border border-slate-100 rounded-2xl min-h-[50px]">
+                  {requirements.length > 0 ? (
+                    requirements.map((req, i) => (
+                      <span 
+                        key={i} 
+                        className={`px-2 py-1 bg-white border text-[9px] font-black uppercase rounded-md flex items-center gap-1 shadow-sm ${getBadgeStyle(req)}`}
+                      >
+                        {req}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-[10px] text-slate-300 font-medium italic">No services selected</span>
+                  )}
+                </div>
               </div>
             </div>
 
+            {/* 4. NOTES */}
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Follow-up Note</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5 ml-1">
+                <MessageSquare size={10} className="text-orange-500" /> 4. Discussion Description
+              </label>
               <textarea
-                readOnly={isAdminOrHead}
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm min-h-[100px] outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-[11px] font-medium min-h-[100px] outline-none focus:ring-2 focus:ring-blue-500/10 transition-all placeholder:text-slate-300"
+                placeholder="Enter detailed client requirements or follow-up notes here..."
                 value={comment}
                 onChange={(e) => onCommentChange(e.target.value)}
               />
             </div>
           </div>
 
-          {!isAdminOrHead && (
-            <div className="mt-4">
-              <Button variant="primary" size="sm" className="w-full" onClick={onSave}>
-                <Save size={14} className="mr-2" /> Save Changes
-              </Button>
-            </div>
-          )}
+          <div className="mt-6 pt-4 border-t border-slate-100">
+            <Button variant="primary" size="sm" className="w-full h-11 rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-lg shadow-blue-500/20" onClick={onSave}>
+              <Save size={16} className="mr-2" /> Sync Changes
+            </Button>
+          </div>
+
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

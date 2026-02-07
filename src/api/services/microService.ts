@@ -125,9 +125,15 @@ export const updateLeadComment = async (id: number, comment: string) => {
   return response.data;
 };
 
-export const updateLeadServices = async (id: number, service_ids: number[], other_service: string = "") => {
+export const updateLeadServices = async (
+  id: number, 
+  service_ids: number[], 
+  subservice_ids: number[], // Added sub-services array
+  other_service: string = ""
+) => {
   const response = await apiClient.put(`/lead-assigns/${id}/services`, { 
-    service_ids, // Matches the backend error key "service_ids"
+    service_ids, 
+    subservice_ids, // New key for sub-services
     other_service
   });
   return response.data;
@@ -249,10 +255,15 @@ export const updateProposalDetails = async (proposalId: number, details: Proposa
  * List all clients.
  * GET /clients
  */
-export const getClients = async (page: number = 1) => {
-  const response = await apiClient.get('/clients', {
-    params: { page }
-  });
+export const getClients = async (page: number = 1, isInLeads?: boolean) => {
+  const params: any = { page };
+  
+  // If a filter is provided, append it to the request
+  if (isInLeads !== undefined) {
+    params.is_in_leads = isInLeads ? 1 : 0; 
+  }
+
+  const response = await apiClient.get('/clients', { params });
   return response.data;
 };
 
@@ -277,6 +288,8 @@ export const createClient = async (clientData: {
   contact_number_1: string;
   contact_number_2?: string;
   status: boolean;
+  is_in_leads?: boolean; // Added
+  proposal_id?: number | null; // Added
 }) => {
   const response = await apiClient.post('/clients', clientData);
   return response.data;

@@ -36,22 +36,10 @@ export const SIDEBAR_MENU: MenuItem[] = [
     path: '/proposals',
     roles: ['ADMIN', 'DM HEAD']
   },
- {
-    title: 'Clients',
+{
+    title: 'Onboarded Clients',
     path: '/clients',
-    roles: ['ADMIN', 'DM HEAD', 'DM EXECUTIVE'],
-    submenu: [
-      { 
-        title: 'Lead Clients', 
-        path: '/clients/leads', 
-        roles: ['ADMIN', 'DM HEAD', 'DM EXECUTIVE'] 
-      },
-      { 
-        title: 'Enquiry Clients', 
-        path: '/clients/enquiry', 
-        roles: ['ADMIN', 'DM HEAD', 'DM EXECUTIVE'] 
-      }
-    ]
+    roles: ['ADMIN', 'DM HEAD', 'DM EXECUTIVE']
   },
   { 
     title: 'Strategy & Pitch', 

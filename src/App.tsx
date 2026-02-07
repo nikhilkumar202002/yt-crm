@@ -16,7 +16,11 @@ import AssignedLeadsPage from './pages/Leads/AssignedLeadsPage';
 import ServicesPage from './pages/Settings/ServicesPage';
 
 import ProposalPage from './pages/Proposal page/ProposalPage';
+
 import ClientPage from './pages/clients/ClientPage';
+import EnquiryClientsPage from './pages/clients/EnquiryClientsPage';
+import LeadClientsPage from './pages/clients/LeadClientsPage';
+
 
 
 import { useAppSelector } from './store/store';
@@ -43,6 +47,9 @@ function App() {
             <Route path="/settings/services" element={<ServicesPage />} />
             <Route path="/proposals" element={<ProposalPage />} />
             <Route path="/clients" element={<ClientPage />} />
+            <Route path="/clients/enquiry-clients" element={<EnquiryClientsPage />} />
+            <Route path="/clients/leads" element={<LeadClientsPage />} />
+            
             
           </Route>
         </Route>

@@ -6,6 +6,7 @@ import {
   updateLeadStatus, 
   updateLeadComment, 
   getServices, 
+  getSubServices, // Ensure this is imported
   updateLeadServices,
   getProposals 
 } from '../../api/services/microService';
@@ -24,23 +25,39 @@ const AssignedLeadsPage = () => {
   const [selectedService, setSelectedService] = useState<string>(''); 
 
   const [commentModal, setCommentModal] = useState({
-    isOpen: false, id: null as number | null, text: '', requirements: [] as string[], 
-    serviceIds: [] as number[], otherService: ''
+    isOpen: false, 
+    id: null as number | null, 
+    text: '', 
+    requirements: [] as string[], 
+    serviceIds: [] as number[], 
+    subServiceIds: [] as number[], // Added subServiceIds state
+    otherService: ''
   });
 
   const fetchData = useCallback(async (page: number, serviceFilter: string = '') => {
     try {
       setLoading(true);
-      const [leadsRes, servicesRes, proposalsRes] = await Promise.all([
+      
+      // 1. Fetch Leads, Services, Sub-Services, and Proposals concurrently
+      const [leadsRes, servicesRes, subServicesRes, proposalsRes] = await Promise.all([
         getAssignedLeads(page, serviceFilter),
         getServices(1),
+        getSubServices(1), // Fetching sub-services to populate the dynamic dropdown
         getProposals(1)
       ]);
       
       const rawLeads = leadsRes?.data?.data || [];
+      const servicesData = servicesRes?.data?.data || [];
+      const subServicesData = subServicesRes?.data?.data || [];
       const proposalsMap = proposalsRes?.data?.data || [];
 
-      const merged = rawLeads.map((lead: any) => {
+      // 2. Merge Sub-Services into Main Services
+      const mergedServices = servicesData.map((service: any) => ({
+        ...service,
+        sub_services: subServicesData.filter((sub: any) => Number(sub.service_id) === Number(service.id))
+      }));
+
+      const mergedLeads = rawLeads.map((lead: any) => {
         const proposal = proposalsMap.find((p: any) => Number(p.lead_assign_id) === Number(lead.id));
         return {
           ...lead,
@@ -48,8 +65,8 @@ const AssignedLeadsPage = () => {
         };
       });
 
-      setAssignments(merged);
-      setAvailableServices(servicesRes?.data?.data || []);
+      setAssignments(mergedLeads);
+      setAvailableServices(mergedServices); // Pass the merged structure to the modal
       setPagination(leadsRes?.data);
       setCurrentPage(leadsRes?.data?.current_page || 1);
     } catch (error) {
@@ -75,10 +92,18 @@ const AssignedLeadsPage = () => {
     if (!commentModal.id) return;
     try {
       const validServiceIds = commentModal.serviceIds.filter(id => id !== 999);
+      
       await Promise.all([
         updateLeadComment(commentModal.id, commentModal.text),
-        updateLeadServices(commentModal.id, validServiceIds, commentModal.otherService)
+        // 3. Include subServiceIds in the update call
+        updateLeadServices(
+          commentModal.id, 
+          validServiceIds, 
+          commentModal.subServiceIds, 
+          commentModal.otherService
+        )
       ]);
+      
       setCommentModal(prev => ({ ...prev, isOpen: false }));
       fetchData(currentPage, selectedService);
     } catch (error) { alert("Failed to save data."); }
@@ -134,11 +159,8 @@ const AssignedLeadsPage = () => {
             <tbody className="divide-y divide-slate-50">
               {assignments.length > 0 ? assignments.map((item, index) => {
                 const slNo = pagination ? (pagination.from + index) : (index + 1);
-                
-                // DATA MAPPING FIX
                 const leadData = item.lead?.lead_data;
                 const phoneNumber = leadData?.phone_number || leadData?.phone || 'N/A';
-                
                 const isLocked = !!item.is_approved;
 
                 return (
@@ -225,9 +247,12 @@ const AssignedLeadsPage = () => {
                     <td className="px-5 py-3 text-right">
                       <button 
                         onClick={() => setCommentModal({ 
-                          isOpen: true, id: item.id, text: item.user_comment || '', 
+                          isOpen: true, 
+                          id: item.id, 
+                          text: item.user_comment || '', 
                           requirements: item.lead_requirements || [],
                           serviceIds: item.services?.map((s: any) => s.id) || [],
+                          subServiceIds: item.sub_services?.map((s: any) => s.id) || [], // Pre-populate existing sub-services
                           otherService: item.other_service || ''
                         })}
                         className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all active:scale-90"
@@ -238,11 +263,7 @@ const AssignedLeadsPage = () => {
                   </tr>
                 );
               }) : (
-                <tr>
-                  <td colSpan={isAdminOrHead ? 8 : 7} className="px-5 py-12 text-center text-[11px] text-slate-400 italic font-medium">
-                    No leads assigned yet.
-                  </td>
-                </tr>
+                <tr><td colSpan={isAdminOrHead ? 8 : 7} className="px-5 py-12 text-center text-[11px] text-slate-400 italic font-medium">No leads assigned yet.</td></tr>
               )}
             </tbody>
           </table>
@@ -256,8 +277,7 @@ const AssignedLeadsPage = () => {
             </p>
             <div className="flex gap-1.5">
               <Button 
-                variant="secondary" 
-                size="sm" 
+                variant="secondary" size="sm" 
                 disabled={!pagination.prev_page_url} 
                 onClick={() => setCurrentPage(prev => prev - 1)} 
                 className="h-7 w-7 p-0 border-slate-200 bg-white"
@@ -265,8 +285,7 @@ const AssignedLeadsPage = () => {
                 <ChevronLeft size={14} />
               </Button>
               <Button 
-                variant="secondary" 
-                size="sm" 
+                variant="secondary" size="sm" 
                 disabled={!pagination.next_page_url} 
                 onClick={() => setCurrentPage(prev => prev + 1)} 
                 className="h-7 w-7 p-0 border-slate-200 bg-white"
@@ -287,11 +306,14 @@ const AssignedLeadsPage = () => {
         onRequirementsChange={(reqs) => setCommentModal(prev => ({ ...prev, requirements: reqs }))}
         selectedServiceIds={commentModal.serviceIds}
         onServiceIdsChange={(ids) => setCommentModal(prev => ({ ...prev, serviceIds: ids }))}
+        // 4. Connect Sub-Service State to Modal
+        selectedSubServiceIds={commentModal.subServiceIds}
+        onSubServiceIdsChange={(ids) => setCommentModal(prev => ({ ...prev, subServiceIds: ids }))}
         otherService={commentModal.otherService}
         onOtherServiceChange={(text) => setCommentModal(prev => ({ ...prev, otherService: text }))}
         onSave={handleSaveData} 
         isAdminOrHead={isAdminOrHead} 
-        availableServices={availableServices}
+        availableServices={availableServices} // Pass merged data
       />
     </div>
   );

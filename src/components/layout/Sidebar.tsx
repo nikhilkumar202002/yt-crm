@@ -21,12 +21,13 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
 
   const currentRole = roleName?.toUpperCase() || '';
 
+  // Updated iconMap to match the new "Onboarded Clients" title
   const iconMap: Record<string, JSX.Element> = {
     'Dashboard': <LayoutDashboard size={15} />,
     'Leads & Pipeline': <Users size={15} />, 
     'Strategy & Pitch': <Rocket size={15} />, 
     'Proposal': <FileText size={15} />,
-    'Clients': <Briefcase size={15} />,
+    'Onboarded Clients': <Briefcase size={15} />, // Renamed key to match menu.ts
     'Campaign Setup': <Layers size={15} />, 
     'Creative Workflow': <Palette size={15} />, 
     'Asset Hub': <FolderOpen size={15} />, 
