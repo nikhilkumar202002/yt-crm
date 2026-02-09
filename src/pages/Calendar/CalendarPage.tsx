@@ -34,6 +34,7 @@ interface CalendarWorkData {
   content_file?: File;
   notes?: string;
   creative_works?: CreativeWork[];
+  is_special_day?: boolean;
 }
 
 interface ModalData {
@@ -41,6 +42,7 @@ interface ModalData {
   items: { description: string }[];
   notes?: string;
   creative_works?: CreativeWork[];
+  is_special_day?: boolean;
 }
 
 const CalendarPage = () => {
@@ -111,6 +113,7 @@ const CalendarPage = () => {
           content_file: undefined,
           notes: work.notes || '',
           creative_works: work.creatives || [],
+          is_special_day: work.is_special_day || false,
         };
       });
       
@@ -188,7 +191,7 @@ const CalendarPage = () => {
     }
   }, [calendarWorkCreatives]);
 
-  const handleSave = useCallback(async (data: { client_id: number; date: string; description: string; content_description: string; notes: string; content_file?: File | null }) => {
+  const handleSave = useCallback(async (data: { client_id: number; date: string; description: string; content_description: string; notes: string; content_file?: File | null; is_special_day?: boolean }) => {
     if (!selectedDate) return;
 
     const dateKey = selectedDate.toDateString();
@@ -204,6 +207,7 @@ const CalendarPage = () => {
         content_file: data.content_file,
         notes: data.notes,
         creative_works,
+        is_special_day: data.is_special_day,
       }
     }));
 
@@ -215,6 +219,7 @@ const CalendarPage = () => {
         content_description: data.content_description,
         notes: data.notes,
         content_file: data.content_file,
+        is_special_day: data.is_special_day,
       });
       await loadCalendarWorks();
     } catch (error) {
@@ -262,13 +267,16 @@ const CalendarPage = () => {
         const hasWork = !!dayData;
         const isToday = isSameDay(currentDay, new Date());
         const isCurrentMonth = isSameMonth(currentDay, monthStart);
+        const isSpecialDay = dayData?.is_special_day;
 
         days.push(
           <div
             key={currentDay.toString()}
-            className={`p-3 text-left text-[14px] font-medium border border-slate-200 cursor-pointer hover:bg-slate-100 flex flex-col items-start ${
+            className={`p-3 text-left text-[14px] font-medium border border-slate-200 cursor-pointer hover:bg-slate-100 flex flex-col items-start relative ${
               !isCurrentMonth
                 ? 'text-slate-300'
+                : isSpecialDay
+                ? 'bg-purple-100 text-purple-800 font-semibold'
                 : hasWork
                 ? 'bg-green-100 text-green-800 font-semibold'
                 : isToday
@@ -277,7 +285,14 @@ const CalendarPage = () => {
             }`}
             onClick={() => handleDayClick(currentDay)}
           >
-            <div>{format(currentDay, dateFormat)}</div>
+            <div className="flex items-center gap-1">
+              {format(currentDay, dateFormat)}
+              {isSpecialDay && (
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-medium bg-purple-500 text-white">
+                  ★
+                </span>
+              )}
+            </div>
             
             {dayData?.creative_works && dayData.creative_works.length > 0 && (
               <div className="text-left text-[12px] mt-1 space-y-0.5">

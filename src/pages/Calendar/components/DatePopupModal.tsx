@@ -4,6 +4,8 @@ import { X, Calendar, Users, Upload, Palette } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '../../../components/common/Button';
 import { Input } from '../../../components/common/Input';
+import { useAppSelector } from '../../../store/store';
+import { getRoles } from '../../../api/services/authService';
 
 interface Client {
   id: number;
@@ -29,8 +31,8 @@ interface DatePopupModalProps {
   onOpenChange: (open: boolean) => void;
   selectedDate: Date | null;
   selectedClient?: number | null;
-  onSave: (data: { client_id: number; date: string; description: string; content_description: string; notes: string; content_file?: File | null }) => void;
-  existingData?: { client_id: number; description: string; content_description: string; content_file?: File | null };
+  onSave: (data: { client_id: number; date: string; description: string; content_description: string; notes: string; content_file?: File | null; is_special_day?: boolean }) => void;
+  existingData?: { client_id: number; description: string; content_description: string; content_file?: File | null; is_special_day?: boolean };
   clients?: Client[];
   calendarWorkCreatives?: CalendarWorkCreative[];
 }
@@ -49,11 +51,17 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
   const [workDescription, setWorkDescription] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [contentFile, setContentFile] = useState<File | null>(null);
+  const [isSpecialDay, setIsSpecialDay] = useState<boolean>(false);
   const [clients, setClients] = useState<Client[]>(propClients);
   const [calendarWorkCreatives, setCalendarWorkCreatives] = useState<CalendarWorkCreative[]>(propCalendarWorkCreatives);
   const [selectedCreativeItems, setSelectedCreativeItems] = useState<SelectedCreativeItem[]>([]);
   const [currentCreativeId, setCurrentCreativeId] = useState<number>(0);
   const [currentQuantity, setCurrentQuantity] = useState<number>(0);
+  const [roles, setRoles] = useState<any[]>([]);
+
+  // Get user role for conditional rendering
+  const { roleName } = useAppSelector((state) => state.auth);
+  const isDMExecutive = roleName?.toUpperCase() === 'DM EXECUTIVE';
 
   // Update state when props change
   useEffect(() => {
@@ -64,6 +72,21 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
     setCalendarWorkCreatives(propCalendarWorkCreatives);
   }, [propCalendarWorkCreatives]);
 
+  // Fetch roles on component mount
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const response = await getRoles();
+        setRoles(response.data || []);
+      } catch (error) {
+        console.error('Failed to fetch roles:', error);
+        setRoles([]);
+      }
+    };
+
+    fetchRoles();
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
       const initializeForm = () => {
@@ -71,6 +94,7 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
           setClientId(existingData.client_id);
           setWorkDescription(existingData.content_description || '');
           setContentFile(null);
+          setIsSpecialDay(existingData.is_special_day || false);
         } else {
           setClientId(selectedClient || 0);
           setWorkDescription('');
@@ -79,6 +103,7 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
           setSelectedCreativeItems([]);
           setCurrentCreativeId(0);
           setCurrentQuantity(0);
+          setIsSpecialDay(false);
         }
       };
       initializeForm();
@@ -125,6 +150,7 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
         content_file: contentFile,
         content_description: workDescription,
         notes: notes,
+        is_special_day: isSpecialDay,
       };
       onSave(payload);
       setClientId(0);
@@ -134,6 +160,7 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
       setSelectedCreativeItems([]);
       setCurrentCreativeId(0);
       setCurrentQuantity(0);
+      setIsSpecialDay(false);
     }
     onOpenChange(false);
   };
@@ -242,18 +269,20 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
               )}
             </div>
 
-            {/* Work Description Section */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Work Description</label>
-              <textarea
-                value={workDescription}
-                onChange={(e) => setWorkDescription(e.target.value)}
-                placeholder="Provide an overview of the creative work to be completed..."
-                rows={3}
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none min-h-20 resize-none"
-              />
-              <p className="text-[10px] text-slate-400">Brief summary of the project scope and objectives</p>
-            </div>
+            {/* Work Description Section - Hidden for DM Executive */}
+            {!isDMExecutive && (
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Work Description</label>
+                <textarea
+                  value={workDescription}
+                  onChange={(e) => setWorkDescription(e.target.value)}
+                  placeholder="Provide an overview of the creative work to be completed..."
+                  rows={3}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none min-h-20 resize-none"
+                />
+                <p className="text-[10px] text-slate-400">Brief summary of the project scope and objectives</p>
+              </div>
+            )}
 
             {/* Notes Section */}
             <div className="space-y-1">
@@ -268,20 +297,36 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
               <p className="text-[10px] text-slate-400">Any additional information or special requirements</p>
             </div>
 
-            {/* File Upload Section */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                <Upload size={14} className="text-slate-400" />
-                Supporting Files
-              </label>
+            {/* Special Day Checkbox */}
+            <div className="flex items-center space-x-2">
               <input
-                type="file"
-                onChange={(e) => setContentFile(e.target.files?.[0] || null)}
-                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none file:mr-3 file:py-1 file:px-3 file:rounded-l file:border-0 file:text-xs file:font-medium file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100"
+                type="checkbox"
+                id="isSpecialDay"
+                checked={isSpecialDay}
+                onChange={(e) => setIsSpecialDay(e.target.checked)}
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
               />
-              <p className="text-[10px] text-slate-400">Upload reference materials, briefs, or assets (PDF, DOC, DOCX, JPG, PNG)</p>
+              <label htmlFor="isSpecialDay" className="text-sm font-medium text-slate-700">
+                Mark as Special Day
+              </label>
             </div>
+
+            {/* File Upload Section - Hidden for DM Executive */}
+            {!isDMExecutive && (
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                  <Upload size={14} className="text-slate-400" />
+                  Supporting Files
+                </label>
+                <input
+                  type="file"
+                  onChange={(e) => setContentFile(e.target.files?.[0] || null)}
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none file:mr-3 file:py-1 file:px-3 file:rounded-l file:border-0 file:text-xs file:font-medium file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100"
+                />
+                <p className="text-[10px] text-slate-400">Upload reference materials, briefs, or assets (PDF, DOC, DOCX, JPG, PNG)</p>
+              </div>
+            )}
           </div>
 
           <div className="mt-8 flex gap-3 pt-2">

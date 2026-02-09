@@ -30,6 +30,7 @@ export interface CalendarWorkPayload {
   content_description: string;
   notes: string;
   content_file?: File;
+  is_special_day?: boolean;
 }
 
 export interface CalendarWorkCreativePayload {
