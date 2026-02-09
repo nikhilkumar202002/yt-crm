@@ -150,7 +150,7 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
         content_file: contentFile,
         content_description: workDescription,
         notes: notes,
-        is_special_day: isSpecialDay,
+        is_special_day: isSpecialDay ? 1 : 0,
       };
       onSave(payload);
       setClientId(0);
