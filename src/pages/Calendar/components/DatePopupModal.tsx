@@ -8,6 +8,7 @@ interface DatePopupModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   selectedDate: Date | null;
+  selectedClient?: number | null;
   onSave: (data: { client_id: number; date: string; no_of_creatives: number; no_of_videos: number; content_file?: File | null }) => void;
   existingData?: { client_id: number; no_of_creatives: number; no_of_videos: number; content_file?: File | null };
 }
@@ -16,6 +17,7 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
   isOpen,
   onOpenChange,
   selectedDate,
+  selectedClient,
   onSave,
   existingData,
 }) => {
@@ -45,22 +47,30 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
       setNoOfVideos(existingData.no_of_videos);
       // content_file is string, but for edit, perhaps not set
     } else if (isOpen) {
-      setClientId(0);
+      setClientId(selectedClient || 0);
       setNoOfCreatives(0);
       setNoOfVideos(0);
       setContentFile(null);
     }
-  }, [isOpen, existingData]);
+  }, [isOpen, existingData, selectedClient]);
+
+  console.log('DatePopupModal: selectedDate =', selectedDate);
 
   const handleSave = () => {
     if (selectedDate && clientId > 0) {
-      onSave({
+      // Construct date string using date-fns for consistency
+      const dateString = format(selectedDate, 'yyyy-MM-dd');
+
+      const payload = {
         client_id: clientId,
-        date: format(selectedDate, 'yyyy-MM-dd'), // Local date YYYY-MM-DD
+        date: dateString, // YYYY-MM-DD
         no_of_creatives: noOfCreatives,
         no_of_videos: noOfVideos,
         content_file: contentFile,
-      });
+      };
+
+      console.log('DatePopupModal: Saving with payload:', payload);
+      onSave(payload);
       setClientId(0);
       setNoOfCreatives(0);
       setNoOfVideos(0);
@@ -79,6 +89,11 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
               <Dialog.Title className="text-lg font-semibold text-slate-900">
                 <Calendar className="inline mr-2" size={20} />
                 Schedule Work for {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Select Date'}
+                {selectedClient && clients.find(c => c.id === selectedClient) && (
+                  <span className="block text-sm font-normal text-slate-600 mt-1">
+                    Client: {clients.find(c => c.id === selectedClient)?.name}
+                  </span>
+                )}
               </Dialog.Title>
               <Dialog.Description className="text-sm text-slate-600 mt-1">
                 Add creative work details for this date
@@ -92,6 +107,19 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
           </div>
 
           <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                <Calendar className="inline mr-1" size={16} />
+                Selected Date
+              </label>
+              <input
+                type="text"
+                value={selectedDate ? format(selectedDate, 'MMMM d, yyyy') : ''}
+                readOnly
+                className="w-full p-2 border border-slate-300 rounded-md bg-slate-50 text-slate-700 cursor-not-allowed"
+              />
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 <Users className="inline mr-1" size={16} />

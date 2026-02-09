@@ -12,7 +12,7 @@ import {
 } from 'date-fns';
 import { Calendar } from 'lucide-react';
 import DatePopupModal from './components/DatePopupModal';
-import { createCalendarWork, getCalendarWorks } from '../../api/services/microService';
+import { createCalendarWork, getCalendarWorks, getClients } from '../../api/services/microService';
 
 const CalendarPage = () => {
   const currentYear = new Date().getFullYear();
@@ -22,11 +22,55 @@ const CalendarPage = () => {
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [dateData, setDateData] = useState<Record<string, { client_id: number; no_of_creatives: number; no_of_videos: number; content_file?: File }>>({});
+  const [allDateData, setAllDateData] = useState<Record<string, { client_id: number; no_of_creatives: number; no_of_videos: number; content_file?: File }>>({});
+  const [clients, setClients] = useState<any[]>([]);
+  const [selectedClient, setSelectedClient] = useState<number | null>(null);
+  const [isClientLoading, setIsClientLoading] = useState(false);
+  const [isClientsLoading, setIsClientsLoading] = useState(true);
+
+  // Filtered data based on selected client
+  const dateData = selectedClient 
+    ? Object.fromEntries(
+        Object.entries(allDateData).filter(([_, work]) => work.client_id === selectedClient)
+      )
+    : allDateData;
 
   useEffect(() => {
     loadCalendarWorks();
   }, []);
+
+  useEffect(() => {
+    const loadClients = async () => {
+      try {
+        setIsClientsLoading(true);
+        const response = await getClients();
+        const clientList = response.data?.data || response.data || [];
+        setClients(clientList);
+        // Auto-select first client if available
+        if (clientList.length > 0 && !selectedClient) {
+          setSelectedClient(clientList[0].id);
+        }
+      } catch (error) {
+        console.error('Failed to load clients:', error);
+      } finally {
+        setIsClientsLoading(false);
+      }
+    };
+
+    loadClients();
+  }, []);
+
+  // Handle client selection loading
+  useEffect(() => {
+    if (selectedClient !== null) {
+      setIsClientLoading(true);
+      // Simulate loading time for better UX
+      const timer = setTimeout(() => {
+        setIsClientLoading(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedClient]);
 
   const loadCalendarWorks = async () => {
     try {
@@ -48,16 +92,17 @@ const CalendarPage = () => {
         };
       });
       
-      setDateData(dataMap);
+      setAllDateData(dataMap);
     } catch (error) {
       console.error('Failed to load calendar works:', error);
     }
   };
   const handleSave = async (data: { client_id: number; date: string; no_of_creatives: number; no_of_videos: number; content_file?: File }) => {
+    console.log('CalendarPage: Received data to save:', data);
     // Update local state immediately for instant visual feedback
     if (selectedDate) {
       const dateKey = selectedDate.toDateString();
-      setDateData(prev => ({ ...prev, [dateKey]: {
+      setAllDateData(prev => ({ ...prev, [dateKey]: {
         client_id: data.client_id,
         no_of_creatives: data.no_of_creatives,
         no_of_videos: data.no_of_videos,
@@ -99,32 +144,33 @@ const CalendarPage = () => {
 
     while (day <= endDate) {
       for (let i = 0; i < 7; i++) {
+        const currentDay = day;
         days.push(
           <div
-            key={day.toString()}
+            key={currentDay.toString()}
             className={`p-1 text-center text-[12px] font-medium border border-slate-200 cursor-pointer hover:bg-slate-100 ${
-              !isSameMonth(day, monthStart)
+              !isSameMonth(currentDay, monthStart)
                 ? 'text-slate-300'
-                : dateData[day.toDateString()]
+                : dateData[currentDay.toDateString()]
                 ? 'bg-green-100 text-green-800 font-semibold'
-                : isSameDay(day, new Date())
+                : isSameDay(currentDay, new Date())
                 ? 'bg-blue-500 text-white rounded'
                 : 'text-slate-700'
             }`}
             onClick={() => {
-              setSelectedDate(day);
+              setSelectedDate(currentDay);
               setIsModalOpen(true);
             }}
           >
-            {format(day, dateFormat)}
-            {dateData[day.toDateString()]?.no_of_creatives > 0 && (
+            {format(currentDay, dateFormat)}
+            {dateData[currentDay.toDateString()]?.no_of_creatives > 0 && (
               <div className="text-[8px] text-blue-600 font-bold">
-                {dateData[day.toDateString()].no_of_creatives}C
+                {dateData[currentDay.toDateString()].no_of_creatives}C
               </div>
             )}
-            {dateData[day.toDateString()]?.no_of_videos > 0 && (
+            {dateData[currentDay.toDateString()]?.no_of_videos > 0 && (
               <div className="text-[8px] text-green-600 font-bold">
-                {dateData[day.toDateString()].no_of_videos}V
+                {dateData[currentDay.toDateString()].no_of_videos}V
               </div>
             )}
           </div>
@@ -160,14 +206,49 @@ const CalendarPage = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 font-sans pb-10">
-      <div className="flex items-center gap-2">
-        <Calendar className="text-blue-600" size={24} />
-        <h1 className="text-xl font-semibold text-slate-900 tracking-tight">
-          Full Year Calendar - {currentYear}
-        </h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Calendar className="text-blue-600" size={24} />
+          <h1 className="text-xl font-semibold text-slate-900 tracking-tight">
+            Full Year Calendar - {currentYear}
+          </h1>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-slate-700">Client:</label>
+          <select
+            value={selectedClient || ''}
+            onChange={(e) => setSelectedClient(e.target.value ? parseInt(e.target.value) : null)}
+            disabled={isClientLoading || isClientsLoading}
+            className="px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-slate-100 disabled:cursor-not-allowed"
+          >
+            {isClientsLoading ? (
+              <option>Loading clients...</option>
+            ) : (
+              <>
+                <option value="">All Clients</option>
+                {clients.map((client) => (
+                  <option key={client.id} value={client.id}>
+                    {client.name} - {client.company_name}
+                  </option>
+                ))}
+              </>
+            )}
+          </select>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-2 gap-6 relative">
+        {(isClientLoading || isClientsLoading) && (
+          <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10 rounded-lg">
+            <div className="flex items-center gap-2 text-slate-600">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+              <span className="text-sm font-medium">
+                {isClientsLoading ? 'Loading clients...' : 'Loading calendar...'}
+              </span>
+            </div>
+          </div>
+        )}
         {months.map((month) => (
           <div key={month.toString()} className="h-[600px]">
             {renderMonth(month)}
@@ -176,9 +257,11 @@ const CalendarPage = () => {
       </div>
 
       <DatePopupModal
+        key={selectedDate?.toISOString()}
         isOpen={isModalOpen}
         onOpenChange={setIsModalOpen}
         selectedDate={selectedDate}
+        selectedClient={selectedClient}
         onSave={handleSave}
         existingData={selectedDate ? dateData[selectedDate.toDateString()] : undefined}
       />
