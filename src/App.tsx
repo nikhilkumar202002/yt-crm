@@ -21,6 +21,8 @@ import ClientPage from './pages/clients/ClientPage';
 import EnquiryClientsPage from './pages/clients/EnquiryClientsPage';
 import LeadClientsPage from './pages/clients/LeadClientsPage';
 
+import CalendarPage from './pages/Calendar/CalendarPage';
+
 
 
 import { useAppSelector } from './store/store';
@@ -49,6 +51,7 @@ function App() {
             <Route path="/clients" element={<ClientPage />} />
             <Route path="/clients/enquiry-clients" element={<EnquiryClientsPage />} />
             <Route path="/clients/leads" element={<LeadClientsPage />} />
+            <Route path="/calendar" element={<CalendarPage />} />
             
             
           </Route>

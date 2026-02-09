@@ -39,6 +39,10 @@ PROPOSALS: {
     DETAIL: (id: number) => `/sub-services/${id}`,
   },
   
+  CALENDAR_WORKS: {
+    BASE: '/calendar-works',
+  },
+  
   CAMPAIGNS: {
     SETUP: '/campaigns/setup',       // cite: 27
     EXECUTION: '/campaigns/execute',  // cite: 51

@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, Rocket, Layers, 
   Palette, FolderOpen, Zap, PieChart, CreditCard, 
   ShieldCheck, X, Settings, ChevronDown, ChevronRight,
-  FileText, Briefcase 
+  FileText, Briefcase, Calendar 
 } from 'lucide-react';
 import { useAppSelector } from '../../store/store';
 import { SIDEBAR_MENU } from '../../config/menu';
@@ -24,6 +24,7 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
   // Updated iconMap to match the new "Onboarded Clients" title
   const iconMap: Record<string, JSX.Element> = {
     'Dashboard': <LayoutDashboard size={15} />,
+    'Calendar': <Calendar size={15} />,
     'Leads & Pipeline': <Users size={15} />, 
     'Strategy & Pitch': <Rocket size={15} />, 
     'Proposal': <FileText size={15} />,

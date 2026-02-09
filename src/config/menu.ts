@@ -14,6 +14,7 @@ export const SIDEBAR_MENU: MenuItem[] = [
     path: '/dashboard', 
     roles: ['ADMIN', 'SALES', 'PM', 'DM HEAD'] 
   },
+ 
   { 
     title: 'Leads & Pipeline', 
     path: '/leads', 
@@ -40,6 +41,11 @@ export const SIDEBAR_MENU: MenuItem[] = [
     title: 'Onboarded Clients',
     path: '/clients',
     roles: ['ADMIN', 'DM HEAD', 'DM EXECUTIVE']
+  },
+   {
+    title: 'Calendar',
+    path: '/calendar',
+    roles: ['ADMIN', 'SALES', 'PM', 'DM HEAD', 'DM EXECUTIVE']
   },
   { 
     title: 'Strategy & Pitch', 

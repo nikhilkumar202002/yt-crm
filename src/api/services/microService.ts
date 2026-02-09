@@ -23,6 +23,14 @@ export interface SubServicePayload {
   service_id: number; // Assuming sub-services are linked to a parent service
 }
 
+export interface CalendarWorkPayload {
+  date: string; // ISO date string
+  client_id: number;
+  no_of_creatives: number;
+  no_of_videos: number;
+  content_file?: File; // Optional file upload
+}
+
 // Departments CRUD
 export const getDepartments = async () => {
   const response = await apiClient.get(ENDPOINTS.DEPARTMENTS.BASE);
@@ -314,4 +322,38 @@ export const updateClient = async (clientId: number, clientData: Partial<{
 export const deleteClient = async (clientId: number) => {
   const response = await apiClient.delete(`/clients/${clientId}`);
   return response.data;
+};
+
+/**
+ * GET All calendar works
+ */
+export const getCalendarWorks = async () => {
+  const response = await apiClient.get(ENDPOINTS.CALENDAR_WORKS.BASE);
+  return response.data;
+};
+
+/**
+ * POST Create a new calendar work
+ */
+export const createCalendarWork = async (data: CalendarWorkPayload) => {
+  // If there's a file, use FormData for multipart upload
+  if (data.content_file) {
+    const formData = new FormData();
+    formData.append('date', data.date);
+    formData.append('client_id', data.client_id.toString());
+    formData.append('no_of_creatives', data.no_of_creatives.toString());
+    formData.append('no_of_videos', data.no_of_videos.toString());
+    formData.append('content_file', data.content_file);
+
+    const response = await apiClient.post(ENDPOINTS.CALENDAR_WORKS.BASE, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } else {
+    // No file, send as JSON
+    const response = await apiClient.post(ENDPOINTS.CALENDAR_WORKS.BASE, data);
+    return response.data;
+  }
 };

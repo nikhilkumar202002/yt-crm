@@ -4,6 +4,7 @@ import {
   Command, ExternalLink
 } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { Link } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../store/store';
 import { logout } from '../../store/slices/authSlice';
 
@@ -53,9 +54,11 @@ const Header = ({ onMenuClick }: HeaderProps) => {
 
         {/* System Utilities */}
         <div className="flex items-center gap-1">
-          <button title="Calendar" className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all">
-            <Calendar size={15} />
-          </button>
+          <Link to="/calendar">
+            <button title="Calendar" className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all">
+              <Calendar size={15} />
+            </button>
+          </Link>
           
           <button title="Public Site" className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all">
             <Globe size={15} />

@@ -56,7 +56,10 @@ const ClientPage = () => {
           proposal_id: p.id, // Keep reference for modal
           status: p.lead_assign?.user_status || 'Active',
           onboarded_at: p.updated_at,
-          services: serviceNames // Store mapped names
+          services: serviceNames, // Store mapped names
+          creative: p.creatives_nos || 0,
+          video: p.videos_nos || 0,
+          amount: p.amount || 0
         };
       });
 
@@ -72,9 +75,9 @@ const ClientPage = () => {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const filteredClients = clients.filter(c => 
-    c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    (c.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (c.company_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (c.email?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -102,7 +105,7 @@ const ClientPage = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden relative min-h-[400px]">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden relative h-auto">
         {loading ? (
           <div className="absolute inset-0 flex items-center justify-center bg-white/50 z-10">
             <Loader2 className="animate-spin text-blue-600" size={28} />
@@ -116,8 +119,12 @@ const ClientPage = () => {
                   <th className="px-6 py-5 min-w-[220px]">Client & Location</th>
                   <th className="px-6 py-5">Contact Details</th>
                   <th className="px-6 py-5">Assigned Services</th> {/* New Column */}
+                  <th className="px-6 py-5 text-center">Creative</th>
+                  <th className="px-6 py-5 text-center">Video</th>
+                  <th className="px-6 py-5 text-center">Amount</th>
                   <th className="px-6 py-5 text-center">Proposal</th>
-                  <th className="px-6 py-5 text-center">Status</th>
+                  <th className="px-6 py-5 text-center">Lead Status</th>
+                  <th className="px-6 py-5 text-center">Onboarded Status</th>
                   <th className="px-6 py-5 text-center">Actions</th> {/* Action Column */}
                 </tr>
               </thead>
@@ -170,6 +177,18 @@ const ClientPage = () => {
                     </td>
                     
                     <td className="px-5 py-3 text-center">
+                      <span className="text-[10px] font-bold text-slate-700">{client.creative}</span>
+                    </td>
+                    
+                    <td className="px-5 py-3 text-center">
+                      <span className="text-[10px] font-bold text-slate-700">{client.video}</span>
+                    </td>
+                    
+                    <td className="px-5 py-3 text-center">
+                      <span className="text-[10px] font-bold text-slate-700">₹{client.amount}</span>
+                    </td>
+                    
+                    <td className="px-5 py-3 text-center">
                       {client.proposal_file ? (
                         <div className="flex flex-col items-center gap-1">
                           <a 
@@ -189,8 +208,14 @@ const ClientPage = () => {
                     </td>
 
                     <td className="px-5 py-3 text-center">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 text-green-600 border border-green-100 text-[9px] font-bold uppercase tracking-wider">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-100 text-[9px] font-bold uppercase tracking-wider">
                         <CheckCircle2 size={10} /> {client.status}
+                      </span>
+                    </td>
+
+                    <td className="px-5 py-3 text-center">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 text-[9px] font-bold uppercase tracking-wider">
+                        <CheckCircle2 size={10} /> Onboarded
                       </span>
                     </td>
 
@@ -207,7 +232,7 @@ const ClientPage = () => {
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-slate-400 text-xs italic">
+                    <td colSpan={11} className="px-6 py-12 text-center text-slate-400 text-xs italic">
                       No onboarded clients found.
                     </td>
                   </tr>
