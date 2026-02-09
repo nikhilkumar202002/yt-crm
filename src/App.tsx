@@ -14,6 +14,7 @@ import EmployeeRegistration from './pages/Employees/EmployeeRegistration';
 
 import AssignedLeadsPage from './pages/Leads/AssignedLeadsPage';
 import ServicesPage from './pages/Settings/ServicesPage';
+import CalendarWorkCreativesPage from './pages/Settings/CalendarWorkCreativesPage';
 
 import ProposalPage from './pages/Proposal page/ProposalPage';
 
@@ -47,6 +48,7 @@ function App() {
             <Route path="/leads" element={<LeadsPage />} />
             <Route path="/leads/assigned" element={<AssignedLeadsPage />} />
             <Route path="/settings/services" element={<ServicesPage />} />
+            <Route path="/settings/calendar-work-creatives" element={<CalendarWorkCreativesPage />} />
             <Route path="/proposals" element={<ProposalPage />} />
             <Route path="/clients" element={<ClientPage />} />
             <Route path="/clients/enquiry-clients" element={<EnquiryClientsPage />} />

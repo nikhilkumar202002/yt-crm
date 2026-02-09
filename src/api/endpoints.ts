@@ -43,6 +43,10 @@ PROPOSALS: {
     BASE: '/calendar-works',
   },
   
+  CALENDAR_WORK_CREATIVES: {
+    BASE: '/calendar-work-creatives',
+  },
+  
   CAMPAIGNS: {
     SETUP: '/campaigns/setup',       // cite: 27
     EXECUTION: '/campaigns/execute',  // cite: 51

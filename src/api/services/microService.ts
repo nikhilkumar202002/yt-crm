@@ -28,7 +28,19 @@ export interface CalendarWorkPayload {
   client_id: number;
   description: string;
   content_description: string;
+  notes: string;
   content_file?: File;
+}
+
+export interface CalendarWorkCreativePayload {
+  name: string;
+  description: string;
+  status: boolean;
+}
+
+export interface CalendarWorksCreatePayload {
+  calender_works_creative_ids: string; // comma-separated IDs like "1,2,3"
+  creative_nos: string; // comma-separated numbers like "10,12,5"
 }
 
 // Departments CRUD
@@ -344,6 +356,9 @@ export const createCalendarWork = async (data: CalendarWorkPayload) => {
     formData.append('description', data.description);
     formData.append('content_description', data.content_description);
     formData.append('content_file', data.content_file);
+    if (data.creative_work_creative_id) {
+      formData.append('creative_work_creative_id', data.creative_work_creative_id.toString());
+    }
 
     const response = await apiClient.post(ENDPOINTS.CALENDAR_WORKS.BASE, formData, {
       headers: {
@@ -357,4 +372,52 @@ export const createCalendarWork = async (data: CalendarWorkPayload) => {
     const response = await apiClient.post(ENDPOINTS.CALENDAR_WORKS.BASE, payload);
     return response.data;
   }
+};
+
+/**
+ * POST Create calendar works with creative assignments
+ */
+export const createCalendarWorksWithCreatives = async (data: CalendarWorksCreatePayload) => {
+  const response = await apiClient.post(ENDPOINTS.CALENDAR_WORKS.BASE, data);
+  return response.data;
+};
+
+/**
+ * GET All calendar work creatives
+ */
+export const getCalendarWorkCreatives = async () => {
+  const response = await apiClient.get(ENDPOINTS.CALENDAR_WORK_CREATIVES.BASE);
+  return response.data;
+};
+
+/**
+ * POST Create a new calendar work creative
+ */
+export const createCalendarWorkCreative = async (data: CalendarWorkCreativePayload) => {
+  const response = await apiClient.post(ENDPOINTS.CALENDAR_WORK_CREATIVES.BASE, data);
+  return response.data;
+};
+
+/**
+ * GET Single calendar work creative by ID
+ */
+export const getCalendarWorkCreative = async (id: number) => {
+  const response = await apiClient.get(`${ENDPOINTS.CALENDAR_WORK_CREATIVES.BASE}/${id}`);
+  return response.data;
+};
+
+/**
+ * PUT Update calendar work creative by ID
+ */
+export const updateCalendarWorkCreative = async (id: number, data: CalendarWorkCreativePayload) => {
+  const response = await apiClient.put(`${ENDPOINTS.CALENDAR_WORK_CREATIVES.BASE}/${id}`, data);
+  return response.data;
+};
+
+/**
+ * DELETE Calendar work creative by ID
+ */
+export const deleteCalendarWorkCreative = async (id: number) => {
+  const response = await apiClient.delete(`${ENDPOINTS.CALENDAR_WORK_CREATIVES.BASE}/${id}`);
+  return response.data;
 };

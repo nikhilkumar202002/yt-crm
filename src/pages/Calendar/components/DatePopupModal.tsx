@@ -1,16 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, Calendar, Users, Upload } from 'lucide-react';
+import { X, Calendar, Users, Upload, Palette } from 'lucide-react';
 import { format } from 'date-fns';
-import { getClients } from '../../../api/services/microService';
+import { Button } from '../../../components/common/Button';
+import { Input } from '../../../components/common/Input';
+
+interface Client {
+  id: number;
+  name: string;
+}
+
+interface SelectedCreativeItem {
+  id: number;
+  quantity: number;
+}
+
+interface CalendarWorkCreative {
+  id: number;
+  name: string;
+  description: string;
+  status: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
 
 interface DatePopupModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   selectedDate: Date | null;
   selectedClient?: number | null;
-  onSave: (data: { client_id: number; date: string; description: string; content_description: string; content_file?: File | null }) => void;
+  onSave: (data: { client_id: number; date: string; description: string; content_description: string; notes: string; content_file?: File | null }) => void;
   existingData?: { client_id: number; description: string; content_description: string; content_file?: File | null };
+  clients?: Client[];
+  calendarWorkCreatives?: CalendarWorkCreative[];
 }
 
 const DatePopupModal: React.FC<DatePopupModalProps> = ({
@@ -20,217 +42,260 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
   selectedClient,
   onSave,
   existingData,
+  clients: propClients = [],
+  calendarWorkCreatives: propCalendarWorkCreatives = [],
 }) => {
   const [clientId, setClientId] = useState<number>(0);
   const [workDescription, setWorkDescription] = useState<string>('');
-  const [items, setItems] = useState<{ description: string }[]>([]);
-  const [description, setDescription] = useState<string>('');
+  const [notes, setNotes] = useState<string>('');
   const [contentFile, setContentFile] = useState<File | null>(null);
-  const [clients, setClients] = useState<any[]>([]);
+  const [clients, setClients] = useState<Client[]>(propClients);
+  const [calendarWorkCreatives, setCalendarWorkCreatives] = useState<CalendarWorkCreative[]>(propCalendarWorkCreatives);
+  const [selectedCreativeItems, setSelectedCreativeItems] = useState<SelectedCreativeItem[]>([]);
+  const [currentCreativeId, setCurrentCreativeId] = useState<number>(0);
+  const [currentQuantity, setCurrentQuantity] = useState<number>(0);
+
+  // Update state when props change
+  useEffect(() => {
+    setClients(propClients);
+  }, [propClients]);
 
   useEffect(() => {
-    const fetchClients = async () => {
-      try {
-        const response = await getClients();
-        setClients(response.data.data || []);
-      } catch (error) {
-        console.error('Failed to fetch clients', error);
-        setClients([]);
-      }
-    };
-    fetchClients();
-  }, []);
+    setCalendarWorkCreatives(propCalendarWorkCreatives);
+  }, [propCalendarWorkCreatives]);
 
   useEffect(() => {
-    if (isOpen && existingData) {
-      setClientId(existingData.client_id);
-      setWorkDescription(existingData.content_description || '');
-      setItems(JSON.parse(existingData.description || '[]'));
-      // content_file is string, but for edit, perhaps not set
-    } else if (isOpen) {
-      setClientId(selectedClient || 0);
-      setWorkDescription('');
-      setItems([]);
-      setDescription('');
-      setContentFile(null);
+    if (isOpen) {
+      const initializeForm = () => {
+        if (existingData) {
+          setClientId(existingData.client_id);
+          setWorkDescription(existingData.content_description || '');
+          setContentFile(null);
+        } else {
+          setClientId(selectedClient || 0);
+          setWorkDescription('');
+          setNotes('');
+          setContentFile(null);
+          setSelectedCreativeItems([]);
+          setCurrentCreativeId(0);
+          setCurrentQuantity(0);
+        }
+      };
+      initializeForm();
     }
   }, [isOpen, existingData, selectedClient]);
+
+  const addCreativeItem = () => {
+    if (currentCreativeId > 0 && currentQuantity > 0) {
+      const existingIndex = selectedCreativeItems.findIndex(item => item.id === currentCreativeId);
+      if (existingIndex >= 0) {
+        // Update existing item quantity
+        const updatedItems = [...selectedCreativeItems];
+        updatedItems[existingIndex].quantity += currentQuantity;
+        setSelectedCreativeItems(updatedItems);
+      } else {
+        // Add new item
+        setSelectedCreativeItems([...selectedCreativeItems, { id: currentCreativeId, quantity: currentQuantity }]);
+      }
+      setCurrentCreativeId(0);
+      setCurrentQuantity(0);
+    }
+  };
+
+  const removeCreativeItem = (id: number) => {
+    setSelectedCreativeItems(selectedCreativeItems.filter(item => item.id !== id));
+  };
 
   const handleSave = () => {
     if (selectedDate && clientId > 0) {
       // Construct date string using date-fns for consistency
       const dateString = format(selectedDate, 'yyyy-MM-dd');
 
+      // Prepare creative work data for payload
+      const creativeWorkIds = selectedCreativeItems.map(item => item.id).join(',');
+      const creativeWorkNumbers = selectedCreativeItems.map(item => item.quantity).join(',');
+
       const payload = {
         client_id: clientId,
         date: dateString, // YYYY-MM-DD
-        description: JSON.stringify(items),
-        content_description: workDescription,
+        description: selectedCreativeItems.length > 0 ? JSON.stringify({
+          calender_works_creative_ids: creativeWorkIds,
+          creative_nos: creativeWorkNumbers
+        }) : JSON.stringify([]), // Keep empty array for backward compatibility
         content_file: contentFile,
+        content_description: workDescription,
+        notes: notes,
       };
       onSave(payload);
       setClientId(0);
       setWorkDescription('');
-      setItems([]);
-      setDescription('');
+      setNotes('');
       setContentFile(null);
+      setSelectedCreativeItems([]);
+      setCurrentCreativeId(0);
+      setCurrentQuantity(0);
     }
     onOpenChange(false);
-  };
-
-  const addItem = () => {
-    if (description.trim()) {
-      setItems([...items, { description: description.trim() }]);
-      setDescription('');
-    }
-  };
-
-  const removeItem = (index: number) => {
-    setItems(items.filter((_, i) => i !== index));
   };
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/50" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <Dialog.Title className="text-lg font-semibold text-slate-900">
-                <Calendar className="inline mr-2" size={20} />
-                Schedule Work for {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Select Date'}
-                {selectedClient && clients.find(c => c.id === selectedClient) && (
-                  <span className="block text-sm font-normal text-slate-600 mt-1">
-                    Client: {clients.find(c => c.id === selectedClient)?.name}
-                  </span>
-                )}
-              </Dialog.Title>
-              <Dialog.Description className="text-sm text-slate-600 mt-1">
-                Add creative work details for this date
-              </Dialog.Description>
-            </div>
-            <Dialog.Close asChild>
-              <button className="text-slate-400 hover:text-slate-600">
-                <X size={20} />
-              </button>
+        <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-100" />
+        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl z-110 font-sans max-h-[90vh] overflow-y-auto">
+          <div className="flex justify-between items-center mb-6">
+            <Dialog.Title className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+              <Calendar size={16} className="text-blue-600" /> Schedule Creative Work
+            </Dialog.Title>
+            <Dialog.Close className="text-slate-400 hover:text-slate-600">
+              <X size={18} />
             </Dialog.Close>
           </div>
 
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                <Calendar className="inline mr-1" size={16} />
-                Selected Date
-              </label>
-              <input
-                type="text"
-                value={selectedDate ? format(selectedDate, 'MMMM d, yyyy') : ''}
+            {/* Date and Client Section */}
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Selected Date"
+                value={selectedDate ? format(selectedDate, 'MMM d, yyyy') : ''}
                 readOnly
-                className="w-full p-2 border border-slate-300 rounded-md bg-slate-50 text-slate-700 cursor-not-allowed"
               />
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 mb-1">
+                  <Users size={14} className="text-slate-400" />
+                  Client
+                </label>
+                <select
+                  value={clientId}
+                  onChange={(e) => setClientId(Number(e.target.value))}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value={0}>Select Client</option>
+                  {clients.map((client) => (
+                    <option key={client.id} value={client.id}>
+                      {client.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                <Users className="inline mr-1" size={16} />
-                Client
+            {/* Creative Items Section */}
+            <div className="space-y-3">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                <Palette size={14} className="text-slate-400" />
+                Creative Items
               </label>
-              <select
-                value={clientId}
-                onChange={(e) => setClientId(Number(e.target.value))}
-                className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value={0}>Select Client</option>
-                {clients.map((client) => (
-                  <option key={client.id} value={client.id}>
-                    {client.name} - {client.company_name}
-                  </option>
-                ))}
-              </select>
+
+              {/* Add Creative Item Form */}
+              <div className="flex gap-2">
+                <select
+                  value={currentCreativeId}
+                  onChange={(e) => setCurrentCreativeId(Number(e.target.value))}
+                  className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value={0}>Select Creative Template</option>
+                  {calendarWorkCreatives.map((creative) => (
+                    <option key={creative.id} value={creative.id}>
+                      {creative.name}
+                    </option>
+                  ))}
+                </select>
+                <Input
+                  type="number"
+                  value={currentQuantity || ''}
+                  onChange={(e) => setCurrentQuantity(Number(e.target.value))}
+                  placeholder="Qty"
+                  min="1"
+                  className="w-20"
+                />
+                <Button
+                  onClick={addCreativeItem}
+                  disabled={currentCreativeId === 0 || currentQuantity <= 0}
+                  size="sm"
+                  className="px-3"
+                >
+                  +
+                </Button>
+              </div>
+
+              {/* Selected Creative Items Badges */}
+              {selectedCreativeItems.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {selectedCreativeItems.map((item) => {
+                    const creative = calendarWorkCreatives.find(c => c.id === item.id);
+                    return (
+                      <div key={item.id} className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                        <span>{creative?.name || 'Unknown'}:{item.quantity}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeCreativeItem(item.id)}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Work Description
-              </label>
+            {/* Work Description Section */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Work Description</label>
               <textarea
                 value={workDescription}
                 onChange={(e) => setWorkDescription(e.target.value)}
-                placeholder="Enter overall work description"
+                placeholder="Provide an overview of the creative work to be completed..."
                 rows={3}
-                className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none min-h-20 resize-none"
               />
+              <p className="text-[10px] text-slate-400">Brief summary of the project scope and objectives</p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Description
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Enter item description"
-                  className="flex-1 p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-                <button
-                  type="button"
-                  onClick={addItem}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-                >
-                  Add
-                </button>
-              </div>
+            {/* Notes Section */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Notes</label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Additional notes or special instructions..."
+                rows={2}
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none min-h-16 resize-none"
+              />
+              <p className="text-[10px] text-slate-400">Any additional information or special requirements</p>
             </div>
 
-            {items.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Description
-                </label>
-                <div className="space-y-2 max-h-32 overflow-y-auto">
-                  {items.map((item, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-slate-50 rounded-md">
-                      <span className="text-sm">{item.description}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeItem(index)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                <Upload className="inline mr-1" size={16} />
-                Content File
+            {/* File Upload Section */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                <Upload size={14} className="text-slate-400" />
+                Supporting Files
               </label>
               <input
                 type="file"
                 onChange={(e) => setContentFile(e.target.files?.[0] || null)}
-                className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none file:mr-3 file:py-1 file:px-3 file:rounded-l file:border-0 file:text-xs file:font-medium file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100"
               />
+              <p className="text-[10px] text-slate-400">Upload reference materials, briefs, or assets (PDF, DOC, DOCX, JPG, PNG)</p>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 mt-6">
+          <div className="mt-8 flex gap-3 pt-2">
             <Dialog.Close asChild>
-              <button className="px-4 py-2 text-slate-600 border border-slate-300 rounded-md hover:bg-slate-50">
-                Cancel
-              </button>
+              <Button variant="ghost" className="flex-1">Cancel</Button>
             </Dialog.Close>
-            <button
+            <Button
+              variant="primary"
               onClick={handleSave}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              disabled={clientId === 0}
+              className="flex-1"
             >
-              Save
-            </button>
+              Schedule Work
+            </Button>
           </div>
         </Dialog.Content>
       </Dialog.Portal>

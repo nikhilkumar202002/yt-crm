@@ -96,6 +96,7 @@ export const SIDEBAR_MENU: MenuItem[] = [
       { title: 'Departments', path: '/settings/departments', roles: ['ADMIN'] },
       { title: 'Designations', path: '/settings/designations', roles: ['ADMIN'] },
       { title: 'Services', path: '/settings/services', roles: ['ADMIN'] },
+      { title: 'Calendar Work Creatives', path: '/settings/calendar-work-creatives', roles: ['ADMIN'] },
     ]
   },
 ];
