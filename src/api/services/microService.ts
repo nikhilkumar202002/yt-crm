@@ -24,11 +24,11 @@ export interface SubServicePayload {
 }
 
 export interface CalendarWorkPayload {
-  date: string; // ISO date string
+  date: string;
   client_id: number;
-  no_of_creatives: number;
-  no_of_videos: number;
-  content_file?: File; // Optional file upload
+  description: string;
+  content_description: string;
+  content_file?: File;
 }
 
 // Departments CRUD
@@ -341,8 +341,8 @@ export const createCalendarWork = async (data: CalendarWorkPayload) => {
     const formData = new FormData();
     formData.append('date', data.date);
     formData.append('client_id', data.client_id.toString());
-    formData.append('no_of_creatives', data.no_of_creatives.toString());
-    formData.append('no_of_videos', data.no_of_videos.toString());
+    formData.append('description', data.description);
+    formData.append('content_description', data.content_description);
     formData.append('content_file', data.content_file);
 
     const response = await apiClient.post(ENDPOINTS.CALENDAR_WORKS.BASE, formData, {
@@ -352,8 +352,9 @@ export const createCalendarWork = async (data: CalendarWorkPayload) => {
     });
     return response.data;
   } else {
-    // No file, send as JSON
-    const response = await apiClient.post(ENDPOINTS.CALENDAR_WORKS.BASE, data);
+    // No file, send as JSON without content_file
+    const { content_file, ...payload } = data;
+    const response = await apiClient.post(ENDPOINTS.CALENDAR_WORKS.BASE, payload);
     return response.data;
   }
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, Calendar, Users, Hash, Upload } from 'lucide-react';
+import { X, Calendar, Users, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { getClients } from '../../../api/services/microService';
 
@@ -9,8 +9,8 @@ interface DatePopupModalProps {
   onOpenChange: (open: boolean) => void;
   selectedDate: Date | null;
   selectedClient?: number | null;
-  onSave: (data: { client_id: number; date: string; no_of_creatives: number; no_of_videos: number; content_file?: File | null }) => void;
-  existingData?: { client_id: number; no_of_creatives: number; no_of_videos: number; content_file?: File | null };
+  onSave: (data: { client_id: number; date: string; description: string; content_description: string; content_file?: File | null }) => void;
+  existingData?: { client_id: number; description: string; content_description: string; content_file?: File | null };
 }
 
 const DatePopupModal: React.FC<DatePopupModalProps> = ({
@@ -22,8 +22,9 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
   existingData,
 }) => {
   const [clientId, setClientId] = useState<number>(0);
-  const [noOfCreatives, setNoOfCreatives] = useState<number>(0);
-  const [noOfVideos, setNoOfVideos] = useState<number>(0);
+  const [workDescription, setWorkDescription] = useState<string>('');
+  const [items, setItems] = useState<{ description: string }[]>([]);
+  const [description, setDescription] = useState<string>('');
   const [contentFile, setContentFile] = useState<File | null>(null);
   const [clients, setClients] = useState<any[]>([]);
 
@@ -43,18 +44,17 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
   useEffect(() => {
     if (isOpen && existingData) {
       setClientId(existingData.client_id);
-      setNoOfCreatives(existingData.no_of_creatives);
-      setNoOfVideos(existingData.no_of_videos);
+      setWorkDescription(existingData.content_description || '');
+      setItems(JSON.parse(existingData.description || '[]'));
       // content_file is string, but for edit, perhaps not set
     } else if (isOpen) {
       setClientId(selectedClient || 0);
-      setNoOfCreatives(0);
-      setNoOfVideos(0);
+      setWorkDescription('');
+      setItems([]);
+      setDescription('');
       setContentFile(null);
     }
   }, [isOpen, existingData, selectedClient]);
-
-  console.log('DatePopupModal: selectedDate =', selectedDate);
 
   const handleSave = () => {
     if (selectedDate && clientId > 0) {
@@ -64,19 +64,29 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
       const payload = {
         client_id: clientId,
         date: dateString, // YYYY-MM-DD
-        no_of_creatives: noOfCreatives,
-        no_of_videos: noOfVideos,
+        description: JSON.stringify(items),
+        content_description: workDescription,
         content_file: contentFile,
       };
-
-      console.log('DatePopupModal: Saving with payload:', payload);
       onSave(payload);
       setClientId(0);
-      setNoOfCreatives(0);
-      setNoOfVideos(0);
+      setWorkDescription('');
+      setItems([]);
+      setDescription('');
       setContentFile(null);
     }
     onOpenChange(false);
+  };
+
+  const addItem = () => {
+    if (description.trim()) {
+      setItems([...items, { description: description.trim() }]);
+      setDescription('');
+    }
+  };
+
+  const removeItem = (index: number) => {
+    setItems(items.filter((_, i) => i !== index));
   };
 
   return (
@@ -141,31 +151,60 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
-                <Hash className="inline mr-1" size={16} />
-                Number of Creatives
+                Work Description
               </label>
-              <input
-                type="number"
-                value={noOfCreatives}
-                onChange={(e) => setNoOfCreatives(Number(e.target.value))}
+              <textarea
+                value={workDescription}
+                onChange={(e) => setWorkDescription(e.target.value)}
+                placeholder="Enter overall work description"
+                rows={3}
                 className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                min="0"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
-                <Hash className="inline mr-1" size={16} />
-                Number of Videos
+                Description
               </label>
-              <input
-                type="number"
-                value={noOfVideos}
-                onChange={(e) => setNoOfVideos(Number(e.target.value))}
-                className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                min="0"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Enter item description"
+                  className="flex-1 p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <button
+                  type="button"
+                  onClick={addItem}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                >
+                  Add
+                </button>
+              </div>
             </div>
+
+            {items.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Description
+                </label>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {items.map((item, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-slate-50 rounded-md">
+                      <span className="text-sm">{item.description}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeItem(index)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
