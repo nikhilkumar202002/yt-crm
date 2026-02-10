@@ -1,16 +1,18 @@
 export type UserRole = 
   | 'ADMIN' 
+  | 'CREATIVE HEAD' 
+  | 'DM EXECUTIVE'
+  | 'DM HEAD'
+  | 'CONTENT WRITER'
+  | 'CREATIVE TEAM HEAD'
+  | 'CREATIVE DESIGNERS'
   | 'SALES' 
   | 'PM' 
   | 'CREATIVE' 
-  | 'CREATIVE HEAD' // New role
-  | 'DM HEAD'       // New role
-  | 'DM EXECUTIVE'  // New role
-  | 'CONTENT WRITER' // New role
   | 'FINANCE' 
   | 'CLIENT' 
-  | 'ADS_OP'        // Used in menu.ts
-  | 'ANALYST';       // Used in menu.ts
+  | 'ADS_OP'
+  | 'ANALYST';
 
 export interface User {
   id: string;

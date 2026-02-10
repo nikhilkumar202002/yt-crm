@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, Rocket, Layers, 
   Palette, FolderOpen, Zap, PieChart, CreditCard, 
   ShieldCheck, X, Settings, ChevronDown, ChevronRight,
-  FileText, Briefcase, Calendar 
+  FileText, Briefcase, Calendar, Clipboard
 } from 'lucide-react';
 import { useAppSelector } from '../../store/store';
 import { SIDEBAR_MENU } from '../../config/menu';
@@ -23,20 +23,21 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
 
   // Updated iconMap to match the new "Onboarded Clients" title
   const iconMap: Record<string, JSX.Element> = {
-    'Dashboard': <LayoutDashboard size={15} />,
-    'Calendar': <Calendar size={15} />,
-    'Leads & Pipeline': <Users size={15} />, 
-    'Strategy & Pitch': <Rocket size={15} />, 
-    'Proposal': <FileText size={15} />,
-    'Onboarded Clients': <Briefcase size={15} />, // Renamed key to match menu.ts
-    'Campaign Setup': <Layers size={15} />, 
-    'Creative Workflow': <Palette size={15} />, 
-    'Asset Hub': <FolderOpen size={15} />, 
-    'Ad Operations': <Zap size={15} />, 
-    'Intelligence': <PieChart size={15} />, 
-    'Finance & Billing': <CreditCard size={15} />, 
-    'Employees': <ShieldCheck size={15} />,
-    'Settings': <Settings size={15} />,
+    'Dashboard': <LayoutDashboard size={16} />,
+    'Calendar': <Calendar size={16} />,
+    'Worksheet': <Clipboard size={16} />,
+    'Leads & Pipeline': <Users size={16} />, 
+    'Strategy & Pitch': <Rocket size={16} />, 
+    'Proposal': <FileText size={16} />,
+    'Onboarded Clients': <Briefcase size={16} />, // Renamed key to match menu.ts
+    'Campaign Setup': <Layers size={16} />, 
+    'Creative Workflow': <Palette size={16} />, 
+    'Asset Hub': <FolderOpen size={16} />, 
+    'Ad Operations': <Zap size={16} />, 
+    'Intelligence': <PieChart size={16} />, 
+    'Finance & Billing': <CreditCard size={16} />, 
+    'Employees': <ShieldCheck size={16} />,
+    'Settings': <Settings size={16} />,
   };
 
   const filteredMenu = SIDEBAR_MENU
@@ -78,8 +79,8 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
         {/* Main Navigation */}
         <nav className="flex-1 overflow-y-auto px-3 py-5 space-y-5">
           <div>
-            <p className="px-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-3">Workflow</p>
-            <div className="space-y-1">
+            <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Workflow</p>
+            <div className="space-y-2">
               {filteredMenu.map((item) => {
                 const hasSubmenu = item.submenu && item.submenu.length > 0;
                 const isActive = location.pathname.startsWith(item.path);
@@ -90,23 +91,23 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
                     <div key={item.title}>
                       <button
                         onClick={() => toggleExpand(item.title)}
-                        className={`w-full flex items-center justify-between gap-2.5 px-3 py-1.5 rounded-md transition-all ${
+                        className={`w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-md transition-all ${
                           isActive ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <span className={isActive ? 'text-blue-600' : 'text-slate-400'}>{iconMap[item.title]}</span>
-                          <span className="text-[11px] font-semibold tracking-tight">{item.title}</span>
+                          <span className="text-xs font-semibold tracking-tight">{item.title}</span>
                         </div>
                         {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                       </button>
                       {isExpanded && (
-                        <div className="ml-6 mt-1 border-l border-slate-100 space-y-0.5">
+                        <div className="ml-6 mt-1 border-l border-slate-100 space-y-1">
                           {item.submenu?.map((sub: any) => (
                             <Link
                               key={sub.path}
                               to={sub.path}
-                              className={`flex items-center px-4 py-1.5 text-[10px] font-medium transition-colors ${
+                              className={`flex items-center px-4 py-2 text-[11px] font-medium transition-colors ${
                                 location.pathname === sub.path ? 'text-blue-600 bg-blue-50/50 font-bold' : 'text-slate-400 hover:text-slate-900'
                               }`}
                             >
@@ -123,14 +124,14 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`flex items-center gap-3 px-3 py-1.5 rounded-md transition-all ${
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-all ${
                       location.pathname === item.path 
                         ? 'bg-blue-600 text-white shadow-sm' 
                         : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                     }`}
                   >
                     <span className={location.pathname === item.path ? 'text-white' : 'text-slate-400'}>{iconMap[item.title]}</span>
-                    <span className="text-[11px] font-semibold tracking-tight">{item.title}</span>
+                    <span className="text-xs font-semibold tracking-tight">{item.title}</span>
                   </Link>
                 );
               })}

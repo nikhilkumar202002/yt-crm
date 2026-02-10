@@ -23,6 +23,7 @@ import EnquiryClientsPage from './pages/clients/EnquiryClientsPage';
 import LeadClientsPage from './pages/clients/LeadClientsPage';
 
 import CalendarPage from './pages/Calendar/CalendarPage';
+import WorksheetPage from './pages/Worksheet/WorksheetPage';
 
 
 
@@ -54,6 +55,7 @@ function App() {
             <Route path="/clients/enquiry-clients" element={<EnquiryClientsPage />} />
             <Route path="/clients/leads" element={<LeadClientsPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/worksheet" element={<WorksheetPage />} />
             
             
           </Route>

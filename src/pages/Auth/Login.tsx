@@ -39,61 +39,61 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans overflow-hidden">
+    <div className="flex min-h-screen bg-gray-50 font-sans overflow-hidden">
       {/* --- Left Side: Branding / Marketing (Hidden on Mobile) --- */}
-      <div className="hidden lg:flex lg:w-3/5 bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-800 items-center justify-center p-12 text-white relative">
+      <div className="hidden lg:flex lg:w-3/5 bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 items-center justify-center p-16 text-white relative">
         {/* Abstract Background Decoration */}
-        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-          <div className="absolute top-10 left-10 w-64 h-64 bg-white rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-blue-400 rounded-full blur-3xl opacity-20" />
+        <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
+          <div className="absolute top-20 left-20 w-72 h-72 bg-white rounded-full blur-3xl" />
+          <div className="absolute bottom-20 right-20 w-96 h-96 bg-slate-400 rounded-full blur-3xl opacity-10" />
         </div>
 
-        <div className="max-w-lg relative z-10">
-          <div className="bg-white/10 backdrop-blur-lg border border-white/20 p-3 rounded-2xl w-fit mb-8 shadow-2xl">
-            <ShieldCheck size={40} className="text-white" />
+        <div className="max-w-xl relative z-10">
+          <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-2xl w-fit mb-12 shadow-xl">
+            <ShieldCheck size={44} className="text-white" />
           </div>
-          <h1 className="text-6xl font-black mb-6 tracking-tighter leading-tight">
-            YT CRM <span className="text-blue-200">v2.0</span>
+          <h1 className="text-7xl font-bold mb-8 tracking-tight leading-tight text-white">
+            YT CRM <span className="text-gray-300 font-light text-6xl">2.0</span>
           </h1>
-          <p className="text-blue-100 text-xl leading-relaxed font-medium mb-12">
-            The next generation of lead management. Track execution, intelligence, and growth in one seamless interface.
+          <p className="text-gray-200 text-lg leading-relaxed font-normal mb-16">
+            Enterprise-grade CRM platform for comprehensive lead management, execution tracking, and business intelligence.
           </p>
           
           {/* Trust Badges / Stats */}
-          <div className="grid grid-cols-2 gap-6 pt-12 border-t border-white/10">
+          <div className="grid grid-cols-2 gap-8 pt-12 border-t border-white/10">
             <div>
-              <p className="text-3xl font-bold">99.9%</p>
-              <p className="text-blue-200 text-sm font-semibold uppercase tracking-wider">Uptime</p>
+              <p className="text-4xl font-bold text-white mb-2">99.9%</p>
+              <p className="text-gray-300 text-sm font-medium uppercase tracking-wide">Uptime SLA</p>
             </div>
             <div>
-              <p className="text-3xl font-bold">256-bit</p>
-              <p className="text-blue-200 text-sm font-semibold uppercase tracking-wider">Encryption</p>
+              <p className="text-4xl font-bold text-white mb-2">Enterprise</p>
+              <p className="text-gray-300 text-sm font-medium uppercase tracking-wide">Security</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* --- Right Side: Login Form (Full width on Mobile) --- */}
-      <div className="w-full lg:w-2/5 flex items-center justify-center p-6 sm:p-12 md:p-20">
+      <div className="w-full lg:w-2/5 flex items-center justify-center p-8 sm:p-16">
         <div className="w-full max-w-md animate-in fade-in slide-in-from-right-10 duration-700">
           
-          <div className="mb-10 text-center lg:text-left">
-            <h2 className="text-4xl font-black text-slate-900 mb-3 tracking-tight">Portal Login</h2>
-            <p className="text-slate-500 font-medium">Please enter your specialized credentials.</p>
+          <div className="mb-12">
+            <h2 className="text-5xl font-bold text-gray-900 mb-4 tracking-tight">Login</h2>
+            <p className="text-gray-600 text-lg font-normal">Sign in to your corporate account</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-5">
+          <form onSubmit={handleLogin} className="space-y-8">
             {/* Email Field */}
-            <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-1">
-                Corporate Email
+            <div className="space-y-3">
+              <label className="text-sm font-semibold uppercase tracking-wider text-gray-700 block">
+                Email Address
               </label>
               <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
+                <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-700 transition-colors" size={20} />
                 <input 
                   type="email" 
-                  placeholder="admin@yellowtooths.in" 
-                  className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 shadow-sm"
+                  placeholder="name@company.com" 
+                  className="w-full pl-14 pr-5 py-4 bg-white border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 outline-none transition-all text-gray-800 text-base font-normal placeholder:text-gray-400 shadow-sm hover:border-gray-300"
                   onChange={(e) => setEmail(e.target.value)} 
                   required 
                 />
@@ -101,57 +101,57 @@ const Login = () => {
             </div>
 
             {/* Password Field with Eye Toggle */}
-            <div className="space-y-2">
-              <div className="flex justify-between items-center ml-1">
-                <label className="text-xs font-black uppercase tracking-widest text-slate-500">
-                  Secure Password
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <label className="text-sm font-semibold uppercase tracking-wider text-gray-700">
+                  Password
                 </label>
-                <button type="button" className="text-xs font-black text-blue-600 hover:text-blue-700 uppercase tracking-widest">
+                <button type="button" className="text-sm font-semibold text-blue-700 hover:text-blue-800 uppercase tracking-wider transition-colors">
                   Forgot?
                 </button>
               </div>
               <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
+                <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-700 transition-colors" size={20} />
                 <input 
                   type={showPassword ? "text" : "password"} 
-                  placeholder="••••••••" 
-                  className="w-full pl-12 pr-12 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 shadow-sm"
+                  placeholder="••••••••••••••" 
+                  className="w-full pl-14 pr-14 py-4 bg-white border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 outline-none transition-all text-gray-800 text-base font-normal placeholder:text-gray-400 shadow-sm hover:border-gray-300"
                   onChange={(e) => setPassword(e.target.value)} 
                   required 
                 />
                 <button 
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                  className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 py-2">
-              <input type="checkbox" id="rem" className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
-              <label htmlFor="rem" className="text-sm font-bold text-slate-600 cursor-pointer">Stay signed in on this device</label>
+            <div className="flex items-center gap-3 pt-2">
+              <input type="checkbox" id="rem" className="w-5 h-5 rounded border-gray-300 text-blue-700 focus:ring-2 focus:ring-blue-500 cursor-pointer" />
+              <label htmlFor="rem" className="text-base font-normal text-gray-700 cursor-pointer">Keep me signed in</label>
             </div>
 
             <button 
               disabled={loading}
-              className="w-full group relative flex items-center justify-center h-14 bg-slate-900 hover:bg-black text-white font-black text-sm uppercase tracking-[0.2em] rounded-2xl shadow-2xl transition-all active:scale-[0.98] disabled:bg-slate-400"
+              className="w-full group relative flex items-center justify-center h-16 bg-blue-700 hover:bg-blue-800 text-white font-semibold text-base uppercase tracking-wide rounded-lg shadow-lg transition-all active:scale-[0.98] disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {loading ? (
-                <Loader2 className="animate-spin" size={20} />
+                <Loader2 className="animate-spin" size={22} />
               ) : (
                 <>
-                  Enter Dashboard
-                  <ChevronRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                  Sign In
+                  <ChevronRight size={20} className="ml-3 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
             </button>
           </form>
 
-          <footer className="mt-12 text-center border-t border-slate-100 pt-8">
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.1em]">
-              Security Protocol Enabled • Built by Yellowtooths
+          <footer className="mt-12 text-center border-t border-gray-200 pt-8">
+            <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider">
+              Enterprise Edition • Powered by Yellowtooths
             </p>
           </footer>
         </div>

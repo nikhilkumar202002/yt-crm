@@ -13,8 +13,8 @@ const EmployeeRegistration = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    password: 'password',
-    password_confirmation: 'password',
+    password: '',
+    password_confirmation: '',
     role_id: '',
     department_id: '',
     designation_id: '',
@@ -64,6 +64,11 @@ const EmployeeRegistration = () => {
         <div className="grid grid-cols-2 gap-4">
           <Input label="Full Name" placeholder="John Doe" onChange={e => setFormData({...formData, name: e.target.value})} required />
           <Input label="Email Address" type="email" placeholder="john@company.com" onChange={e => setFormData({...formData, email: e.target.value})} required />
+        </div>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <Input label="Password" type="password" placeholder="Enter password" onChange={e => setFormData({...formData, password: e.target.value})} required />
+          <Input label="Confirm Password" type="password" placeholder="Confirm password" onChange={e => setFormData({...formData, password_confirmation: e.target.value})} required />
         </div>
         
         <Input label="Mobile Number" placeholder="7356400765" onChange={e => setFormData({...formData, mobile_number: e.target.value})} required />
