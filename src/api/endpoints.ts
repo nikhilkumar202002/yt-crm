@@ -6,6 +6,9 @@ export const ENDPOINTS = {
     EMPLOYEES: '/users',
     PROFILE: '/user/profile',
   },
+  USERS: {
+    LIST: '/users/list',
+  },
   ROLES: {
     BASE: '/roles',
     DETAIL: (id: number) => `/roles/${id}`,
@@ -41,6 +44,8 @@ PROPOSALS: {
   
   CALENDAR_WORKS: {
     BASE: '/calendar-works',
+    DETAIL: (id: number) => `/calendar-works/${id}`,
+    ASSIGN: (id: number) => `/calendar-works/${id}/assign`,
   },
   
   CALENDAR_WORK_CREATIVES: {

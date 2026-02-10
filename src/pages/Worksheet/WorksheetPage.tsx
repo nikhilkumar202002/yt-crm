@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useAppSelector } from '../../store/store';
 import {
   Clipboard, Plus, Search, Filter,
-  Calendar, User, CheckCircle, Clock,
-  Edit, Trash2, MoreVertical, Loader2,
-  Upload, Check
+  Edit, Trash2,
+  Upload,
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
-import { getCalendarWorks } from '../../api/services/microService';
+import { getCalendarWorks, getEmployeesForAssignment, assignCalendarWork } from '../../api/services/microService';
+import { getUsersList } from '../../api/services/authService';
 
 interface Creative {
   id: string;
@@ -29,6 +29,21 @@ interface Client {
   update_history: null;
   is_in_leads: boolean;
   proposal_id: null;
+}
+
+interface Employee {
+  id: number;
+  name: string;
+  email: string;
+  role_name: string;
+  designation_name: string;
+  status: boolean;
+}
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
 }
 
 interface CalendarWork {
@@ -58,13 +73,42 @@ const WorksheetPage = () => {
   const [workStatuses, setWorkStatuses] = useState<{[key: number]: string}>({});
   const [assignedDesigners, setAssignedDesigners] = useState<{[key: number]: string}>({});
   const [token, setToken] = useState<string | null>(null);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [editingAssignment, setEditingAssignment] = useState<number | null>(null);
+  const [pendingAssignments, setPendingAssignments] = useState<Set<number>>(new Set());
 
   // Get token from localStorage
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
     setToken(storedToken);
-    console.log('Token from localStorage:', storedToken);
   }, []);
+
+  // Load assigned designers from localStorage and filter by current works
+  useEffect(() => {
+    const storedAssignments = localStorage.getItem('assignedDesigners');
+    if (storedAssignments && calendarWorks.length > 0) {
+      try {
+        const parsed = JSON.parse(storedAssignments);
+        // Only keep assignments for works that exist in current data
+        const validAssignments: {[key: number]: string} = {};
+        calendarWorks.forEach(work => {
+          if (parsed[work.id]) {
+            validAssignments[work.id] = parsed[work.id];
+          }
+        });
+        setAssignedDesigners(validAssignments);
+      } catch (err) {
+      }
+    }
+  }, [calendarWorks]);
+
+  // Save assigned designers to localStorage whenever they change
+  useEffect(() => {
+    if (Object.keys(assignedDesigners).length > 0) {
+      localStorage.setItem('assignedDesigners', JSON.stringify(assignedDesigners));
+    }
+  }, [assignedDesigners]);
 
   // Roles that should hide the date column (case insensitive check)
   const creativeRoles = ['CREATIVE TEAM HEAD', 'CREATIVE DESIGNERS'];
@@ -74,13 +118,13 @@ const WorksheetPage = () => {
     role.toLowerCase() === (roleName || '').toLowerCase()
   );
 
-  // Debug logging
-  console.log('Current roleName:', roleName);
-  console.log('shouldShowDate:', shouldShowDate);
-  console.log('creativeRoles:', creativeRoles);
-  console.log('Case insensitive match found:', creativeRoles.some(role => 
+  // Roles that should hide the assign designer dropdown
+  const assignHiddenRoles = ['CREATIVE DESIGNERS'];
+
+  // Check if user should see assign designer dropdown based on their role
+  const shouldShowAssignDropdown = !assignHiddenRoles.some(role => 
     role.toLowerCase() === (roleName || '').toLowerCase()
-  ));
+  );
 
   useEffect(() => {
     const fetchCalendarWorks = async () => {
@@ -90,23 +134,57 @@ const WorksheetPage = () => {
         setCalendarWorks(response.data?.data || []);
         setError(null);
       } catch (err) {
-        console.error('Failed to fetch calendar works:', err);
         setError('Failed to load calendar works data');
       } finally {
         setLoading(false);
       }
     };
 
+    const fetchEmployees = async () => {
+      try {
+        const response = await getEmployeesForAssignment();
+        setEmployees(response.data || []);
+      } catch (err) {
+      }
+    };
+
+    const fetchUsers = async () => {
+      try {
+        const response = await getUsersList();
+        setUsers(response.data?.data || []);
+      } catch (err) {
+      }
+    };
+
     fetchCalendarWorks();
+    fetchEmployees();
+    fetchUsers();
   }, []);
 
-  // Filter calendar works based on search term
+  // Helper function to get assigned user details
+  const getAssignedUser = (workId: number) => {
+    const userId = assignedDesigners[workId];
+    if (!userId) return null;
+    return users.find(user => user.id.toString() === userId);
+  };
+
+  // Filter calendar works based on search term and role-based assignment visibility
   const filteredCalendarWorks = calendarWorks.filter(work => {
+    const hasAssignment = assignedDesigners[work.id] && assignedDesigners[work.id] !== '';
+    const isAssignedToCurrentUser = assignedDesigners[work.id] === user?.id?.toString();
+    
+    // Role-based visibility:
+    // - Creative Team Head and Admin roles: can see all assigned works
+    // - All other roles (including Creative Designers): can only see works assigned to them
+    const isTeamHeadOrAdmin = roleName?.toLowerCase() === 'creative team head' || 
+                             roleName?.toLowerCase().includes('admin');
+    const canViewWork = isTeamHeadOrAdmin ? hasAssignment : (hasAssignment && isAssignedToCurrentUser);
+    
     const matchesSearch = (work.client?.company_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
                          (work.client?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
                          (work.content_description?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
                          (work.notes?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-    return matchesSearch;
+    return canViewWork && matchesSearch;
   });
 
   return (
@@ -114,9 +192,14 @@ const WorksheetPage = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Calendar Works</h1>
+          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+            {(roleName?.toLowerCase() === 'creative team head' || roleName?.toLowerCase().includes('admin')) ? 'All Assigned Works' : 'My Assigned Works'}
+          </h1>
           <p className="text-sm text-slate-500 font-normal tracking-wide">
-            Task Manager: {user?.name} — <span className="text-blue-600 font-medium">{roleName}</span>
+            {(roleName?.toLowerCase() === 'creative team head' || roleName?.toLowerCase().includes('admin')) 
+              ? `Team overview: ${user?.name} — ${roleName}` 
+              : `Your assigned tasks: ${user?.name} — ${roleName}`
+            }
           </p>
         </div>
         <div className="flex gap-2">
@@ -172,7 +255,9 @@ const WorksheetPage = () => {
                   <th className="px-6 py-4 text-left text-[11px] font-medium text-slate-500 uppercase tracking-wider align-top">Content Description</th>
                   <th className="px-6 py-4 text-left text-[11px] font-medium text-slate-500 uppercase tracking-wider align-top">Creatives</th>
                   <th className="px-6 py-4 text-left text-[11px] font-medium text-slate-500 uppercase tracking-wider align-top">Notes</th>
-                  <th className="px-6 py-4 text-left text-[11px] font-medium text-slate-500 uppercase tracking-wider align-top">Assign Designer</th>
+                  {shouldShowAssignDropdown && (
+                    <th className="px-6 py-4 text-left text-[11px] font-medium text-slate-500 uppercase tracking-wider align-top">Assign User</th>
+                  )}
                   <th className="px-6 py-4 text-left text-[11px] font-medium text-slate-500 uppercase tracking-wider align-top">Design Upload</th>
                   <th className="px-6 py-4 text-left text-[11px] font-medium text-slate-500 uppercase tracking-wider align-top">Status</th>
                   <th className="px-6 py-4 text-left text-[11px] font-medium text-slate-500 uppercase tracking-wider align-top">Actions</th>
@@ -191,9 +276,7 @@ const WorksheetPage = () => {
                         <td className="px-6 py-4 text-left align-top">
                           <div className="text-sm font-medium text-slate-900">
                             {work.date ? (() => {
-                              console.log('Raw date value:', work.date, 'Type:', typeof work.date);
                               const date = new Date(work.date);
-                              console.log('Parsed date:', date, 'isNaN:', isNaN(date.getTime()));
                               return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString();
                             })() : 'No Date'}
                           </div>
@@ -236,19 +319,102 @@ const WorksheetPage = () => {
                           {work.notes || 'No notes'}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-left align-top">
-                        <select
-                          value={assignedDesigners[work.id] || ''}
-                          onChange={(e) => setAssignedDesigners(prev => ({ ...prev, [work.id]: e.target.value }))}
-                          className="text-xs border border-slate-200 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                        >
-                          <option value="">Select Designer</option>
-                          <option value="John Doe">John Doe</option>
-                          <option value="Jane Smith">Jane Smith</option>
-                          <option value="Mike Johnson">Mike Johnson</option>
-                          <option value="Sarah Wilson">Sarah Wilson</option>
-                        </select>
-                      </td>
+                      {shouldShowAssignDropdown && (
+                        <td className="px-6 py-4 text-left align-top">
+                          {editingAssignment === work.id ? (
+                            <select
+                              value={assignedDesigners[work.id] || ''}
+                              onChange={async (e) => {
+                                const selectedUserId = e.target.value;
+                                
+                                if (selectedUserId) {
+                                  // Optimistic update - update UI immediately
+                                  setAssignedDesigners(prev => ({ ...prev, [work.id]: selectedUserId }));
+                                  setPendingAssignments(prev => new Set(prev).add(work.id));
+                                  setEditingAssignment(null);
+                                  
+                                  // Make API call in background
+                                  try {
+                                    await assignCalendarWork(work.id, { assigned_to: `[${selectedUserId}]` });
+                                  } catch (err) {
+                                    // Revert the optimistic update on error
+                                    setAssignedDesigners(prev => ({ ...prev, [work.id]: '' }));
+                                  } finally {
+                                    setPendingAssignments(prev => {
+                                      const newSet = new Set(prev);
+                                      newSet.delete(work.id);
+                                      return newSet;
+                                    });
+                                  }
+                                } else {
+                                  // Handle unassignment - also optimistic
+                                  const previousAssignment = assignedDesigners[work.id];
+                                  setAssignedDesigners(prev => ({ ...prev, [work.id]: '' }));
+                                  setPendingAssignments(prev => new Set(prev).add(work.id));
+                                  setEditingAssignment(null);
+                                  
+                                  try {
+                                    await assignCalendarWork(work.id, { assigned_to: '[]' });
+                                  } catch (err) {
+                                    // Revert on error
+                                    setAssignedDesigners(prev => ({ ...prev, [work.id]: previousAssignment || '' }));
+                                  } finally {
+                                    setPendingAssignments(prev => {
+                                      const newSet = new Set(prev);
+                                      newSet.delete(work.id);
+                                      return newSet;
+                                    });
+                                  }
+                                }
+                              }}
+                              onBlur={() => setEditingAssignment(null)}
+                              className="text-xs border border-slate-200 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                              autoFocus
+                            >
+                              <option value="">Select User</option>
+                              {users.map((user) => (
+                                <option key={user.id} value={user.id.toString()}>
+                                  {user.name} ({user.email})
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              {getAssignedUser(work.id) ? (
+                                <div className="flex items-center gap-2">
+                                  <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${
+                                    pendingAssignments.has(work.id)
+                                      ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                                      : 'bg-green-100 text-green-800 border-green-200'
+                                  }`}>
+                                    {pendingAssignments.has(work.id) ? (
+                                      <div className="h-1.5 w-1.5 rounded-full mr-1.5 border border-yellow-500 border-t-transparent animate-spin" />
+                                    ) : (
+                                      <span className="h-1.5 w-1.5 rounded-full mr-1.5 bg-green-500" />
+                                    )}
+                                    {getAssignedUser(work.id)?.name}
+                                  </span>
+                                  <button
+                                    onClick={() => setEditingAssignment(work.id)}
+                                    disabled={pendingAssignments.has(work.id)}
+                                    className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Change assignment"
+                                  >
+                                    <Edit size={12} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setEditingAssignment(work.id)}
+                                  className="px-3 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 rounded transition-colors"
+                                >
+                                  Assign User
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      )}
                       <td className="px-6 py-4 text-left align-top">
                         <div className="flex items-center gap-2">
                           <input
@@ -327,16 +493,22 @@ const WorksheetPage = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={shouldShowDate ? 10 : 9} className="px-6 py-20 text-center align-top">
+                    <td colSpan={9 - (shouldShowDate ? 0 : 1) - (shouldShowAssignDropdown ? 0 : 1)} className="px-6 py-20 text-center align-top">
                       <div className="flex flex-col items-center gap-2">
                         <div className="p-3 bg-slate-50 rounded-full text-slate-300">
                           <Clipboard size={24} />
                         </div>
                         <p className="text-sm font-medium text-slate-400">
-                          No calendar works found
+                          {(roleName?.toLowerCase() === 'creative team head' || roleName?.toLowerCase().includes('admin')) 
+                            ? 'No assigned works found' 
+                            : 'No works assigned to you'
+                          }
                         </p>
                         <p className="text-xs text-slate-300 uppercase tracking-widest font-normal">
-                          No records match your search criteria
+                          {(roleName?.toLowerCase() === 'creative team head' || roleName?.toLowerCase().includes('admin')) 
+                            ? 'No works match your search or no works are currently assigned' 
+                            : 'No works match your search or you have no assigned tasks'
+                          }
                         </p>
                       </div>
                     </td>

@@ -78,3 +78,8 @@ export const getEmployees = async () => {
     throw error;
   }
 };
+
+export const getUsersList = async () => {
+  const response = await apiClient.get(ENDPOINTS.USERS.LIST);
+  return response.data;
+};

@@ -1,5 +1,6 @@
 import apiClient from '../client';
 import { ENDPOINTS } from '../endpoints';
+import { getUsersList } from './authService';
 
 export interface OrgUnit {
   id?: number;
@@ -44,6 +45,10 @@ export interface CalendarWorksCreatePayload {
   creative_nos: string; // comma-separated numbers like "10,12,5"
 }
 
+export interface AssignCalendarWorkPayload {
+  assigned_to: string; // e.g., "[1]" or "[1,2,3]"
+}
+
 // Departments CRUD
 export const getDepartments = async () => {
   const response = await apiClient.get(ENDPOINTS.DEPARTMENTS.BASE);
@@ -84,6 +89,39 @@ export const updateDesignation = async (id: number, data: OrgUnit) => {
 export const deleteDesignation = async (id: number) => {
   const response = await apiClient.delete(ENDPOINTS.DESIGNATIONS.DETAIL(id));
   return response.data;
+};
+
+// Employee Management
+export interface Employee {
+  id: number;
+  name: string;
+  email: string;
+  role_name: string;
+  designation_name: string;
+  status: boolean;
+}
+
+/**
+ * GET All employees (staff)
+ */
+export const getEmployees = async () => {
+  const response = await apiClient.get(ENDPOINTS.AUTH.EMPLOYEES);
+  return response.data;
+};
+
+/**
+ * GET Employees excluding heads (for assignment purposes)
+ */
+export const getEmployeesForAssignment = async () => {
+  const response = await getUsersList();
+  const employees: Employee[] = response.data?.data || [];
+
+  // Filter out employees with roles containing "head" (case insensitive)
+  const filteredEmployees = employees.filter(employee =>
+    !employee.role_name?.toLowerCase().includes('head')
+  );
+
+  return { ...response, data: filteredEmployees };
 };
 
 // Leads Management
@@ -380,6 +418,14 @@ export const createCalendarWork = async (data: CalendarWorkPayload) => {
  */
 export const createCalendarWorksWithCreatives = async (data: CalendarWorksCreatePayload) => {
   const response = await apiClient.post(ENDPOINTS.CALENDAR_WORKS.BASE, data);
+  return response.data;
+};
+
+/**
+ * PUT Assign calendar work to team members
+ */
+export const assignCalendarWork = async (id: number, data: AssignCalendarWorkPayload) => {
+  const response = await apiClient.put(ENDPOINTS.CALENDAR_WORKS.ASSIGN(id), data);
   return response.data;
 };
 
