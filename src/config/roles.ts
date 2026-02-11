@@ -1,21 +1,18 @@
-export type UserRole = 
-  | 'ADMIN' 
-  | 'CREATIVE HEAD' 
-  | 'DM EXECUTIVE'
-  | 'DM HEAD'
-  | 'CONTENT WRITER'
-  | 'CREATIVE TEAM HEAD'
-  | 'CREATIVE DESIGNERS'
-  | 'SALES' 
-  | 'PM' 
-  | 'CREATIVE' 
-  | 'FINANCE' 
-  | 'CLIENT' 
-  | 'ADS_OP'
-  | 'ANALYST';
+export const GLOBAL_ROLES = {
+  admin: {
+    canViewAll: true,
+    canAssignAny: true,
+    canManageGroups: true
+  },
 
-export interface User {
-  id: string;
-  name: string;
-  role: UserRole;
-}
+  manager: {
+    canViewAll: false,
+    canAssignGroup: true,
+    canManageOwnGroup: true
+  },
+
+  staff: {
+    canViewAll: false,
+    canAssignGroup: false
+  }
+};

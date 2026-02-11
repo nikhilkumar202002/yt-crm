@@ -2,22 +2,63 @@ import React, { useState } from 'react';
 import { 
   Bell, ChevronDown, LogOut, Settings, 
   Menu, Search, Plus, Calendar, Globe, 
-  Command, ExternalLink
+  Command, ExternalLink, CheckCircle, AlertCircle, Info, Clock
 } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { Link } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../store/store';
 import { logout } from '../../store/slices/authSlice';
-import NotificationModal from './NotificationModal';
 
 interface HeaderProps {
   onMenuClick: () => void;
 }
 
+// Dummy notification data
+const dummyNotifications = [
+  {
+    id: '1',
+    type: 'success' as const,
+    title: 'Lead Converted',
+    message: 'John Doe has been successfully converted to a client.',
+    time: '2 minutes ago',
+    read: false,
+  },
+  {
+    id: '2',
+    type: 'info' as const,
+    title: 'New Lead Assigned',
+    message: 'Sarah Johnson has been assigned to you.',
+    time: '15 minutes ago',
+    read: false,
+  },
+  {
+    id: '3',
+    type: 'warning' as const,
+    title: 'Proposal Due Soon',
+    message: 'Proposal for TechCorp Inc. is due in 2 days.',
+    time: '1 hour ago',
+    read: true,
+  },
+];
+
 const Header = ({ onMenuClick }: HeaderProps) => {
   const { user, roleName } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
-  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+
+  const unreadCount = dummyNotifications.filter(n => !n.read).length;
+
+  const getNotificationIcon = (type: 'success' | 'info' | 'warning' | 'error') => {
+    switch (type) {
+      case 'success':
+        return <CheckCircle size={14} className="text-green-600" />;
+      case 'warning':
+        return <AlertCircle size={14} className="text-yellow-600" />;
+      case 'error':
+        return <AlertCircle size={14} className="text-red-600" />;
+      default:
+        return <Info size={14} className="text-blue-600" />;
+    }
+  };
 
   return (
     <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-30 font-sans">
@@ -67,14 +108,90 @@ const Header = ({ onMenuClick }: HeaderProps) => {
             <Globe size={15} />
           </button>
 
-          <button
-            onClick={() => setIsNotificationModalOpen(true)}
-            className="relative p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all cursor-pointer"
-            title="Notifications"
-          >
-            <Bell size={15} />
-            <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 border-2 border-white rounded-full" />
-          </button>
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild>
+              <button className="relative p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all cursor-pointer" title="Notifications">
+                <Bell size={15} />
+                {unreadCount > 0 && (
+                  <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 border-2 border-white rounded-full" />
+                )}
+              </button>
+            </DropdownMenu.Trigger>
+
+            <DropdownMenu.Portal>
+              <DropdownMenu.Content 
+                className="min-w-[320px] max-w-[400px] bg-white rounded-lg p-0 shadow-xl border border-slate-200 mt-2 animate-in fade-in zoom-in-95 duration-150 max-h-[400px] overflow-hidden"
+                sideOffset={8}
+                align="end"
+              >
+                <div className="p-4 border-b border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-slate-900">Notifications</h3>
+                    {unreadCount > 0 && (
+                      <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="max-h-64 overflow-y-auto">
+                  {dummyNotifications.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <Bell size={32} className="text-slate-300 mx-auto mb-3" />
+                      <p className="text-slate-500 text-sm">No notifications yet</p>
+                      <p className="text-slate-400 text-xs mt-1">We'll notify you when there's something new</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-slate-50">
+                      {dummyNotifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          className="p-4 hover:bg-slate-50/50 cursor-pointer transition-colors"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="mt-0.5">
+                              {getNotificationIcon(notification.type)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-1">
+                                <h4 className={`text-sm font-semibold ${notification.read ? 'text-slate-600' : 'text-slate-900'}`}>
+                                  {notification.title}
+                                </h4>
+                                {!notification.read && (
+                                  <div className="h-2 w-2 bg-blue-600 rounded-full flex-shrink-0"></div>
+                                )}
+                              </div>
+                              <p className={`text-xs leading-relaxed mb-2 ${notification.read ? 'text-slate-500' : 'text-slate-700'}`}>
+                                {notification.message}
+                              </p>
+                              <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                                <Clock size={10} />
+                                {notification.time}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {dummyNotifications.length > 0 && (
+                  <div className="p-3 border-t border-slate-100 bg-slate-50/50">
+                    <div className="flex items-center justify-between">
+                      <button className="text-xs text-slate-500 hover:text-slate-700 font-medium">
+                        Mark all as read
+                      </button>
+                      <button className="text-xs text-blue-600 hover:text-blue-700 font-medium">
+                        View all
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </DropdownMenu.Content>
+            </DropdownMenu.Portal>
+          </DropdownMenu.Root>
         </div>
 
         {/* Profile Dropdown */}
@@ -125,12 +242,6 @@ const Header = ({ onMenuClick }: HeaderProps) => {
           </DropdownMenu.Portal>
         </DropdownMenu.Root>
       </div>
-
-      {/* Notification Modal */}
-      <NotificationModal
-        isOpen={isNotificationModalOpen}
-        onOpenChange={setIsNotificationModalOpen}
-      />
     </header>
   );
 };

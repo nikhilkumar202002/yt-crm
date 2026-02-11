@@ -1,10 +1,9 @@
 // src/config/menu.ts
-import { UserRole } from './roles';
 
 export interface MenuItem {
   title: string;
   path: string;
-  roles: UserRole[];
+  roles: string[];
   submenu?: MenuItem[];
 }
 
@@ -100,7 +99,8 @@ export const SIDEBAR_MENU: MenuItem[] = [
       { title: 'Role Management', path: '/settings/roles', roles: ['ADMIN'] },
       { title: 'Departments', path: '/settings/departments', roles: ['ADMIN'] },
       { title: 'Designations', path: '/settings/designations', roles: ['ADMIN'] },
-      { title: 'Groups', path: '/groups', roles: ['ADMIN'] },
+      { title: 'Groups', path: '/settings/groups', roles: ['ADMIN'] },
+      { title: 'Positions', path: '/settings/positions', roles: ['ADMIN'] },
       { title: 'Services', path: '/settings/services', roles: ['ADMIN'] },
       { title: 'Calendar Work Creatives', path: '/settings/calendar-work-creatives', roles: ['ADMIN'] },
     ]

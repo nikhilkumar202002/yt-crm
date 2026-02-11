@@ -16,6 +16,13 @@ export interface GroupData {
   status: boolean | number;
 }
 
+export interface PositionData {
+  id?: number;
+  name: string;
+  description: string;
+  status: boolean | number;
+}
+
 export interface ProposalDetailsPayload {
   creatives_nos: number;
   videos_nos: number;
@@ -121,6 +128,32 @@ export const deleteGroup = async (id: number) => {
 
 export const getGroupDetail = async (id: number) => {
   const response = await apiClient.get(ENDPOINTS.GROUPS.DETAIL(id));
+  return response.data;
+};
+
+// Positions CRUD
+export const getPositions = async (page: number = 1) => {
+  const response = await apiClient.get(`${ENDPOINTS.POSITIONS.BASE}?page=${page}`);
+  return response.data;
+};
+
+export const createPosition = async (data: PositionData) => {
+  const response = await apiClient.post(ENDPOINTS.POSITIONS.BASE, data);
+  return response.data;
+};
+
+export const updatePosition = async (id: number, data: PositionData) => {
+  const response = await apiClient.put(ENDPOINTS.POSITIONS.DETAIL(id), data);
+  return response.data;
+};
+
+export const deletePosition = async (id: number) => {
+  const response = await apiClient.delete(ENDPOINTS.POSITIONS.DETAIL(id));
+  return response.data;
+};
+
+export const getPositionDetail = async (id: number) => {
+  const response = await apiClient.get(ENDPOINTS.POSITIONS.DETAIL(id));
   return response.data;
 };
 

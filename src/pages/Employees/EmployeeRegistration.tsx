@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { registerEmployee, getRoles } from '../../api/services/authService';
-import { getDepartments, getDesignations, getGroups } from '../../api/services/microService';
+import { getDepartments, getDesignations, getGroups, getPositions } from '../../api/services/microService';
 
 const EmployeeRegistration = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [orgData, setOrgData] = useState({ departments: [], designations: [], roles: [], groups: [] });
+  const [orgData, setOrgData] = useState({ departments: [], designations: [], roles: [], groups: [], positions: [] });
   
   const [formData, setFormData] = useState({
     name: '',
@@ -18,6 +18,7 @@ const EmployeeRegistration = () => {
     role_id: '',
     group_id: '',
     department_id: '',
+    position_id: '',
     designation_id: '',
     mobile_number: ''
   });
@@ -25,22 +26,24 @@ const EmployeeRegistration = () => {
   useEffect(() => {
   const loadSelectData = async () => {
     try {
-      const [deptsRes, desgsRes, rolesRes, groupsRes] = await Promise.all([
+      const [deptsRes, desgsRes, rolesRes, groupsRes, positionsRes] = await Promise.all([
         getDepartments(),
         getDesignations(),
         getRoles(),
-        getGroups()
+        getGroups(),
+        getPositions()
       ]);
       setOrgData({ 
         departments: deptsRes?.data?.data || deptsRes?.data || [], 
         designations: desgsRes?.data?.data || desgsRes?.data || [], 
         roles: rolesRes?.data?.data || rolesRes?.data || [],
-        groups: groupsRes?.data?.data || groupsRes?.data || []
+        groups: groupsRes?.data?.data || groupsRes?.data || [],
+        positions: positionsRes?.data?.data || positionsRes?.data || []
       });
     } catch (error) {
       console.error("Error loading registration data:", error);
       // Fallback to empty arrays to prevent .map() crashes
-      setOrgData({ departments: [], designations: [], roles: [], groups: [] });
+      setOrgData({ departments: [], designations: [], roles: [], groups: [], positions: [] });
     }
   };
   loadSelectData();
@@ -55,6 +58,7 @@ const EmployeeRegistration = () => {
         role_id: parseInt(formData.role_id),
         group_id: parseInt(formData.group_id),
         department_id: parseInt(formData.department_id),
+        position_id: parseInt(formData.position_id),
         designation_id: parseInt(formData.designation_id),
       };
       await registerEmployee(registrationData);
@@ -98,6 +102,14 @@ const EmployeeRegistration = () => {
               onChange={e => setFormData({...formData, designation_id: e.target.value})}>
               <option value="">Select Desg</option>
               {orgData.designations.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Position</label>
+            <select className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none"
+              onChange={e => setFormData({...formData, position_id: e.target.value})}>
+              <option value="">Select Position</option>
+              {orgData.positions.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
           <div className="space-y-1">

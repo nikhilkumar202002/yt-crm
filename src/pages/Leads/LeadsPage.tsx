@@ -43,7 +43,8 @@ const LeadsPage = () => {
     try {
       setIsUploading(true);
       await uploadLeads(file);
-      fetchLeads(1); 
+      setCurrentPage(1); // Reset to page 1 after successful upload
+      fetchLeads(1);
     } catch (error) {
       alert('Upload failed. Check file format.');
     } finally {

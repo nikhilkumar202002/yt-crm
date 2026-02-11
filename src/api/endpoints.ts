@@ -65,5 +65,9 @@ PROPOSALS: {
   GROUPS: {
     BASE: '/groups',
     DETAIL: (id: number) => `/groups/${id}`,
+  },
+  POSITIONS: {
+    BASE: '/positions',
+    DETAIL: (id: number) => `/positions/${id}`,
   }
 };
