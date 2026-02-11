@@ -24,6 +24,7 @@ import LeadClientsPage from './pages/clients/LeadClientsPage';
 
 import CalendarPage from './pages/Calendar/CalendarPage';
 import WorksheetPage from './pages/Worksheet/WorksheetPage';
+import GroupsPage from './pages/Groups/GroupsPage';
 
 
 
@@ -56,6 +57,7 @@ function App() {
             <Route path="/clients/leads" element={<LeadClientsPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/worksheet" element={<WorksheetPage />} />
+            <Route path="/groups" element={<GroupsPage />} />
             
             
           </Route>

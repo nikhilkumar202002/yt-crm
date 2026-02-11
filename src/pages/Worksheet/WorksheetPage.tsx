@@ -6,7 +6,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
-import { getCalendarWorks, getEmployeesForAssignment, assignCalendarWork } from '../../api/services/microService';
+import { getCalendarWorks, getEmployeesForAssignment, assignCalendarWork, assignCalendarWorkContent } from '../../api/services/microService';
 import { getUsersList } from '../../api/services/authService';
 
 interface Creative {
@@ -56,9 +56,13 @@ interface CalendarWork {
   description: string;
   content_description: string;
   created_by: string;
-  update_history: null;
+  update_history: any[] | null;
   notes: string;
   is_special_day: boolean;
+  assigned_to: string | null;
+  assigned_by: string | null;
+  assigned_time: string | null;
+  content_assigned_to: string | null;
   creatives: Creative[];
   client: Client;
 }
@@ -76,7 +80,9 @@ const WorksheetPage = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [editingAssignment, setEditingAssignment] = useState<number | null>(null);
+  const [editingContentAssignment, setEditingContentAssignment] = useState<number | null>(null);
   const [pendingAssignments, setPendingAssignments] = useState<Set<number>>(new Set());
+  const [pendingContentAssignments, setPendingContentAssignments] = useState<Set<number>>(new Set());
 
   // Get token from localStorage
   useEffect(() => {
@@ -126,6 +132,14 @@ const WorksheetPage = () => {
     role.toLowerCase() === (roleName || '').toLowerCase()
   );
 
+  // Roles that can assign content (DM Executives only)
+  const contentAssignRoles = ['DM EXECUTIVE'];
+
+  // Check if user should see content assignment dropdown based on their role
+  const shouldShowContentAssignDropdown = contentAssignRoles.some(role => 
+    role.toLowerCase() === (roleName || '').toLowerCase()
+  );
+
   useEffect(() => {
     const fetchCalendarWorks = async () => {
       try {
@@ -163,15 +177,44 @@ const WorksheetPage = () => {
 
   // Helper function to get assigned user details
   const getAssignedUser = (workId: number) => {
-    const userId = assignedDesigners[workId];
-    if (!userId) return null;
-    return users.find(user => user.id.toString() === userId);
+    const work = calendarWorks.find(w => w.id === workId);
+    if (!work?.assigned_to) return null;
+    
+    try {
+      const assignedUserIds = JSON.parse(work.assigned_to);
+      if (assignedUserIds.length === 0) return null;
+      
+      // Return the first assigned user (for display purposes)
+      const userId = assignedUserIds[0];
+      return users.find(user => user.id === userId);
+    } catch (err) {
+      return null;
+    }
+  };
+
+  // Helper function to get assigned content writer details
+  const getAssignedContentWriter = (workId: number) => {
+    const work = calendarWorks.find(w => w.id === workId);
+    if (!work?.content_assigned_to) return null;
+    
+    try {
+      const assignedUserIds = JSON.parse(work.content_assigned_to);
+      if (assignedUserIds.length === 0) return null;
+      
+      // Return the first assigned content writer (for display purposes)
+      const userId = assignedUserIds[0];
+      return users.find(user => user.id === userId);
+    } catch (err) {
+      return null;
+    }
   };
 
   // Filter calendar works based on search term and role-based assignment visibility
   const filteredCalendarWorks = calendarWorks.filter(work => {
-    const hasAssignment = assignedDesigners[work.id] && assignedDesigners[work.id] !== '';
-    const isAssignedToCurrentUser = assignedDesigners[work.id] === user?.id?.toString();
+    // Parse assigned_to field - it's a string like "[5]" or "[1,2,3]"
+    const assignedToUsers = work.assigned_to ? JSON.parse(work.assigned_to) : [];
+    const hasAssignment = assignedToUsers.length > 0;
+    const isAssignedToCurrentUser = assignedToUsers.includes(user?.id);
     
     // Role-based visibility:
     // - Creative Team Head and Admin roles: can see all assigned works
@@ -256,7 +299,10 @@ const WorksheetPage = () => {
                   <th className="px-6 py-4 text-left text-[11px] font-medium text-slate-500 uppercase tracking-wider align-top">Creatives</th>
                   <th className="px-6 py-4 text-left text-[11px] font-medium text-slate-500 uppercase tracking-wider align-top">Notes</th>
                   {shouldShowAssignDropdown && (
-                    <th className="px-6 py-4 text-left text-[11px] font-medium text-slate-500 uppercase tracking-wider align-top">Assign User</th>
+                    <th className="px-6 py-4 text-left text-[11px] font-medium text-slate-500 uppercase tracking-wider align-top">Assign Designer</th>
+                  )}
+                  {shouldShowContentAssignDropdown && (
+                    <th className="px-6 py-4 text-left text-[11px] font-medium text-slate-500 uppercase tracking-wider align-top">Assign Content</th>
                   )}
                   <th className="px-6 py-4 text-left text-[11px] font-medium text-slate-500 uppercase tracking-wider align-top">Design Upload</th>
                   <th className="px-6 py-4 text-left text-[11px] font-medium text-slate-500 uppercase tracking-wider align-top">Status</th>
@@ -323,22 +369,30 @@ const WorksheetPage = () => {
                         <td className="px-6 py-4 text-left align-top">
                           {editingAssignment === work.id ? (
                             <select
-                              value={assignedDesigners[work.id] || ''}
+                              value={(() => {
+                                // Parse API data only (no optimistic updates)
+                                try {
+                                  const assignedUserIds = work.assigned_to ? JSON.parse(work.assigned_to) : [];
+                                  return assignedUserIds.length > 0 ? assignedUserIds[0].toString() : '';
+                                } catch (err) {
+                                  return '';
+                                }
+                              })()}
                               onChange={async (e) => {
                                 const selectedUserId = e.target.value;
                                 
                                 if (selectedUserId) {
-                                  // Optimistic update - update UI immediately
-                                  setAssignedDesigners(prev => ({ ...prev, [work.id]: selectedUserId }));
+                                  // Show loading state
                                   setPendingAssignments(prev => new Set(prev).add(work.id));
                                   setEditingAssignment(null);
                                   
-                                  // Make API call in background
                                   try {
                                     await assignCalendarWork(work.id, { assigned_to: `[${selectedUserId}]` });
+                                    // Reload calendar works to get updated data
+                                    const response = await getCalendarWorks();
+                                    setCalendarWorks(response.data?.data || []);
                                   } catch (err) {
-                                    // Revert the optimistic update on error
-                                    setAssignedDesigners(prev => ({ ...prev, [work.id]: '' }));
+                                    console.error('Failed to assign work:', err);
                                   } finally {
                                     setPendingAssignments(prev => {
                                       const newSet = new Set(prev);
@@ -347,31 +401,44 @@ const WorksheetPage = () => {
                                     });
                                   }
                                 } else {
-                                  // Handle unassignment - also optimistic
-                                  const previousAssignment = assignedDesigners[work.id];
-                                  setAssignedDesigners(prev => ({ ...prev, [work.id]: '' }));
-                                  setPendingAssignments(prev => new Set(prev).add(work.id));
-                                  setEditingAssignment(null);
+                                  // Handle unassignment
+                                  const currentAssignment = (() => {
+                                    try {
+                                      const assignedUserIds = work.assigned_to ? JSON.parse(work.assigned_to) : [];
+                                      return assignedUserIds.length > 0 ? assignedUserIds[0].toString() : '';
+                                    } catch (err) {
+                                      return '';
+                                    }
+                                  })();
                                   
-                                  try {
-                                    await assignCalendarWork(work.id, { assigned_to: '[]' });
-                                  } catch (err) {
-                                    // Revert on error
-                                    setAssignedDesigners(prev => ({ ...prev, [work.id]: previousAssignment || '' }));
-                                  } finally {
-                                    setPendingAssignments(prev => {
-                                      const newSet = new Set(prev);
-                                      newSet.delete(work.id);
-                                      return newSet;
-                                    });
+                                  if (currentAssignment) {
+                                    // Show loading state
+                                    setPendingAssignments(prev => new Set(prev).add(work.id));
+                                    setEditingAssignment(null);
+                                    
+                                    try {
+                                      await assignCalendarWork(work.id, { assigned_to: '[]' });
+                                      // Reload calendar works to get updated data
+                                      const response = await getCalendarWorks();
+                                      setCalendarWorks(response.data?.data || []);
+                                    } catch (err) {
+                                      console.error('Failed to unassign work:', err);
+                                    } finally {
+                                      setPendingAssignments(prev => {
+                                        const newSet = new Set(prev);
+                                        newSet.delete(work.id);
+                                        return newSet;
+                                      });
+                                    }
                                   }
                                 }
                               }}
                               onBlur={() => setEditingAssignment(null)}
-                              className="text-xs border border-slate-200 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                              disabled={pendingAssignments.has(work.id)}
+                              className="text-xs border border-slate-200 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-slate-100 disabled:cursor-not-allowed"
                               autoFocus
                             >
-                              <option value="">Select User</option>
+                              <option value="">Select Designer</option>
                               {users.map((user) => (
                                 <option key={user.id} value={user.id.toString()}>
                                   {user.name} ({user.email})
@@ -404,12 +471,147 @@ const WorksheetPage = () => {
                                   </button>
                                 </div>
                               ) : (
-                                <button
-                                  onClick={() => setEditingAssignment(work.id)}
-                                  className="px-3 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 rounded transition-colors"
-                                >
-                                  Assign User
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  {pendingAssignments.has(work.id) ? (
+                                    <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+                                      <div className="h-1.5 w-1.5 rounded-full mr-1.5 border border-yellow-500 border-t-transparent animate-spin" />
+                                      Assigning...
+                                    </span>
+                                  ) : (
+                                    <button
+                                      onClick={() => setEditingAssignment(work.id)}
+                                      className="px-3 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 rounded transition-colors"
+                                    >
+                                      Assign User
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      )}
+                      {shouldShowContentAssignDropdown && (
+                        <td className="px-6 py-4 text-left align-top">
+                          {editingContentAssignment === work.id ? (
+                            <select
+                              value={(() => {
+                                // Parse API data for content assignment
+                                try {
+                                  const assignedUserIds = work.content_assigned_to ? JSON.parse(work.content_assigned_to) : [];
+                                  return assignedUserIds.length > 0 ? assignedUserIds[0].toString() : '';
+                                } catch (err) {
+                                  return '';
+                                }
+                              })()}
+                              onChange={async (e) => {
+                                const selectedUserId = e.target.value;
+                                
+                                if (selectedUserId) {
+                                  // Show loading state
+                                  setPendingContentAssignments(prev => new Set(prev).add(work.id));
+                                  setEditingContentAssignment(null);
+                                  
+                                  try {
+                                    await assignCalendarWorkContent(work.id, { content_assigned_to: `[${selectedUserId}]` });
+                                    // Reload calendar works to get updated data
+                                    const response = await getCalendarWorks();
+                                    setCalendarWorks(response.data?.data || []);
+                                  } catch (err) {
+                                    console.error('Failed to assign content:', err);
+                                  } finally {
+                                    setPendingContentAssignments(prev => {
+                                      const newSet = new Set(prev);
+                                      newSet.delete(work.id);
+                                      return newSet;
+                                    });
+                                  }
+                                } else {
+                                  // Handle unassignment
+                                  const currentAssignment = (() => {
+                                    try {
+                                      const assignedUserIds = work.content_assigned_to ? JSON.parse(work.content_assigned_to) : [];
+                                      return assignedUserIds.length > 0 ? assignedUserIds[0].toString() : '';
+                                    } catch (err) {
+                                      return '';
+                                    }
+                                  })();
+                                  
+                                  if (currentAssignment) {
+                                    // Show loading state
+                                    setPendingContentAssignments(prev => new Set(prev).add(work.id));
+                                    setEditingContentAssignment(null);
+                                    
+                                    try {
+                                      await assignCalendarWorkContent(work.id, { content_assigned_to: '[]' });
+                                      // Reload calendar works to get updated data
+                                      const response = await getCalendarWorks();
+                                      setCalendarWorks(response.data?.data || []);
+                                    } catch (err) {
+                                      console.error('Failed to unassign content:', err);
+                                    } finally {
+                                      setPendingContentAssignments(prev => {
+                                        const newSet = new Set(prev);
+                                        newSet.delete(work.id);
+                                        return newSet;
+                                      });
+                                    }
+                                  }
+                                }
+                              }}
+                              onBlur={() => setEditingContentAssignment(null)}
+                              disabled={pendingContentAssignments.has(work.id)}
+                              className="text-xs border border-slate-200 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-slate-100 disabled:cursor-not-allowed"
+                              autoFocus
+                            >
+                              <option value="">Select Content Writer</option>
+                              {users.map((user) => (
+                                <option key={user.id} value={user.id.toString()}>
+                                  {user.name} ({user.email})
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              {getAssignedContentWriter(work.id) ? (
+                                <div className="flex items-center gap-2">
+                                  <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${
+                                    pendingContentAssignments.has(work.id)
+                                      ? 'bg-purple-100 text-purple-800 border-purple-200'
+                                      : 'bg-purple-100 text-purple-800 border-purple-200'
+                                  }`}>
+                                    {pendingContentAssignments.has(work.id) ? (
+                                      <div className="h-1.5 w-1.5 rounded-full mr-1.5 border border-purple-500 border-t-transparent animate-spin" />
+                                    ) : (
+                                      <span className="h-1.5 w-1.5 rounded-full mr-1.5 bg-purple-500" />
+                                    )}
+                                    {getAssignedContentWriter(work.id)?.name}
+                                  </span>
+                                  <button
+                                    onClick={() => setEditingContentAssignment(work.id)}
+                                    disabled={pendingContentAssignments.has(work.id)}
+                                    className="p-1 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Change content assignment"
+                                  >
+                                    <Edit size={12} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  {pendingContentAssignments.has(work.id) ? (
+                                    <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                                      <div className="h-1.5 w-1.5 rounded-full mr-1.5 border border-purple-500 border-t-transparent animate-spin" />
+                                      Assigning Content...
+                                    </span>
+                                  ) : (
+                                    <button
+                                      onClick={() => setEditingContentAssignment(work.id)}
+                                      className="px-3 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 rounded transition-colors"
+                                    >
+                                      Assign Content
+                                    </button>
+                                  )}
+                                </div>
                               )}
                             </div>
                           )}
@@ -493,7 +695,7 @@ const WorksheetPage = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={9 - (shouldShowDate ? 0 : 1) - (shouldShowAssignDropdown ? 0 : 1)} className="px-6 py-20 text-center align-top">
+                    <td colSpan={9 - (shouldShowDate ? 0 : 1) - (shouldShowAssignDropdown ? 0 : 1) - (shouldShowContentAssignDropdown ? 0 : 1)} className="px-6 py-20 text-center align-top">
                       <div className="flex flex-col items-center gap-2">
                         <div className="p-3 bg-slate-50 rounded-full text-slate-300">
                           <Clipboard size={24} />

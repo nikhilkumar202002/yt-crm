@@ -9,6 +9,13 @@ export interface OrgUnit {
   status: boolean | number;
 }
 
+export interface GroupData {
+  id?: number;
+  name: string;
+  description: string;
+  status: boolean | number;
+}
+
 export interface ProposalDetailsPayload {
   creatives_nos: number;
   videos_nos: number;
@@ -88,6 +95,32 @@ export const updateDesignation = async (id: number, data: OrgUnit) => {
 
 export const deleteDesignation = async (id: number) => {
   const response = await apiClient.delete(ENDPOINTS.DESIGNATIONS.DETAIL(id));
+  return response.data;
+};
+
+// Groups CRUD
+export const getGroups = async (page: number = 1) => {
+  const response = await apiClient.get(`${ENDPOINTS.GROUPS.BASE}?page=${page}`);
+  return response.data;
+};
+
+export const createGroup = async (data: GroupData) => {
+  const response = await apiClient.post(ENDPOINTS.GROUPS.BASE, data);
+  return response.data;
+};
+
+export const updateGroup = async (id: number, data: GroupData) => {
+  const response = await apiClient.put(ENDPOINTS.GROUPS.DETAIL(id), data);
+  return response.data;
+};
+
+export const deleteGroup = async (id: number) => {
+  const response = await apiClient.delete(ENDPOINTS.GROUPS.DETAIL(id));
+  return response.data;
+};
+
+export const getGroupDetail = async (id: number) => {
+  const response = await apiClient.get(ENDPOINTS.GROUPS.DETAIL(id));
   return response.data;
 };
 
@@ -426,6 +459,14 @@ export const createCalendarWorksWithCreatives = async (data: CalendarWorksCreate
  */
 export const assignCalendarWork = async (id: number, data: AssignCalendarWorkPayload) => {
   const response = await apiClient.put(ENDPOINTS.CALENDAR_WORKS.ASSIGN(id), data);
+  return response.data;
+};
+
+/**
+ * PUT Assign calendar work content to content writers
+ */
+export const assignCalendarWorkContent = async (id: number, data: { content_assigned_to: string }) => {
+  const response = await apiClient.put(ENDPOINTS.CALENDAR_WORKS.CONTENT_ASSIGN(id), data);
   return response.data;
 };
 

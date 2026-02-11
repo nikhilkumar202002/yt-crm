@@ -96,15 +96,20 @@ const CalendarPage = () => {
 
   const loadCalendarWorks = useCallback(async () => {
     try {
+      console.log('Loading calendar works...');
       const response = await getCalendarWorks();
+      console.log('Calendar works response:', response);
       const works = response.data?.data || [];
+      console.log('Parsed works:', works);
       
       const dataMap: Record<string, CalendarWorkData> = {};
       
       works.forEach((work: any) => {
+        console.log('Processing work:', work);
         const [year, month, day] = work.date.split('-').map(Number);
         const dateObj = new Date(year, month - 1, day);
         const dateKey = dateObj.toDateString();
+        console.log('Date key:', dateKey);
         
         dataMap[dateKey] = {
           client_id: parseInt(work.client_id),
@@ -117,6 +122,7 @@ const CalendarPage = () => {
         };
       });
       
+      console.log('Final dataMap:', dataMap);
       setAllDateData(dataMap);
     } catch (error) {
       console.error('Failed to load calendar works:', error);

@@ -50,7 +50,7 @@ export const SIDEBAR_MENU: MenuItem[] = [
   {
     title: 'Worksheet',
     path: '/worksheet',
-    roles: ['ADMIN', 'PM', 'DM HEAD', 'DM EXECUTIVE', 'CREATIVE HEAD', 'CREATIVE TEAM HEAD', 'CREATIVE DESIGNERS']
+    roles: ['ADMIN', 'PM', 'DM HEAD', 'DM EXECUTIVE', 'CREATIVE HEAD', 'CREATIVE TEAM HEAD', 'CREATIVE DESIGNERS', 'CONTENT WRITER']
   },
   { 
     title: 'Strategy & Pitch', 
@@ -100,6 +100,7 @@ export const SIDEBAR_MENU: MenuItem[] = [
       { title: 'Role Management', path: '/settings/roles', roles: ['ADMIN'] },
       { title: 'Departments', path: '/settings/departments', roles: ['ADMIN'] },
       { title: 'Designations', path: '/settings/designations', roles: ['ADMIN'] },
+      { title: 'Groups', path: '/groups', roles: ['ADMIN'] },
       { title: 'Services', path: '/settings/services', roles: ['ADMIN'] },
       { title: 'Calendar Work Creatives', path: '/settings/calendar-work-creatives', roles: ['ADMIN'] },
     ]

@@ -45,7 +45,8 @@ PROPOSALS: {
   CALENDAR_WORKS: {
     BASE: '/calendar-works',
     DETAIL: (id: number) => `/calendar-works/${id}`,
-    ASSIGN: (id: number) => `/calendar-works/${id}/assign`,
+    ASSIGN: (id: number) => `/calendar-works/${id}/designers/assign`,
+    CONTENT_ASSIGN: (id: number) => `/calendar-works/${id}/content/assign`,
   },
   
   CALENDAR_WORK_CREATIVES: {
@@ -60,5 +61,9 @@ PROPOSALS: {
   FINANCE: {
     BILLING: '/finance/billing',     // cite: 76
     RETAINERS: '/finance/retainers', // cite: 75
+  },
+  GROUPS: {
+    BASE: '/groups',
+    DETAIL: (id: number) => `/groups/${id}`,
   }
 };
