@@ -16,6 +16,7 @@ import { Button } from '../../components/common/Button';
 const AssignedLeadsPage = () => {
   const { roleName, user } = useAppSelector((state) => state.auth);
   const isAdminOrHead = ['ADMIN', 'DM HEAD'].includes(roleName?.toUpperCase() || '');
+  const isAdmin = roleName?.toUpperCase() === 'ADMIN';
   const userId = user?.id;
   
   const [assignments, setAssignments] = useState<any[]>([]);
@@ -41,7 +42,7 @@ const AssignedLeadsPage = () => {
       
       // 1. Fetch Leads, Services, Sub-Services, and Proposals concurrently
       const [leadsRes, servicesRes, subServicesRes] = await Promise.all([
-        getAssignedLeads(page, serviceFilter, userId),
+        getAssignedLeads(page, serviceFilter, isAdmin ? undefined : userId),
         getServices(1),
         getSubServices(1)
       ]);
@@ -60,10 +61,12 @@ const AssignedLeadsPage = () => {
       const servicesData = servicesRes?.data?.data || [];
       const subServicesData = subServicesRes?.data?.data || [];
 
-      // Filter assignments to only show those assigned to the current user
-      const filteredLeads = rawLeads.filter((assignment: any) => 
-        Number(assignment.user_id) === Number(userId)
-      );
+      // Filter assignments: admins see all, regular users see only their own
+      const filteredLeads = isAdmin 
+        ? rawLeads 
+        : rawLeads.filter((assignment: any) => 
+            Number(assignment.user_id) === Number(userId)
+          );
 
       // 2. Merge Sub-Services into Main Services
       const mergedServices = servicesData.map((service: any) => ({
@@ -214,6 +217,10 @@ const AssignedLeadsPage = () => {
                         <span className={`px-2 py-0.5 rounded text-[9px] font-bold border uppercase tracking-tighter ${
                           item.user_status?.toLowerCase() === 'hot' 
                             ? 'bg-red-50 text-red-600 border-red-100' 
+                            : item.user_status?.toLowerCase() === 'warm'
+                            ? 'bg-orange-50 text-orange-600 border-orange-100'
+                            : item.user_status?.toLowerCase() === 'cold'
+                            ? 'bg-blue-50 text-blue-600 border-blue-100'
                             : 'bg-slate-50 text-slate-500 border-slate-200'
                         }`}>
                           {item.user_status || 'New'}
@@ -222,7 +229,15 @@ const AssignedLeadsPage = () => {
                         <select 
                           value={item.user_status?.toLowerCase() || ''}
                           onChange={(e) => handleStatusChange(item.id, e.target.value)}
-                          className="text-[10px] font-bold py-0.5 px-1 rounded border border-slate-200 outline-none bg-white focus:border-blue-500 uppercase cursor-pointer"
+                          className={`text-[10px] font-bold py-0.5 px-1 rounded border outline-none uppercase cursor-pointer ${
+                            item.user_status?.toLowerCase() === 'hot' 
+                              ? 'bg-red-50 text-red-600 border-red-100' 
+                              : item.user_status?.toLowerCase() === 'warm'
+                              ? 'bg-orange-50 text-orange-600 border-orange-100'
+                              : item.user_status?.toLowerCase() === 'cold'
+                              ? 'bg-blue-50 text-blue-600 border-blue-100'
+                              : 'bg-white text-slate-700 border-slate-200 focus:border-blue-500'
+                          }`}
                         >
                           <option value="">Set</option>
                           <option value="hot">Hot</option>
