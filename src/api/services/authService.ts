@@ -14,6 +14,7 @@ export interface RegistrationData {
   password: string;
   password_confirmation: string;
   role_id: number;
+  group_id: number;
   department_id: number;
   designation_id: number;
   mobile_number: string;

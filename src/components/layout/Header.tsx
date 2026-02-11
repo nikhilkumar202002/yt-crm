@@ -1,5 +1,6 @@
+import React, { useState } from 'react';
 import { 
-  Bell, ChevronDown, User, LogOut, Settings, 
+  Bell, ChevronDown, LogOut, Settings, 
   Menu, Search, Plus, Calendar, Globe, 
   Command, ExternalLink
 } from 'lucide-react';
@@ -7,6 +8,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { Link } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../store/store';
 import { logout } from '../../store/slices/authSlice';
+import NotificationModal from './NotificationModal';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -15,6 +17,7 @@ interface HeaderProps {
 const Header = ({ onMenuClick }: HeaderProps) => {
   const { user, roleName } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
 
   return (
     <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-30 font-sans">
@@ -64,7 +67,11 @@ const Header = ({ onMenuClick }: HeaderProps) => {
             <Globe size={15} />
           </button>
 
-          <button className="relative p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all">
+          <button
+            onClick={() => setIsNotificationModalOpen(true)}
+            className="relative p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all cursor-pointer"
+            title="Notifications"
+          >
             <Bell size={15} />
             <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 border-2 border-white rounded-full" />
           </button>
@@ -101,11 +108,6 @@ const Header = ({ onMenuClick }: HeaderProps) => {
               </div>
               
               <DropdownMenu.Item className="flex items-center gap-2.5 px-3 py-1.5 text-[11px] text-slate-600 font-semibold rounded-md hover:bg-blue-50 hover:text-blue-700 outline-none cursor-pointer transition-colors">
-                <User size={14} />
-                My Profile
-              </DropdownMenu.Item>
-              
-              <DropdownMenu.Item className="flex items-center gap-2.5 px-3 py-1.5 text-[11px] text-slate-600 font-semibold rounded-md hover:bg-blue-50 hover:text-blue-700 outline-none cursor-pointer transition-colors">
                 <ExternalLink size={14} />
                 Support Portal
               </DropdownMenu.Item>
@@ -123,6 +125,12 @@ const Header = ({ onMenuClick }: HeaderProps) => {
           </DropdownMenu.Portal>
         </DropdownMenu.Root>
       </div>
+
+      {/* Notification Modal */}
+      <NotificationModal
+        isOpen={isNotificationModalOpen}
+        onOpenChange={setIsNotificationModalOpen}
+      />
     </header>
   );
 };

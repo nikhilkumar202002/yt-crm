@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { Shield, Edit2, Trash2 } from 'lucide-react';
 import { getRoles, deleteRole, RoleData } from '../../api/services/authService';
 import { CreateRoleModal } from './components/CreateRoleModal';
 
@@ -43,50 +44,70 @@ const RoleManagement = () => {
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 font-sans">
-      <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-        <h2 className="text-xl font-bold text-gray-800">Role Management</h2>
+    <div className="space-y-6 animate-in fade-in duration-500 font-sans">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Role Management</h1>
+          <p className="text-[11px] text-slate-500 font-medium">Manage user roles and permissions</p>
+        </div>
         <CreateRoleModal onSuccess={fetchRoles} />
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
-            <tr>
-              <th className="px-6 py-4">Role Name</th>
-              <th className="px-6 py-4">Description</th>
-              <th className="px-6 py-4 text-center">Status</th>
-              <th className="px-6 py-4 text-right">Actions</th>
-            </tr>
-          </thead>
-         <tbody className="divide-y divide-gray-100">
-  {roles.map((role) => (
-    <tr key={role.id} className="hover:bg-gray-50 transition-colors">
-      <td className="px-6 py-4 font-semibold text-gray-700">{role.name}</td>
-      <td className="px-6 py-4 text-gray-500 text-sm">{role.description}</td>
-      <td className="px-6 py-4 text-center">
-        {/* Fix: Check for string "1" or numeric 1 */}
-        <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
-          role.status === "1" || role.status === 1 
-            ? 'bg-green-100 text-green-700' 
-            : 'bg-red-100 text-red-700'
-        }`}>
-          {role.status === "1" || role.status === 1 ? 'Active' : 'Inactive'}
-        </span>
-      </td>
-      <td className="px-6 py-4 text-right space-x-3">
-        <button className="text-blue-600 hover:underline text-sm font-medium">Edit</button>
-        <button 
-          onClick={() => role.id && handleDelete(role.id)}
-          className="text-red-600 hover:underline text-sm font-medium"
-        >
-          Delete
-        </button>
-      </td>
-    </tr>
-  ))}
-</tbody>
-        </table>
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-slate-50/50 border-b border-slate-100">
+                <tr>
+                  <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Role Name</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Description</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {roles.length > 0 ? (
+                  roles.map((role) => (
+                    <tr key={role.id} className="hover:bg-slate-50/50 transition-colors group">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><Shield size={14} /></div>
+                          <span className="text-xs font-bold text-slate-900">{role.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-[11px] text-slate-500">{role.description}</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold border ${
+                          role.status === "1" || role.status === 1
+                            ? 'bg-green-50 text-green-600 border-green-100'
+                            : 'bg-red-50 text-red-600 border-red-100'
+                        }`}>
+                          {role.status === "1" || role.status === 1 ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right space-x-2">
+                        <button className="text-slate-400 hover:text-blue-600"><Edit2 size={14} /></button>
+                        <button onClick={() => role.id && handleDelete(role.id)} className="text-slate-400 hover:text-red-600">
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-10 text-center text-slate-400 italic text-sm">
+                      No roles found in the system.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

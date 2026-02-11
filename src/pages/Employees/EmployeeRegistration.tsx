@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { registerEmployee, getRoles } from '../../api/services/authService';
-import { getDepartments, getDesignations } from '../../api/services/microService';
+import { getDepartments, getDesignations, getGroups } from '../../api/services/microService';
 
 const EmployeeRegistration = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [orgData, setOrgData] = useState({ departments: [], designations: [], roles: [] });
+  const [orgData, setOrgData] = useState({ departments: [], designations: [], roles: [], groups: [] });
   
   const [formData, setFormData] = useState({
     name: '',
@@ -16,6 +16,7 @@ const EmployeeRegistration = () => {
     password: '',
     password_confirmation: '',
     role_id: '',
+    group_id: '',
     department_id: '',
     designation_id: '',
     mobile_number: ''
@@ -24,20 +25,22 @@ const EmployeeRegistration = () => {
   useEffect(() => {
   const loadSelectData = async () => {
     try {
-      const [deptsRes, desgsRes, rolesRes] = await Promise.all([
+      const [deptsRes, desgsRes, rolesRes, groupsRes] = await Promise.all([
         getDepartments(),
         getDesignations(),
-        getRoles()
+        getRoles(),
+        getGroups()
       ]);
       setOrgData({ 
         departments: deptsRes?.data?.data || deptsRes?.data || [], 
         designations: desgsRes?.data?.data || desgsRes?.data || [], 
-        roles: rolesRes?.data?.data || rolesRes?.data || [] 
+        roles: rolesRes?.data?.data || rolesRes?.data || [],
+        groups: groupsRes?.data?.data || groupsRes?.data || []
       });
     } catch (error) {
       console.error("Error loading registration data:", error);
       // Fallback to empty arrays to prevent .map() crashes
-      setOrgData({ departments: [], designations: [], roles: [] });
+      setOrgData({ departments: [], designations: [], roles: [], groups: [] });
     }
   };
   loadSelectData();
@@ -47,7 +50,14 @@ const EmployeeRegistration = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await registerEmployee(formData as any);
+      const registrationData = {
+        ...formData,
+        role_id: parseInt(formData.role_id),
+        group_id: parseInt(formData.group_id),
+        department_id: parseInt(formData.department_id),
+        designation_id: parseInt(formData.designation_id),
+      };
+      await registerEmployee(registrationData);
       alert('Employee registered successfully');
       navigate('/employees');
     } catch (error) {
@@ -73,7 +83,7 @@ const EmployeeRegistration = () => {
         
         <Input label="Mobile Number" placeholder="7356400765" onChange={e => setFormData({...formData, mobile_number: e.target.value})} required />
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Department</label>
             <select className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none" 
@@ -88,6 +98,14 @@ const EmployeeRegistration = () => {
               onChange={e => setFormData({...formData, designation_id: e.target.value})}>
               <option value="">Select Desg</option>
               {orgData.designations.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Group</label>
+            <select className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none"
+              onChange={e => setFormData({...formData, group_id: e.target.value})}>
+              <option value="">Select Group</option>
+              {orgData.groups.map((g: any) => <option key={g.id} value={g.id}>{g.name}</option>)}
             </select>
           </div>
           <div className="space-y-1">

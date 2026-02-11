@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
 import { getGroups, deleteGroup } from '../../api/services/microService';
+import { CreateGroupModal, EditGroupModal, GroupDetailsModal, DeleteGroupModal } from './components';
 
 interface Group {
   id: number;
@@ -22,6 +23,12 @@ const GroupsPage = () => {
   const [pagination, setPagination] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Modal states
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const fetchGroups = useCallback(async (page: number) => {
     try {
@@ -43,16 +50,19 @@ const GroupsPage = () => {
     fetchGroups(currentPage);
   }, [currentPage, fetchGroups]);
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this group?')) {
-      try {
-        await deleteGroup(id);
-        fetchGroups(currentPage);
-      } catch (error) {
-        console.error('Failed to delete group:', error);
-        alert('Failed to delete group');
-      }
-    }
+  const handleEdit = (group: Group) => {
+    setSelectedGroup(group);
+    setIsEditModalOpen(true);
+  };
+
+  const handleView = (group: Group) => {
+    setSelectedGroup(group);
+    setIsDetailsModalOpen(true);
+  };
+
+  const handleDeleteClick = (group: Group) => {
+    setSelectedGroup(group);
+    setIsDeleteModalOpen(true);
   };
 
   const filteredGroups = groups.filter(group =>
@@ -72,10 +82,7 @@ const GroupsPage = () => {
               <p className="text-sm text-slate-500">Manage your organization groups</p>
             </div>
           </div>
-          <Button className="flex items-center gap-2">
-            <Plus size={16} />
-            Add Group
-          </Button>
+          <CreateGroupModal onSuccess={() => fetchGroups(currentPage)} />
         </div>
       </div>
 
@@ -163,15 +170,24 @@ const GroupsPage = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex items-center justify-end gap-2">
-                            <button className="text-blue-600 hover:text-blue-900 p-1">
+                            <button
+                              onClick={() => handleView(group)}
+                              className="text-blue-600 hover:text-blue-900 p-1"
+                              title="View Details"
+                            >
                               <Eye size={16} />
                             </button>
-                            <button className="text-slate-600 hover:text-slate-900 p-1">
+                            <button
+                              onClick={() => handleEdit(group)}
+                              className="text-slate-600 hover:text-slate-900 p-1"
+                              title="Edit Group"
+                            >
                               <Edit size={16} />
                             </button>
                             <button
-                              onClick={() => handleDelete(group.id)}
+                              onClick={() => handleDeleteClick(group)}
                               className="text-red-600 hover:text-red-900 p-1"
+                              title="Delete Group"
                             >
                               <Trash2 size={16} />
                             </button>
@@ -228,6 +244,27 @@ const GroupsPage = () => {
           </div>
         )}
       </div>
+
+      {/* Modals */}
+      <EditGroupModal
+        group={selectedGroup}
+        isOpen={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        onSuccess={() => fetchGroups(currentPage)}
+      />
+
+      <GroupDetailsModal
+        groupId={selectedGroup?.id || null}
+        isOpen={isDetailsModalOpen}
+        onOpenChange={setIsDetailsModalOpen}
+      />
+
+      <DeleteGroupModal
+        group={selectedGroup ? { id: selectedGroup.id, name: selectedGroup.name } : null}
+        isOpen={isDeleteModalOpen}
+        onOpenChange={setIsDeleteModalOpen}
+        onSuccess={() => fetchGroups(currentPage)}
+      />
     </div>
   );
 };
