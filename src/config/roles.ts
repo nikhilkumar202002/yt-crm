@@ -2,6 +2,7 @@ export const GLOBAL_ROLES = {
   admin: {
     canViewAll: true,
     canAssignAny: true,
+    canAssignGroup: true,
     canManageGroups: true
   },
 

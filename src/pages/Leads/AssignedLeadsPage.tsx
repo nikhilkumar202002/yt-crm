@@ -14,8 +14,9 @@ import { LeadDescriptionModal } from './components/LeadDescriptionModal';
 import { Button } from '../../components/common/Button';
 
 const AssignedLeadsPage = () => {
-  const { roleName } = useAppSelector((state) => state.auth);
+  const { roleName, user } = useAppSelector((state) => state.auth);
   const isAdminOrHead = ['ADMIN', 'DM HEAD'].includes(roleName?.toUpperCase() || '');
+  const userId = user?.id;
   
   const [assignments, setAssignments] = useState<any[]>([]);
   const [availableServices, setAvailableServices] = useState<any[]>([]); 
@@ -39,17 +40,30 @@ const AssignedLeadsPage = () => {
       setLoading(true);
       
       // 1. Fetch Leads, Services, Sub-Services, and Proposals concurrently
-      const [leadsRes, servicesRes, subServicesRes, proposalsRes] = await Promise.all([
-        getAssignedLeads(page, serviceFilter),
+      const [leadsRes, servicesRes, subServicesRes] = await Promise.all([
+        getAssignedLeads(page, serviceFilter, userId),
         getServices(1),
-        getSubServices(1), // Fetching sub-services to populate the dynamic dropdown
-        getProposals(1)
+        getSubServices(1)
       ]);
+
+      // Fetch proposals separately with error handling
+      let proposalsMap: any[] = [];
+      try {
+        const proposalsRes = await getProposals(1);
+        proposalsMap = proposalsRes?.data?.data || [];
+      } catch (error) {
+        console.warn("Could not fetch proposals (permission denied), approval status will not be shown");
+        proposalsMap = [];
+      }
       
       const rawLeads = leadsRes?.data?.data || [];
       const servicesData = servicesRes?.data?.data || [];
       const subServicesData = subServicesRes?.data?.data || [];
-      const proposalsMap = proposalsRes?.data?.data || [];
+
+      // Filter assignments to only show those assigned to the current user
+      const filteredLeads = rawLeads.filter((assignment: any) => 
+        Number(assignment.user_id) === Number(userId)
+      );
 
       // 2. Merge Sub-Services into Main Services
       const mergedServices = servicesData.map((service: any) => ({
@@ -57,7 +71,7 @@ const AssignedLeadsPage = () => {
         sub_services: subServicesData.filter((sub: any) => Number(sub.service_id) === Number(service.id))
       }));
 
-      const mergedLeads = rawLeads.map((lead: any) => {
+      const mergedLeads = filteredLeads.map((lead: any) => {
         const proposal = proposalsMap.find((p: any) => Number(p.lead_assign_id) === Number(lead.id));
         return {
           ...lead,
@@ -74,11 +88,13 @@ const AssignedLeadsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [userId]);
 
   useEffect(() => { 
-    fetchData(currentPage, selectedService); 
-  }, [currentPage, selectedService, fetchData]);
+    if (userId) {
+      fetchData(currentPage, selectedService); 
+    }
+  }, [currentPage, selectedService, fetchData, userId]);
 
   const handleStatusChange = async (id: number, newStatus: string) => {
     if (newStatus === "") return;

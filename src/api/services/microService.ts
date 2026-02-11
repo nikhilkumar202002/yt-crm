@@ -222,10 +222,11 @@ export const assignLeads = async (data: { lead_ids: number[], user_id: number, s
   return response.data;
 };
 
-export const getAssignedLeads = async (page: number, requirement: string = '') => {
+export const getAssignedLeads = async (page: number, requirement: string = '', userId?: number) => {
   // Ensure the parameter name matches what your backend expects (e.g., 'requirement')
   const requirementParam = requirement ? `&requirement=${encodeURIComponent(requirement)}` : '';
-  const response = await apiClient.get(`/lead-assigns?page=${page}${requirementParam}`);
+  const userParam = userId ? `&user_id=${userId}` : '';
+  const response = await apiClient.get(`/lead-assigns?page=${page}${requirementParam}${userParam}`);
   return response.data;
 };
 /**

@@ -7,7 +7,8 @@ import {
   FileText, Briefcase, Calendar, Clipboard
 } from 'lucide-react';
 import { useAppSelector } from '../../store/store';
-import { SIDEBAR_MENU } from '../../config/menu';
+import { SIDEBAR_MENU, hasMenuAccess } from '../../config/menu';
+import { resolvePermissions } from '../../config/permissionResolver';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -15,11 +16,18 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
-  const { roleName } = useAppSelector((state) => state.auth);
+  const { roleName, position } = useAppSelector((state) => state.auth);
   const location = useLocation();
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
 
-  const currentRole = roleName?.toUpperCase() || '';
+  // Convert role to lowercase to match GLOBAL_ROLES keys
+  const currentRole = roleName?.toLowerCase() || 'staff';
+
+  // Get user permissions based on role and position
+  const userPermissions = resolvePermissions({
+    role: currentRole,
+    position: position || 'Member' // Use stored position or default to Member
+  });
 
   // Updated iconMap to match the new "Onboarded Clients" title
   const iconMap: Record<string, JSX.Element> = {
@@ -41,10 +49,10 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
   };
 
   const filteredMenu = SIDEBAR_MENU
-    .filter(item => item.roles.includes(currentRole as any))
+    .filter(item => hasMenuAccess(userPermissions, item.requiredPermissions))
     .map(item => ({
       ...item,
-      submenu: item.submenu?.filter(sub => sub.roles.includes(currentRole as any))
+      submenu: item.submenu?.filter(sub => hasMenuAccess(userPermissions, sub.requiredPermissions))
     }));
 
   const toggleExpand = (title: string) => {

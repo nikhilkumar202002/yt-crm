@@ -1,108 +1,117 @@
 // src/config/menu.ts
+import { resolvePermissions } from './permissionResolver';
 
 export interface MenuItem {
   title: string;
   path: string;
-  roles: string[];
+  requiredPermissions?: string[]; // Array of required permission keys
   submenu?: MenuItem[];
 }
 
+// Helper function to check if user has required permissions
+export function hasMenuAccess(userPermissions: any, requiredPermissions?: string[]): boolean {
+  if (!requiredPermissions || requiredPermissions.length === 0) {
+    return true; // No specific permissions required
+  }
+  return requiredPermissions.some(perm => userPermissions[perm] === true);
+}
+
 export const SIDEBAR_MENU: MenuItem[] = [
-  { 
-    title: 'Dashboard', 
-    path: '/dashboard', 
-    roles: ['ADMIN', 'SALES', 'PM', 'DM HEAD'] 
+  {
+    title: 'Dashboard',
+    path: '/dashboard',
+    requiredPermissions: [] // Everyone can access dashboard
   },
- 
-  { 
-    title: 'Leads & Pipeline', 
-    path: '/leads', 
-    roles: ['ADMIN', 'SALES', 'DM HEAD', 'DM EXECUTIVE'], // Parent remains visible
+
+  {
+    title: 'Leads & Pipeline',
+    path: '', // Parent menu doesn't have a direct path since it has submenus
+    requiredPermissions: ['canViewAll', 'canAssignGroup'], // Users with lead viewing or assignment permissions
     submenu: [
-      { 
-        title: 'All Leads', 
-        path: '/leads', 
-        roles: ['ADMIN', 'DM HEAD'] // DM EXECUTIVE removed from here
+      {
+        title: 'All Leads',
+        path: '/leads',
+        requiredPermissions: ['canViewAll'] // Admin and Staff Head level access
       },
-      { 
-        title: 'Assigned Leads', 
-        path: '/leads/assigned', 
-        roles: ['ADMIN', 'SALES', 'DM HEAD', 'DM EXECUTIVE'] // Visibility maintained
+      {
+        title: 'Assigned Leads',
+        path: '/leads/assigned',
+        requiredPermissions: ['canAssignGroup'] // Can assign within group
       }
     ]
   },
   {
     title: 'Proposal',
     path: '/proposals',
-    roles: ['ADMIN', 'DM HEAD']
+    requiredPermissions: ['canViewAll', 'canAssignGroup']
   },
 {
     title: 'Onboarded Clients',
     path: '/clients',
-    roles: ['ADMIN', 'DM HEAD', 'DM EXECUTIVE']
+    requiredPermissions: ['canViewAll', 'canAssignGroup']
   },
    {
     title: 'Calendar',
     path: '/calendar',
-    roles: ['ADMIN', 'SALES', 'PM', 'DM HEAD', 'DM EXECUTIVE']
+    requiredPermissions: [] // Most roles can access calendar
   },
   {
     title: 'Worksheet',
     path: '/worksheet',
-    roles: ['ADMIN', 'PM', 'DM HEAD', 'DM EXECUTIVE', 'CREATIVE HEAD', 'CREATIVE TEAM HEAD', 'CREATIVE DESIGNERS', 'CONTENT WRITER']
+    requiredPermissions: ['canAssignGroup'] // Can work on assigned tasks
   },
-  { 
-    title: 'Strategy & Pitch', 
-    path: '/strategy', 
-    roles: ['ADMIN', 'SALES', 'PM'] 
+  {
+    title: 'Strategy & Pitch',
+    path: '/strategy',
+    requiredPermissions: ['canViewAll', 'canAssignGroup']
   },
-  { 
-    title: 'Campaign Setup', 
-    path: '/campaigns', 
-    roles: ['ADMIN', 'PM', 'ADS_OP', 'DM HEAD'] 
+  {
+    title: 'Campaign Setup',
+    path: '/campaigns',
+    requiredPermissions: ['canViewAll', 'canAssignGroup']
   },
-  { 
-    title: 'Creative Workflow', 
-    path: '/creative', 
-    roles: ['ADMIN', 'PM', 'CREATIVE HEAD', 'CREATIVE TEAM HEAD', 'CREATIVE DESIGNERS']
+  {
+    title: 'Creative Workflow',
+    path: '/creative',
+    requiredPermissions: ['canAssignGroup'] // Creative team access
   },
-  { 
-    title: 'Asset Hub', 
-    path: '/assets', 
-    roles: ['ADMIN', 'PM', 'CREATIVE HEAD', 'CREATIVE TEAM HEAD', 'CREATIVE DESIGNERS', 'CLIENT', 'CONTENT WRITER'] 
+  {
+    title: 'Asset Hub',
+    path: '/assets',
+    requiredPermissions: ['canAssignGroup'] // Can access assigned assets
   },
-  { 
-    title: 'Ad Operations', 
-    path: '/execution', 
-    roles: ['ADMIN', 'ADS_OP', 'DM HEAD'] 
+  {
+    title: 'Ad Operations',
+    path: '/execution',
+    requiredPermissions: ['canViewAll', 'canAssignGroup']
   },
-  { 
-    title: 'Intelligence', 
-    path: '/intelligence', 
-    roles: ['ADMIN', 'ANALYST', 'PM', 'DM HEAD'] 
+  {
+    title: 'Intelligence',
+    path: '/intelligence',
+    requiredPermissions: ['canViewAll'] // Analytics access
   },
-  { 
-    title: 'Finance & Billing', 
-    path: '/finance', 
-    roles: ['ADMIN', 'FINANCE'] 
+  {
+    title: 'Finance & Billing',
+    path: '/finance',
+    requiredPermissions: ['canViewAll'] // Finance access
   },
-  { 
-    title: 'Employees', 
-    path: '/employees', 
-    roles: ['ADMIN'] 
+  {
+    title: 'Employees',
+    path: '/employees',
+    requiredPermissions: ['canManageGroups', 'canViewAll'] // Management access
   },
   {
     title: 'Settings',
     path: '/settings',
-    roles: ['ADMIN'], 
+    requiredPermissions: ['canManageGroups', 'canViewAll'], // Admin access
     submenu: [
-      { title: 'Role Management', path: '/settings/roles', roles: ['ADMIN'] },
-      { title: 'Departments', path: '/settings/departments', roles: ['ADMIN'] },
-      { title: 'Designations', path: '/settings/designations', roles: ['ADMIN'] },
-      { title: 'Groups', path: '/settings/groups', roles: ['ADMIN'] },
-      { title: 'Positions', path: '/settings/positions', roles: ['ADMIN'] },
-      { title: 'Services', path: '/settings/services', roles: ['ADMIN'] },
-      { title: 'Calendar Work Creatives', path: '/settings/calendar-work-creatives', roles: ['ADMIN'] },
+      { title: 'Role Management', path: '/settings/roles', requiredPermissions: ['canManageGroups'] },
+      { title: 'Departments', path: '/settings/departments', requiredPermissions: ['canManageGroups'] },
+      { title: 'Designations', path: '/settings/designations', requiredPermissions: ['canManageGroups'] },
+      { title: 'Groups', path: '/settings/groups', requiredPermissions: ['canManageGroups'] },
+      { title: 'Positions', path: '/settings/positions', requiredPermissions: ['canManageGroups'] },
+      { title: 'Services', path: '/settings/services', requiredPermissions: ['canManageGroups'] },
+      { title: 'Calendar Work Creatives', path: '/settings/calendar-work-creatives', requiredPermissions: ['canManageGroups'] },
     ]
   },
 ];
