@@ -7,6 +7,7 @@ import {
 import { getProposals, getServices } from '../../api/services/microService';
 import { Button } from '../../components/common/Button';
 import { ClientFormModal } from './Component/ClientFormModal';
+import { useAppSelector } from '../../store/store';
 
 const ClientPage = () => {
   const [clients, setClients] = useState<any[]>([]);
@@ -16,6 +17,9 @@ const ClientPage = () => {
     isOpen: boolean, 
     clientData: any | null 
   }>({ isOpen: false, clientData: null });
+
+  const { roleName, position } = useAppSelector((state) => state.auth);
+  const isStaffOrIntern = roleName?.toLowerCase() === 'staff' || position === 'intern';
 
   const fetchData = useCallback(async () => {
     try {
@@ -121,11 +125,11 @@ const ClientPage = () => {
                   <th className="px-6 py-5">Assigned Services</th> {/* New Column */}
                   <th className="px-6 py-5 text-center">Creative</th>
                   <th className="px-6 py-5 text-center">Video</th>
-                  <th className="px-6 py-5 text-center">Amount</th>
-                  <th className="px-6 py-5 text-center">Proposal</th>
+                  {!isStaffOrIntern && <th className="px-6 py-5 text-center">Amount</th>}
+                  {!isStaffOrIntern && <th className="px-6 py-5 text-center">Proposal</th>}
                   <th className="px-6 py-5 text-center">Lead Status</th>
                   <th className="px-6 py-5 text-center">Onboarded Status</th>
-                  <th className="px-6 py-5 text-center">Actions</th> {/* Action Column */}
+                  {!isStaffOrIntern && <th className="px-6 py-5 text-center">Actions</th>} {/* Action Column */}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -184,28 +188,32 @@ const ClientPage = () => {
                       <span className="text-[10px] font-bold text-slate-700">{client.video}</span>
                     </td>
                     
-                    <td className="px-5 py-3 text-center">
-                      <span className="text-[10px] font-bold text-slate-700">₹{client.amount}</span>
-                    </td>
+                    {!isStaffOrIntern && (
+                      <td className="px-5 py-3 text-center">
+                        <span className="text-[10px] font-bold text-slate-700">₹{client.amount}</span>
+                      </td>
+                    )}
                     
-                    <td className="px-5 py-3 text-center">
-                      {client.proposal_file ? (
-                        <div className="flex flex-col items-center gap-1">
-                          <a 
-                            href={client.proposal_file} 
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100 text-[9px] font-bold hover:bg-indigo-100 transition-colors"
-                          >
-                            <FileText size={10} />
-                            View PDF
-                          </a>
-                          <span className="text-[8px] text-indigo-400 font-medium">PID-{client.id}</span>
-                        </div>
-                      ) : (
-                        <span className="text-[9px] text-slate-300 italic">No File</span>
-                      )}
-                    </td>
+                    {!isStaffOrIntern && (
+                      <td className="px-5 py-3 text-center">
+                        {client.proposal_file ? (
+                          <div className="flex flex-col items-center gap-1">
+                            <a 
+                              href={client.proposal_file} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100 text-[9px] font-bold hover:bg-indigo-100 transition-colors"
+                            >
+                              <FileText size={10} />
+                              View PDF
+                            </a>
+                            <span className="text-[8px] text-indigo-400 font-medium">PID-{client.id}</span>
+                          </div>
+                        ) : (
+                          <span className="text-[9px] text-slate-300 italic">No File</span>
+                        )}
+                      </td>
+                    )}
 
                     <td className="px-5 py-3 text-center">
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-100 text-[9px] font-bold uppercase tracking-wider">
@@ -219,20 +227,21 @@ const ClientPage = () => {
                       </span>
                     </td>
 
-                    {/* ACTIONS COLUMN with Edit Button */}
-                    <td className="px-5 py-3 text-center">
-                      <button 
-                        onClick={() => setFormModal({ isOpen: true, clientData: client })} 
-                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                        title="Edit Client Details"
-                      >
-                        <Edit3 size={14} />
-                      </button>
-                    </td>
+                    {!isStaffOrIntern && (
+                      <td className="px-5 py-3 text-center">
+                        <button 
+                          onClick={() => setFormModal({ isOpen: true, clientData: client })} 
+                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                          title="Edit Client Details"
+                        >
+                          <Edit3 size={14} />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan={11} className="px-6 py-12 text-center text-slate-400 text-xs italic">
+                    <td colSpan={isStaffOrIntern ? 8 : 11} className="px-6 py-12 text-center text-slate-400 text-xs italic">
                       No onboarded clients found.
                     </td>
                   </tr>

@@ -80,9 +80,14 @@ export const SubServiceModal = ({ isOpen, onOpenChange, onSuccess, initialServic
         <Dialog.Overlay className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110]" />
         <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl p-8 shadow-2xl z-[120] font-sans focus:outline-none">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
-              <Layers size={18} className="text-blue-600" /> Define Sub-Service
-            </h2>
+            <Dialog.Title asChild>
+              <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                <Layers size={18} className="text-blue-600" /> Define Sub-Service
+              </h2>
+            </Dialog.Title>
+            <Dialog.Description className="sr-only">
+              Create or edit a sub-service under a parent service.
+            </Dialog.Description>
             <Dialog.Close className="text-slate-400 hover:text-slate-600 transition-colors">
               <X size={20} />
             </Dialog.Close>

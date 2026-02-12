@@ -80,6 +80,24 @@ const ServicesPage = () => {
     }
   };
 
+  const handleSaveService = async (formData: any) => {
+    try {
+      if (modal.data) {
+        // Update existing service
+        await updateService(modal.data.id, formData);
+      } else {
+        // Create new service
+        await createService(formData);
+      }
+      // Refresh data and close modal
+      fetchServices(currentPage);
+      setModal({ isOpen: false, data: null });
+    } catch (error) {
+      console.error("Failed to save service:", error);
+      alert("Failed to save service. Please try again.");
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500 font-sans">
       <div className="flex justify-between items-center">
@@ -185,7 +203,7 @@ const ServicesPage = () => {
         </div>
       </div>
 
-      <ServiceModal isOpen={modal.isOpen} onOpenChange={(open) => setModal({ ...modal, isOpen: open })} onSave={(d) => { fetchServices(currentPage); setModal({isOpen:false, data:null}); }} editingService={modal.data} />
+      <ServiceModal isOpen={modal.isOpen} onOpenChange={(open) => setModal({ ...modal, isOpen: open })} onSave={handleSaveService} editingService={modal.data} />
       
       {/* Updated SubServiceModal integration */}
       <SubServiceModal 

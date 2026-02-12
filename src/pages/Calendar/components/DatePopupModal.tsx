@@ -59,9 +59,10 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
   const [currentQuantity, setCurrentQuantity] = useState<number>(0);
   const [roles, setRoles] = useState<any[]>([]);
 
-  // Get user role for conditional rendering
-  const { roleName } = useAppSelector((state) => state.auth);
+  // Get user role and group for conditional rendering
+  const { roleName, group } = useAppSelector((state) => state.auth);
   const isDMExecutive = roleName?.toUpperCase() === 'DM EXECUTIVE';
+  const isDMGroup = group?.toUpperCase() === 'DIGITAL MARKETING' || group?.toUpperCase() === 'DM';
 
   // Update state when props change
   useEffect(() => {
@@ -269,8 +270,8 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
               )}
             </div>
 
-            {/* Work Description Section - Hidden for DM Executive */}
-            {!isDMExecutive && (
+            {/* Work Description Section - Hidden for DM Group */}
+            {!isDMGroup && (
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Work Description</label>
                 <textarea
@@ -311,8 +312,8 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
               </label>
             </div>
 
-            {/* File Upload Section - Hidden for DM Executive */}
-            {!isDMExecutive && (
+            {/* File Upload Section - Hidden for DM Group */}
+            {!isDMGroup && (
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
                   <Upload size={14} className="text-slate-400" />

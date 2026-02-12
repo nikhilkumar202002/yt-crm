@@ -9,6 +9,7 @@ interface User {
   designation_name?: string; // Position/designation of the user
   designation_id?: string | number; // Designation ID from API
   position_id?: string | number; // Position ID from API
+  group?: string; // User's group (DM, Content, Creative)
 }
 
 interface AuthState {
@@ -16,6 +17,7 @@ interface AuthState {
   token: string | null;
   roleName: string | null;
   position: string | null; // User's position for permission resolution
+  group: string | null; // User's group
   isAuthenticated: boolean;
 }
 
@@ -24,6 +26,7 @@ const initialState: AuthState = {
   token: localStorage.getItem('token'),
   roleName: localStorage.getItem('role_name'),
   position: localStorage.getItem('position'),
+  group: localStorage.getItem('group'),
   isAuthenticated: !!localStorage.getItem('token'),
 };
 
@@ -39,11 +42,13 @@ const authSlice = createSlice({
   // Use the exact string 'Admin' as returned by your API response
   state.roleName = user.role_name; 
   state.position = String(user.designation_id) || '1'; // Use designation_id as position, default to '1' (Member)
+  state.group = user.group || null; // User's group
   state.isAuthenticated = true;
 
   localStorage.setItem('token', token);
   localStorage.setItem('role_name', user.role_name); 
   localStorage.setItem('position', String(user.designation_id) || '1');
+  localStorage.setItem('group', user.group || '');
   localStorage.setItem('user', JSON.stringify(user));
 },
     logout: (state) => {
@@ -51,6 +56,7 @@ const authSlice = createSlice({
       state.token = null;
       state.roleName = null;
       state.position = null;
+      state.group = null;
       state.isAuthenticated = false;
       localStorage.clear();
     },

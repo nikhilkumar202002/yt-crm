@@ -48,6 +48,7 @@ export const ServiceModal = ({ isOpen, onOpenChange, onSave, editingService }: S
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Service Name</label>
               <input
                 required
+                autoFocus
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                 placeholder="e.g. Digital Marketing"
                 value={formData.name}

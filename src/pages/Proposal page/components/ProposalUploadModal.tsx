@@ -3,13 +3,14 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { X, Upload, CheckCircle2, FileText, Loader2 } from 'lucide-react';
 import { Button } from '../../../components/common/Button';
 import { createProposal, updateProposalFile } from '../../../api/services/microService';
+import { useNavigate } from 'react-router-dom';
 
 interface ProposalUploadModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   leadId: number | null;
   proposalId?: number | null; // Tracks if we are updating an existing file
-  onSuccess: () => void;
+  onSuccess?: () => void;
 }
 
 export const ProposalUploadModal = ({ 
@@ -21,6 +22,7 @@ export const ProposalUploadModal = ({
 }: ProposalUploadModalProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const navigate = useNavigate();
 
   const handleUpload = async () => {
     if (!file) return;
@@ -35,11 +37,12 @@ export const ProposalUploadModal = ({
         await createProposal(Number(leadId), file);
       }
 
-      onSuccess(); // Refresh table in parent
-      onOpenChange(false);
-      setFile(null);
-    } catch (error) {
-      alert("Failed to save proposal. Please try again.");
+      // Navigate to proposal page to refresh and show updated data
+      navigate('/proposals');
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to save proposal. Please try again.';
+      alert(errorMessage);
     } finally {
       setUploading(false);
     }
@@ -54,12 +57,16 @@ export const ProposalUploadModal = ({
           {/* Header */}
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest">
-                {proposalId ? 'Update Proposal' : 'Upload Proposal'}
-              </h2>
-              <p className="text-[10px] text-slate-400 font-bold mt-1">
-                {proposalId ? `Proposal ID: #${proposalId}` : `Lead ID: #${leadId}`}
-              </p>
+              <Dialog.Title asChild>
+                <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest">
+                  {proposalId ? 'Update Proposal' : 'Upload Proposal'}
+                </h2>
+              </Dialog.Title>
+              <Dialog.Description asChild>
+                <p className="text-[10px] text-slate-400 font-bold mt-1">
+                  {proposalId ? `Proposal ID: #${proposalId}` : `Lead ID: #${leadId}`}
+                </p>
+              </Dialog.Description>
             </div>
             <Dialog.Close className="text-slate-400 hover:text-slate-600 transition-colors">
               <X size={20} />

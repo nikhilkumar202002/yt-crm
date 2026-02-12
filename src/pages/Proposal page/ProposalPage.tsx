@@ -25,19 +25,40 @@ const ProposalPage = () => {
     try {
       if (!silent) setLoading(true); 
       
-      const [leadsRes, proposalsRes] = await Promise.all([
-        getAssignedLeads(page, 'hot'),
-        getProposals(1)
-      ]);
-
+      // First, fetch leads
+      const leadsRes = await getAssignedLeads(page, 'hot');
       const hotLeads = (leadsRes?.data?.data || []).filter(
         (l: any) => l.user_status?.toLowerCase() === 'hot'
       );
 
-      const proposalsMap = proposalsRes?.data?.data || [];
+      // Fetch all proposals (handle pagination)
+      let allProposals: any[] = [];
+      try {
+        const firstProposalRes = await getProposals(1);
+        const firstPageData = firstProposalRes?.data?.data || [];
+        const totalPages = firstProposalRes?.data?.last_page || 1;
+        
+        allProposals = [...firstPageData];
+        
+        if (totalPages > 1) {
+          // Fetch remaining pages in parallel
+          const remainingPages = Array.from({ length: totalPages - 1 }, (_, i) => i + 2);
+          const remainingResponses = await Promise.all(
+            remainingPages.map(p => getProposals(p))
+          );
+          
+          remainingResponses.forEach(res => {
+            const pageData = res?.data?.data || [];
+            allProposals = allProposals.concat(pageData);
+          });
+        }
+      } catch (error) {
+        console.warn("Could not fetch proposals (permission denied or API error), proposal data will not be shown");
+        allProposals = [];
+      }
 
       const mergedData = hotLeads.map((lead: any) => {
-        const existingProposal = proposalsMap.find(
+        const existingProposal = allProposals.find(
           (p: any) => Number(p.lead_assign_id) === Number(lead.id)
         );
         
@@ -308,7 +329,6 @@ const ProposalPage = () => {
         onOpenChange={(open) => setUploadModal({ ...uploadModal, isOpen: open })}
         leadId={uploadModal.leadId}
         proposalId={uploadModal.proposalId}
-        onSuccess={() => fetchData(currentPage, true)} 
       />
 
       <ProposalDetailsModal 

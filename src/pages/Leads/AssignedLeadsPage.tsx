@@ -315,6 +315,22 @@ const AssignedLeadsPage = () => {
               >
                 <ChevronLeft size={14} />
               </Button>
+              {pagination.links?.filter((link: any) => !isNaN(Number(link.label))).map((link: any) => (
+                <Button
+                  key={link.page}
+                  variant={link.active ? "primary" : "secondary"}
+                  size="sm"
+                  disabled={!link.url}
+                  onClick={() => link.url && setCurrentPage(link.page)}
+                  className={`h-7 min-w-[28px] px-2 text-[10px] font-bold ${
+                    link.active 
+                      ? 'bg-blue-600 text-white border-blue-600' 
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {link.label}
+                </Button>
+              ))}
               <Button 
                 variant="secondary" size="sm" 
                 disabled={!pagination.next_page_url} 

@@ -26,24 +26,24 @@ export const SIDEBAR_MENU: MenuItem[] = [
   {
     title: 'Leads & Pipeline',
     path: '', // Parent menu doesn't have a direct path since it has submenus
-    requiredPermissions: ['canViewAll', 'canAssignGroup'], // Users with lead viewing or assignment permissions
+    requiredPermissions: ['canViewAllLeads', 'canViewAssignedLeads'], // Users with lead viewing permissions
     submenu: [
       {
         title: 'All Leads',
         path: '/leads',
-        requiredPermissions: ['canViewAll'] // Admin and Staff Head level access
+        requiredPermissions: ['canViewAllLeads'] // Admin, Manager, and authorized Staff
       },
       {
         title: 'Assigned Leads',
         path: '/leads/assigned',
-        requiredPermissions: ['canAssignGroup'] // Can assign within group
+        requiredPermissions: ['canViewAssignedLeads'] // Staff Members, Heads, Interns with assigned leads
       }
     ]
   },
   {
     title: 'Proposal',
     path: '/proposals',
-    requiredPermissions: ['canViewAll', 'canAssignGroup']
+    requiredPermissions: ['canViewAll'] // Admin and Head level access only
   },
 {
     title: 'Onboarded Clients',

@@ -12,7 +12,8 @@ import {
 } from 'date-fns';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import DatePopupModal from './components/DatePopupModal';
-import { createCalendarWork, getCalendarWorks, getClients, getCalendarWorkCreatives } from '../../api/services/microService';
+import { createCalendarWork, getCalendarWorks, getClients, getCalendarWorkCreatives, getProposals } from '../../api/services/microService';
+import { useAppSelector } from '../../store/store';
 
 // Type definitions
 interface Client {
@@ -86,6 +87,10 @@ const CalendarPage = () => {
   const [contentModal, setContentModal] = useState<{ isOpen: boolean; file: File | null }>({ isOpen: false, file: null });
   const [detailsModal, setDetailsModal] = useState<{ isOpen: boolean; data: ModalData | null }>({ isOpen: false, data: null });
 
+  // Get user group for conditional rendering
+  const { group } = useAppSelector((state) => state.auth);
+  const isDMGroup = group?.toUpperCase() === 'DIGITAL MARKETING' || group?.toUpperCase() === 'DM';
+
   // Filtered data based on selected client - memoized for performance
   const dateData = useMemo(() => {
     if (!selectedClient) return allDateData;
@@ -138,18 +143,37 @@ const CalendarPage = () => {
       try {
         setIsClientsLoading(true);
         
-        // Load clients and creative templates in parallel
-        const [clientsResponse, creativesResponse] = await Promise.all([
-          getClients(),
+        // Load onboarded clients, creative templates, and calendar works in parallel
+        const [proposalsRes, creativesResponse] = await Promise.all([
+          getProposals(1),
           getCalendarWorkCreatives()
         ]);
-        
-        const clientList = clientsResponse.data?.data || [];
-        setClients(clientList);
+
+        const allProposals = proposalsRes?.data?.data || [];
+        const approvedProposals = allProposals.filter((p: any) => p.is_accepted === true);
+
+        // Map Proposal Data to Client Structure (onboarded clients)
+        const onboardedClients = approvedProposals.map((p: any) => {
+          const leadData = p.lead_assign?.lead?.lead_data || {};
+          const userData = p.lead_assign?.user || {};
+          
+          return {
+            id: p.id, // Using Proposal ID as reference
+            name: leadData.full_name || userData.name || 'Unknown Client',
+            company_name: leadData.location || leadData.city || 'N/A',
+          };
+        });
+
+        // Remove duplicates based on name and company
+        const uniqueClients = onboardedClients.filter((client, index, self) =>
+          index === self.findIndex(c => c.name === client.name && c.company_name === client.company_name)
+        );
+
+        setClients(uniqueClients);
         
         // Auto-select first client if available
-        if (clientList.length > 0 && !selectedClient) {
-          setSelectedClient(clientList[0].id);
+        if (uniqueClients.length > 0 && !selectedClient) {
+          setSelectedClient(uniqueClients[0].id);
         }
         
         setCalendarWorkCreatives(creativesResponse.data?.data || []);
@@ -313,7 +337,7 @@ const CalendarPage = () => {
               </div>
             )}
             
-            {hasWork && (
+            {hasWork && !isDMGroup && (
               <button
                 className="text-left text-[10px] mt-1 text-blue-600 hover:text-blue-800"
                 onClick={(e) => {
@@ -325,7 +349,7 @@ const CalendarPage = () => {
               </button>
             )}
             
-            {dayData?.content_file && (
+            {dayData?.content_file && !isDMGroup && (
               <div 
                 className="text-left text-[10px] mt-1 text-blue-600 cursor-pointer hover:text-blue-800"
                 onClick={(e) => {

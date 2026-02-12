@@ -29,7 +29,7 @@ export function resolvePermissions(user: {
 
   // Get position permissions with case-insensitive matching
   const positionKey = (user.position || '').toLowerCase();
-  const positionPermissions = POSITION_PERMISSIONS[positionKey] || {};
+  const positionPermissions = (POSITION_PERMISSIONS as any)[positionKey] || {};
 
   // For admin role, position permissions should NOT override role permissions
   if (mappedRole === 'admin') {
