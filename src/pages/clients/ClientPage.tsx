@@ -4,7 +4,7 @@ import {
   FileText, Search, CheckCircle2, Edit3, Layers 
 } from 'lucide-react';
 // Added getServices to imports
-import { getProposals, getServices } from '../../api/services/microService';
+import { getClients, getServices } from '../../api/services/microService';
 import { Button } from '../../components/common/Button';
 import { ClientFormModal } from './Component/ClientFormModal';
 import { useAppSelector } from '../../store/store';
@@ -25,52 +25,14 @@ const ClientPage = () => {
     try {
       setLoading(true);
       
-      // 1. Parallel Fetch: Proposals (Data Source) and Services (For Mapping)
-      const [proposalsRes, servicesRes] = await Promise.all([
-        getProposals(1),
-        getServices(1)
-      ]);
+      // Fetch all clients from /clients API
+      const clientsRes = await getClients(1);
+      const clientsList = clientsRes?.data?.data || [];
 
-      const allProposals = proposalsRes?.data?.data || [];
-      const servicesList = servicesRes?.data?.data || [];
-
-      // 2. Filter ONLY Approved Proposals
-      const approvedProposals = allProposals.filter((p: any) => p.is_accepted === true);
-
-      // 3. Map Proposal Data to Client Structure
-      const mappedClients = approvedProposals.map((p: any) => {
-        const leadData = p.lead_assign?.lead?.lead_data || {};
-        const userData = p.lead_assign?.user || {};
-        
-        // Map Service IDs to Names
-        const serviceIds = p.lead_assign?.service_ids || [];
-        const serviceNames = serviceIds.map((id: number) => {
-          const service = servicesList.find((s: any) => s.id === Number(id));
-          return service ? service.name : null;
-        }).filter(Boolean);
-
-        return {
-          id: p.id, // Using Proposal ID as reference
-          name: leadData.full_name || userData.name || 'Unknown Client',
-          company_name: leadData.location || leadData.city || 'N/A',
-          email: leadData.email || userData.email || 'N/A',
-          contact_number_1: leadData.phone_number || userData.mobile_number || 'N/A',
-          contact_number_2: null, // Placeholder if needed
-          proposal_file: p.file_url,
-          proposal_id: p.id, // Keep reference for modal
-          status: p.lead_assign?.user_status || 'Active',
-          onboarded_at: p.updated_at,
-          services: serviceNames, // Store mapped names
-          creative: p.creatives_nos || 0,
-          video: p.videos_nos || 0,
-          amount: p.amount || 0
-        };
-      });
-
-      setClients(mappedClients);
-
+      setClients(clientsList);
     } catch (error) {
-      console.error("Failed to fetch onboarded clients", error);
+      console.error('Failed to fetch clients:', error);
+      setClients([]);
     } finally {
       setLoading(false);
     }
@@ -90,22 +52,30 @@ const ClientPage = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Users className="text-blue-600" size={24} /> Onboarded Clients
+            <Users className="text-blue-600" size={24} /> Clients
           </h1>
           <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wider">
-            View clients from approved proposals
+            Manage all clients
           </p>
         </div>
 
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-          <input 
-            type="text"
-            placeholder="Search clients..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-[11px] font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
-          />
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <Button
+            onClick={() => setFormModal({ isOpen: true, clientData: null })}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg"
+          >
+            + Add Client
+          </Button>
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+            <input 
+              type="text"
+              placeholder="Search clients..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-[11px] font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
+            />
+          </div>
         </div>
       </div>
 
@@ -120,16 +90,10 @@ const ClientPage = () => {
               <thead className="bg-slate-50/50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                 <tr>
                   <th className="px-6 py-5 w-14 text-center">#</th>
-                  <th className="px-6 py-5 min-w-[220px]">Client & Location</th>
+                  <th className="px-6 py-5 min-w-[220px]">Client & Company</th>
                   <th className="px-6 py-5">Contact Details</th>
-                  <th className="px-6 py-5">Assigned Services</th> {/* New Column */}
-                  <th className="px-6 py-5 text-center">Creative</th>
-                  <th className="px-6 py-5 text-center">Video</th>
-                  {!isStaffOrIntern && <th className="px-6 py-5 text-center">Amount</th>}
-                  {!isStaffOrIntern && <th className="px-6 py-5 text-center">Proposal</th>}
-                  <th className="px-6 py-5 text-center">Lead Status</th>
-                  <th className="px-6 py-5 text-center">Onboarded Status</th>
-                  {!isStaffOrIntern && <th className="px-6 py-5 text-center">Actions</th>} {/* Action Column */}
+                  <th className="px-6 py-5 text-center">Status</th>
+                  <th className="px-6 py-5 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -159,65 +123,22 @@ const ClientPage = () => {
                         <span className="flex items-center gap-1.5 text-[10px] font-bold text-slate-700">
                           <Phone size={10} className="text-blue-400"/> {client.contact_number_1}
                         </span>
+                        {client.contact_number_2 && (
+                          <span className="flex items-center gap-1.5 text-[10px] font-bold text-slate-700">
+                            <Phone size={10} className="text-blue-400"/> {client.contact_number_2}
+                          </span>
+                        )}
                         <span className="flex items-center gap-1.5 text-[9px] text-slate-400">
                           <Mail size={10} className="text-slate-300"/> {client.email}
                         </span>
                       </div>
                     </td>
 
-                    {/* SERVICES COLUMN */}
-                    <td className="px-5 py-3">
-                      <div className="flex flex-wrap gap-1 max-w-[150px]">
-                        {client.services && client.services.length > 0 ? (
-                          client.services.map((serviceName: string, i: number) => (
-                            <span key={i} className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 border border-purple-100 text-[8px] font-bold uppercase tracking-tighter">
-                              {serviceName}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-[9px] text-slate-300 italic">No Services</span>
-                        )}
-                      </div>
-                    </td>
-                    
                     <td className="px-5 py-3 text-center">
-                      <span className="text-[10px] font-bold text-slate-700">{client.creative}</span>
-                    </td>
-                    
-                    <td className="px-5 py-3 text-center">
-                      <span className="text-[10px] font-bold text-slate-700">{client.video}</span>
-                    </td>
-                    
-                    {!isStaffOrIntern && (
-                      <td className="px-5 py-3 text-center">
-                        <span className="text-[10px] font-bold text-slate-700">₹{client.amount}</span>
-                      </td>
-                    )}
-                    
-                    {!isStaffOrIntern && (
-                      <td className="px-5 py-3 text-center">
-                        {client.proposal_file ? (
-                          <div className="flex flex-col items-center gap-1">
-                            <a 
-                              href={client.proposal_file} 
-                              target="_blank" 
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100 text-[9px] font-bold hover:bg-indigo-100 transition-colors"
-                            >
-                              <FileText size={10} />
-                              View PDF
-                            </a>
-                            <span className="text-[8px] text-indigo-400 font-medium">PID-{client.id}</span>
-                          </div>
-                        ) : (
-                          <span className="text-[9px] text-slate-300 italic">No File</span>
-                        )}
-                      </td>
-                    )}
-
-                    <td className="px-5 py-3 text-center">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-100 text-[9px] font-bold uppercase tracking-wider">
-                        <CheckCircle2 size={10} /> {client.status}
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
+                        client.status ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-red-50 text-red-600 border border-red-100'
+                      }`}>
+                        <CheckCircle2 size={10} /> {client.status ? 'Active' : 'Inactive'}
                       </span>
                     </td>
 
@@ -227,22 +148,19 @@ const ClientPage = () => {
                       </span>
                     </td>
 
-                    {!isStaffOrIntern && (
-                      <td className="px-5 py-3 text-center">
-                        <button 
-                          onClick={() => setFormModal({ isOpen: true, clientData: client })} 
-                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                          title="Edit Client Details"
-                        >
-                          <Edit3 size={14} />
-                        </button>
-                      </td>
-                    )}
+                    <td className="px-5 py-3 text-center">
+                      <button
+                        onClick={() => setFormModal({ isOpen: true, clientData: client })}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-100 text-[9px] font-bold hover:bg-blue-100 transition-colors"
+                      >
+                        <Edit3 size={12} /> Edit
+                      </button>
+                    </td>
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan={isStaffOrIntern ? 8 : 11} className="px-6 py-12 text-center text-slate-400 text-xs italic">
-                      No onboarded clients found.
+                    <td colSpan={5} className="px-6 py-12 text-center text-slate-400 text-xs italic">
+                      No clients found.
                     </td>
                   </tr>
                 )}

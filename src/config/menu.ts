@@ -25,7 +25,7 @@ export const SIDEBAR_MENU: MenuItem[] = [
 
   {
     title: 'Leads & Pipeline',
-    path: '', // Parent menu doesn't have a direct path since it has submenus
+    path: '',
     requiredPermissions: ['canViewAllLeads', 'canViewAssignedLeads'], // Users with lead viewing permissions
     submenu: [
       {

@@ -32,7 +32,7 @@ interface DatePopupModalProps {
   selectedDate: Date | null;
   selectedClient?: number | null;
   onSave: (data: { client_id: number; date: string; description: string; content_description: string; notes: string; content_file?: File | null; is_special_day?: boolean }) => void;
-  existingData?: { client_id: number; description: string; content_description: string; content_file?: File | null; is_special_day?: boolean };
+  existingData?: { client_id: number; description: string; content_description: string; notes: string; content_file?: File | null; is_special_day?: boolean };
   clients?: Client[];
   calendarWorkCreatives?: CalendarWorkCreative[];
 }
@@ -94,8 +94,28 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
         if (existingData) {
           setClientId(existingData.client_id);
           setWorkDescription(existingData.content_description || '');
+          setNotes(existingData.notes || '');
           setContentFile(null);
           setIsSpecialDay(existingData.is_special_day || false);
+          
+          // Parse existing description to populate selected creative items
+          try {
+            const parsed = JSON.parse(existingData.description || '[]');
+            if (parsed.calender_works_creative_ids && parsed.creative_nos) {
+              const ids = parsed.calender_works_creative_ids.split(',');
+              const nos = parsed.creative_nos.split(',');
+              const items = ids.map((id: string, index: number) => ({
+                id: parseInt(id),
+                quantity: parseInt(nos[index])
+              }));
+              setSelectedCreativeItems(items);
+            } else {
+              setSelectedCreativeItems([]);
+            }
+          } catch (error) {
+            console.error('Failed to parse existing description:', error);
+            setSelectedCreativeItems([]);
+          }
         } else {
           setClientId(selectedClient || 0);
           setWorkDescription('');
