@@ -57,11 +57,9 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
   const [selectedCreativeItems, setSelectedCreativeItems] = useState<SelectedCreativeItem[]>([]);
   const [currentCreativeId, setCurrentCreativeId] = useState<number>(0);
   const [currentQuantity, setCurrentQuantity] = useState<number>(0);
-  const [roles, setRoles] = useState<any[]>([]);
 
   // Get user role and group for conditional rendering
-  const { roleName, group } = useAppSelector((state) => state.auth);
-  const isDMExecutive = roleName?.toUpperCase() === 'DM EXECUTIVE';
+  const { group } = useAppSelector((state) => state.auth);
   const isDMGroup = group?.toUpperCase() === 'DIGITAL MARKETING' || group?.toUpperCase() === 'DM';
 
   // Update state when props change
@@ -72,21 +70,6 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
   useEffect(() => {
     setCalendarWorkCreatives(propCalendarWorkCreatives);
   }, [propCalendarWorkCreatives]);
-
-  // Fetch roles on component mount
-  useEffect(() => {
-    const fetchRoles = async () => {
-      try {
-        const response = await getRoles();
-        setRoles(response.data || []);
-      } catch (error) {
-        console.error('Failed to fetch roles:', error);
-        setRoles([]);
-      }
-    };
-
-    fetchRoles();
-  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -171,7 +154,7 @@ const DatePopupModal: React.FC<DatePopupModalProps> = ({
         content_file: contentFile,
         content_description: workDescription,
         notes: notes,
-        is_special_day: isSpecialDay ? 1 : 0,
+        is_special_day: isSpecialDay,
       };
       onSave(payload);
       setClientId(0);

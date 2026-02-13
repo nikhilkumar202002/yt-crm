@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { setSecureCookie, getSecureCookie, clearSecureCookies } from '../../utils/secureStorage';
 
 interface User {
   id: number;
@@ -9,7 +10,7 @@ interface User {
   designation_name?: string; // Position/designation of the user
   designation_id?: string | number; // Designation ID from API
   position_id?: string | number; // Position ID from API
-  group?: string; // User's group (DM, Content, Creative)
+  group_name?: string; // User's group name from API
 }
 
 interface AuthState {
@@ -17,17 +18,22 @@ interface AuthState {
   token: string | null;
   roleName: string | null;
   position: string | null; // User's position for permission resolution
-  group: string | null; // User's group
+  group: string | null; // User's group name
+  designation_name: string | null; // User's designation name
   isAuthenticated: boolean;
 }
 
 const initialState: AuthState = {
-  user: JSON.parse(localStorage.getItem('user') || 'null'),
-  token: localStorage.getItem('token'),
-  roleName: localStorage.getItem('role_name'),
-  position: localStorage.getItem('position'),
-  group: localStorage.getItem('group'),
-  isAuthenticated: !!localStorage.getItem('token'),
+  user: (() => {
+    const userData = getSecureCookie('user');
+    return userData ? JSON.parse(userData) : null;
+  })(),
+  token: getSecureCookie('token'),
+  roleName: getSecureCookie('role_name'),
+  position: getSecureCookie('position'),
+  group: getSecureCookie('group'),
+  designation_name: getSecureCookie('designation_name'),
+  isAuthenticated: !!getSecureCookie('token'),
 };
 
 const authSlice = createSlice({
@@ -35,20 +41,23 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     // Corrected to handle the nested user structure from your API
-   setLoginData: (state, action: PayloadAction<{ user: User; token: string }>) => {
+  setLoginData: (state, action: PayloadAction<{ user: User; token: string }>) => {
   const { user, token } = action.payload;
   state.user = user;
   state.token = token;
   // Use the exact string 'Admin' as returned by your API response
-  state.roleName = user.role_name; 
+  state.roleName = user.role_name;
   state.position = String(user.designation_id) || '1'; // Use designation_id as position, default to '1' (Member)
-  state.group = user.group || null; // User's group
+  state.group = user.group_name || null; // User's group name from API
+  state.designation_name = user.designation_name || null; // User's designation name
   state.isAuthenticated = true;
 
-  localStorage.setItem('token', token);
-  localStorage.setItem('role_name', user.role_name); 
-  localStorage.setItem('position', String(user.designation_id) || '1');
-  localStorage.setItem('group', user.group || '');
+  setSecureCookie('token', token);
+  setSecureCookie('user', JSON.stringify(user));
+  setSecureCookie('role_name', user.role_name);
+  setSecureCookie('position', String(user.designation_id) || '1');
+  setSecureCookie('group', user.group_name || '');
+  setSecureCookie('designation_name', user.designation_name || '');
   localStorage.setItem('user', JSON.stringify(user));
 },
     logout: (state) => {
@@ -57,8 +66,9 @@ const authSlice = createSlice({
       state.roleName = null;
       state.position = null;
       state.group = null;
+      state.designation_name = null;
       state.isAuthenticated = false;
-      localStorage.clear();
+      clearSecureCookies();
     },
   },
 });

@@ -23,6 +23,8 @@ const ROLE_MAPPING: Record<string, keyof typeof GLOBAL_ROLES> = {
 export function resolvePermissions(user: {
   role: string;
   position: string;
+  group?: string;
+  designation_name?: string;
 }) {
   // Map the role name to internal permission key
   const mappedRole = ROLE_MAPPING[user.role] || ROLE_MAPPING[user.role.toLowerCase()] || 'staff';
@@ -31,17 +33,36 @@ export function resolvePermissions(user: {
   const positionKey = (user.position || '').toLowerCase();
   const positionPermissions = (POSITION_PERMISSIONS as any)[positionKey] || {};
 
+  // Start with base permissions
+  let permissions = { ...GLOBAL_ROLES[mappedRole], ...positionPermissions };
+
   // For admin role, position permissions should NOT override role permissions
   if (mappedRole === 'admin') {
-    return {
-      ...positionPermissions, // Position permissions first
-      ...GLOBAL_ROLES[mappedRole] // Admin permissions override position permissions
-    };
+    return GLOBAL_ROLES[mappedRole]; // Admin gets all permissions, no restrictions
+  }
+
+  // Apply group-based restrictions for non-admin users
+  if (user.group === 'Content Creator' && 
+      (user.position === '1' || user.position === 'member' || user.position === 'employee' || 
+       positionKey === 'member' || positionKey === 'employee' ||
+       user.designation_name?.toLowerCase() === 'member' || user.designation_name?.toLowerCase() === 'employee')) {
+    // Content Creator group with Member/employee position should have very limited access
+    // Only Dashboard and Worksheet
+    permissions.canViewAll = false;
+    permissions.canAssignAny = false;
+    permissions.canAssignGroup = true; // Allow worksheet access
+    permissions.canManageGroups = false;
+    permissions.canViewAllLeads = false;
+    permissions.canViewAssignedLeads = false;
+    permissions.canAssignLeads = false;
+    permissions.canReceiveLeadIdsForAssignment = false;
+    permissions.canViewCalendar = false;
+  } else if (user.group === 'Content Creator') {
+    // Other Content Creator positions have normal access
+    permissions.canViewAllLeads = false;
+    permissions.canViewAssignedLeads = false;
   }
 
   // For other roles, position permissions can enhance role permissions
-  return {
-    ...GLOBAL_ROLES[mappedRole],
-    ...positionPermissions
-  };
+  return permissions;
 }

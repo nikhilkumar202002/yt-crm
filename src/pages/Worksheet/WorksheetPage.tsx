@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useAppSelector } from '../../store/store';
 import WorksheetCreativePage from './WorksheetCreativePage';
 import WorksheetDMPage from './WorksheetDMPage';
@@ -29,7 +29,8 @@ const WorksheetPage = () => {
         // Set current user group
         const currentUser = user?.id ? usersData.find((u: User) => u.id === user.id) : null;
         setCurrentUserGroup(currentUser?.group_name || '');
-      } catch (err) {
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
       }
     };
 

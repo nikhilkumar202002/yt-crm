@@ -1,4 +1,5 @@
 import axios, { AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import { getSecureCookie, clearSecureCookies } from '../utils/secureStorage';
 
 // Environment-based configuration
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://devcrm.yellowtooths.in/api';
@@ -13,10 +14,10 @@ const DEFAULT_HEADERS = {
 // Token management utilities
 const TOKEN_KEY = 'token';
 
-const getAuthToken = (): string | null => localStorage.getItem(TOKEN_KEY);
+const getAuthToken = (): string | null => getSecureCookie(TOKEN_KEY);
 
 const clearAuthData = (): void => {
-  localStorage.clear();
+  clearSecureCookies();
   // Prevent redirect loop if already on login page
   if (window.location.pathname !== '/login') {
     window.location.href = '/login';

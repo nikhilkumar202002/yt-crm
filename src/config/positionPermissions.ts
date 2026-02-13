@@ -8,7 +8,8 @@ export const POSITION_PERMISSIONS = {
     canViewAllLeads: false,
     canViewAssignedLeads: true,
     canAssignLeads: true,
-    canReceiveLeadIdsForAssignment: true
+    canReceiveLeadIdsForAssignment: true,
+    canViewCalendar: true
   },
 
   '1': {
@@ -20,7 +21,8 @@ export const POSITION_PERMISSIONS = {
     canViewAllLeads: false,
     canViewAssignedLeads: true,
     canAssignLeads: false,
-    canReceiveLeadIdsForAssignment: false
+    canReceiveLeadIdsForAssignment: false,
+    canViewCalendar: true
   },
 
   '2': {
@@ -32,7 +34,8 @@ export const POSITION_PERMISSIONS = {
     canViewAllLeads: false,
     canViewAssignedLeads: true,
     canAssignLeads: false,
-    canReceiveLeadIdsForAssignment: false
+    canReceiveLeadIdsForAssignment: false,
+    canViewCalendar: true
   },
 
   'head': {
@@ -44,7 +47,8 @@ export const POSITION_PERMISSIONS = {
     canViewAllLeads: false,
     canViewAssignedLeads: true,
     canAssignLeads: true,
-    canReceiveLeadIdsForAssignment: true
+    canReceiveLeadIdsForAssignment: true,
+    canViewCalendar: true
   },
 
   'member': {
@@ -56,7 +60,8 @@ export const POSITION_PERMISSIONS = {
     canViewAllLeads: false,
     canViewAssignedLeads: true,
     canAssignLeads: false,
-    canReceiveLeadIdsForAssignment: false
+    canReceiveLeadIdsForAssignment: false,
+    canViewCalendar: true
   },
 
   'intern': {
@@ -69,6 +74,7 @@ export const POSITION_PERMISSIONS = {
     canViewAllLeads: false,
     canViewAssignedLeads: true,  // If assigned
     canAssignLeads: false,
-    canReceiveLeadIdsForAssignment: false
+    canReceiveLeadIdsForAssignment: false,
+    canViewCalendar: true
   }
 };

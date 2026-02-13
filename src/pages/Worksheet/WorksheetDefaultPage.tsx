@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppSelector } from '../../store/store';
 import {
-  Clipboard, Plus, Search, Filter,
+  Clipboard, Search,
   Edit, Trash2,
   Upload,
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
-import { getCalendarWorks, getEmployeesForAssignment, assignCalendarWork, assignCalendarWorkContent } from '../../api/services/microService';
+import { getCalendarWorks } from '../../api/services/microService';
 import { getUsersList } from '../../api/services/authService';
 
 interface Creative {
@@ -31,15 +31,6 @@ interface Client {
   proposal_id: null;
 }
 
-interface Employee {
-  id: number;
-  name: string;
-  email: string;
-  role_name: string;
-  designation_name: string;
-  status: boolean;
-}
-
 interface User {
   id: number;
   name: string;
@@ -62,7 +53,7 @@ interface CalendarWork {
   description: string;
   content_description: string;
   created_by: string;
-  update_history: any[] | null;
+  update_history: unknown[] | null;
   notes: string;
   is_special_day: boolean;
   assigned_to: string | null;
@@ -78,23 +69,13 @@ interface CalendarWork {
 }
 
 const WorksheetDefaultPage = () => {
-  const { user } = useAppSelector((state) => state.auth);
+  const { group } = useAppSelector((state) => state.auth);
   const [searchTerm, setSearchTerm] = useState('');
   const [calendarWorks, setCalendarWorks] = useState<CalendarWork[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [workStatuses, setWorkStatuses] = useState<{[key: number]: string}>({});
-  const [assignedDesigners, setAssignedDesigners] = useState<{[key: number]: string}>({});
-  const [users, setUsers] = useState<User[]>([]);
-  const [editingAssignment, setEditingAssignment] = useState<number | null>(null);
-  const [editingContentAssignment, setEditingContentAssignment] = useState<number | null>(null);
-  const [pendingAssignments, setPendingAssignments] = useState<Set<number>>(new Set());
-  const [pendingContentAssignments, setPendingContentAssignments] = useState<Set<number>>(new Set());
 
   // For default roles, show tracking, date, assign designer, but not content assign
-  const shouldShowTrackingAndDate = true;
-  const shouldShowAssignDropdown = true;
-  const shouldShowContentAssignDropdown = false;
 
   useEffect(() => {
     const fetchCalendarWorks = async () => {
@@ -122,21 +103,6 @@ const WorksheetDefaultPage = () => {
     fetchCalendarWorks();
     fetchUsers();
   }, []);
-
-  // Helper function to get assigned user details
-  const getAssignedUser = (workId: number) => {
-    const work = calendarWorks.find(w => w.id === workId);
-    if (!work?.assigned_to) return null;
-
-    try {
-      const assignedUserIds = JSON.parse(work.assigned_to);
-      if (assignedUserIds.length === 0) return null;
-
-      return users.find(user => user.id === assignedUserIds[0]);
-    } catch (err) {
-      return null;
-    }
-  };
 
   // Filter works based on search term
   const filteredCalendarWorks = calendarWorks.filter(work => {

@@ -7,7 +7,8 @@ export const GLOBAL_ROLES = {
     canViewAllLeads: true,
     canViewAssignedLeads: true,
     canAssignLeads: true,
-    canReceiveLeadIdsForAssignment: true
+    canReceiveLeadIdsForAssignment: true,
+    canViewCalendar: true
   },
 
   manager: {
@@ -17,15 +18,17 @@ export const GLOBAL_ROLES = {
     canViewAllLeads: true,
     canViewAssignedLeads: true,
     canAssignLeads: true,
-    canReceiveLeadIdsForAssignment: true
+    canReceiveLeadIdsForAssignment: true,
+    canViewCalendar: true
   },
 
   staff: {
     canViewAll: false,
     canAssignGroup: false,
-    canViewAllLeads: false,
+    canViewAllLeads: true,
     canViewAssignedLeads: true,
-    canAssignLeads: false,
-    canReceiveLeadIdsForAssignment: false
+    canAssignLeads: true,
+    canReceiveLeadIdsForAssignment: false,
+    canViewCalendar: true
   }
 };

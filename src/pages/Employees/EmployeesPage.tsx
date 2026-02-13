@@ -1,15 +1,15 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserPlus, Mail, Shield, MoreVertical, Search, Phone } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '../../components/common/Button';
-import { getEmployees, Employee } from '../../api/services/authService';
+import { getEmployees } from '../../api/services/authService';
+import type { Employee } from '../../api/services/authService';
 
 interface ExtendedEmployee extends Employee {
   status?: boolean | number;
   mobile_number?: string;
   position_name?: string;
-  created_at?: string;
 }
 import { useAppSelector } from '../../store/store';
 
@@ -95,7 +95,7 @@ const EmployeesPage = () => {
                     <tr key={emp.id} className="hover:bg-slate-50/50 transition-colors group">
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                          <div className="h-9 w-9 rounded-xl bg-linear-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">
                             {emp.name ? emp.name.charAt(0).toUpperCase() : '?'}
                           </div>
                           <div className="min-w-0">
@@ -132,12 +132,12 @@ const EmployeesPage = () => {
                             {emp.department_name || ''}
                           </p>
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-bold border ${
-                            (emp.is_active === 1 || emp.is_active === true) || (emp.status === 1 || emp.status === true)
+                            emp.is_active === 1 || emp.status === 1 || emp.status === true
                               ? 'bg-green-50 text-green-600 border-green-100' 
                               : 'bg-red-50 text-red-600 border-red-100'
                           }`}>
-                            <span className={`h-1 w-1 rounded-full mr-1.5 ${(emp.is_active === 1 || emp.is_active === true) || (emp.status === 1 || emp.status === true) ? 'bg-green-500' : 'bg-red-500'}`} />
-                            {(emp.is_active === 1 || emp.is_active === true) || (emp.status === 1 || emp.status === true) ? 'Active' : 'Inactive'}
+                            <span className={`h-1 w-1 rounded-full mr-1.5 ${emp.is_active === 1 || emp.status === 1 || emp.status === true ? 'bg-green-500' : 'bg-red-500'}`} />
+                            {emp.is_active === 1 || emp.status === 1 || emp.status === true ? 'Active' : 'Inactive'}
                           </span>
                           <p className="text-[10px] text-slate-400 mt-1">
                             Joined {emp.created_at ? format(new Date(emp.created_at), 'MMM dd, yyyy') : ''}

@@ -53,7 +53,7 @@ export const SIDEBAR_MENU: MenuItem[] = [
    {
     title: 'Calendar',
     path: '/calendar',
-    requiredPermissions: [] // Most roles can access calendar
+    requiredPermissions: ['canViewCalendar'] // Require specific permission for calendar access
   },
   {
     title: 'Worksheet',
@@ -73,12 +73,12 @@ export const SIDEBAR_MENU: MenuItem[] = [
   {
     title: 'Creative Workflow',
     path: '/creative',
-    requiredPermissions: ['canAssignGroup'] // Creative team access
+    requiredPermissions: ['canViewAll', 'canAssignGroup'] // Creative team access - require canViewAll to restrict Content Creator
   },
   {
     title: 'Asset Hub',
     path: '/assets',
-    requiredPermissions: ['canAssignGroup'] // Can access assigned assets
+    requiredPermissions: ['canViewAll', 'canAssignGroup'] // Can access assigned assets - require canViewAll to restrict Content Creator
   },
   {
     title: 'Ad Operations',

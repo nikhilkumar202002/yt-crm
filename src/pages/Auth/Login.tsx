@@ -20,16 +20,13 @@ const Login = () => {
 
     try {
       const data = await loginUser({ email, password });
-      
-      // CRITICAL: Save token to localStorage so the API client interceptor can find it
-      localStorage.setItem('token', data.token);
-      
+
       dispatch(setLoginData({
         user: data.user,
         token: data.token
       }));
-      
-      navigate('/dashboard'); 
+
+      navigate('/dashboard');
     } catch (error: any) {
       console.error("Login Error:", error);
       alert(error.response?.data?.message || 'Login failed');

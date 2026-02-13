@@ -28,6 +28,15 @@ interface CreativeWork {
   nos: string;
 }
 
+interface CalendarWorkCreative {
+  id: number;
+  name: string;
+  description: string;
+  status: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
 interface CalendarWorkData {
   client_id: number;
   work_description?: string;
@@ -83,7 +92,7 @@ const CalendarPage = () => {
   const [selectedClient, setSelectedClient] = useState<number | null>(null);
   const [isClientLoading, setIsClientLoading] = useState(false);
   const [isClientsLoading, setIsClientsLoading] = useState(true);
-  const [calendarWorkCreatives, setCalendarWorkCreatives] = useState<any[]>([]);
+  const [calendarWorkCreatives, setCalendarWorkCreatives] = useState<CalendarWorkCreative[]>([]);
   const [contentModal, setContentModal] = useState<{ isOpen: boolean; file: File | null }>({ isOpen: false, file: null });
   const [detailsModal, setDetailsModal] = useState<{ isOpen: boolean; data: ModalData | null }>({ isOpen: false, data: null });
 
@@ -95,7 +104,7 @@ const CalendarPage = () => {
   const dateData = useMemo(() => {
     if (!selectedClient) return allDateData;
     return Object.fromEntries(
-      Object.entries(allDateData).filter(([_, work]) => work.client_id === selectedClient)
+      Object.entries(allDateData).filter(([, work]) => work.client_id === selectedClient)
     );
   }, [allDateData, selectedClient]);
 
@@ -109,7 +118,15 @@ const CalendarPage = () => {
       
       const dataMap: Record<string, CalendarWorkData> = {};
       
-      works.forEach((work: any) => {
+      works.forEach((work: {
+        date: string;
+        client_id: string;
+        content_description: string;
+        description: string;
+        notes: string;
+        creatives: any[];
+        is_special_day: boolean;
+      }) => {
         console.log('Processing work:', work);
         const [year, month, day] = work.date.split('-').map(Number);
         const dateObj = new Date(year, month - 1, day);
@@ -136,7 +153,7 @@ const CalendarPage = () => {
 
   useEffect(() => {
     loadCalendarWorks();
-  }, []); // loadCalendarWorks is stable with empty dependencies, no need to include it
+  }, [loadCalendarWorks]); // loadCalendarWorks is stable with empty dependencies
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -168,7 +185,7 @@ const CalendarPage = () => {
     };
 
     loadInitialData();
-  }, []); // Empty dependency array since we only want this to run once
+  }, [selectedClient]); // Include selectedClient since it's used in the effect
 
   // Handle client selection loading
   useEffect(() => {
@@ -216,7 +233,7 @@ const CalendarPage = () => {
         client_id: data.client_id,
         work_description: data.content_description,
         items: JSON.parse(data.description || '[]'),
-        content_file: data.content_file,
+        content_file: data.content_file ?? undefined,
         notes: data.notes,
         creative_works,
         is_special_day: data.is_special_day,
@@ -230,7 +247,7 @@ const CalendarPage = () => {
         description: data.description,
         content_description: data.content_description,
         notes: data.notes,
-        content_file: data.content_file,
+        content_file: data.content_file ?? undefined,
         is_special_day: data.is_special_day,
       });
       await loadCalendarWorks();
@@ -369,7 +386,7 @@ const CalendarPage = () => {
         </div>
       </div>
     );
-  }, [monthData, dateData, handleDayClick, handleViewDetails, handleViewFile]);
+  }, [monthData, dateData, handleDayClick, handleViewDetails, handleViewFile, isDMGroup]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 font-sans pb-10">
@@ -456,7 +473,17 @@ const CalendarPage = () => {
         selectedDate={selectedDate}
         selectedClient={selectedClient}
         onSave={handleSave}
-        existingData={selectedDate ? dateData[selectedDate.toDateString()] : undefined}
+        existingData={selectedDate ? (() => {
+          const data = dateData[selectedDate.toDateString()];
+          return data ? {
+            client_id: data.client_id,
+            description: JSON.stringify(data.items),
+            content_description: data.work_description || '',
+            notes: data.notes || '',
+            content_file: data.content_file || null,
+            is_special_day: data.is_special_day
+          } : undefined;
+        })() : undefined}
         clients={clients}
         calendarWorkCreatives={calendarWorkCreatives}
       />
