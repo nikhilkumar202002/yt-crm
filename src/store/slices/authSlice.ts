@@ -11,6 +11,12 @@ interface User {
   designation_id?: string | number; // Designation ID from API
   position_id?: string | number; // Position ID from API
   group_name?: string; // User's group name from API
+  permissions?: {
+    viewAllLeads: boolean;
+    viewAssignedLeads: boolean;
+    assignLeads: boolean;
+    uploadLeads: boolean;
+  };
 }
 
 interface AuthState {
@@ -20,6 +26,12 @@ interface AuthState {
   position: string | null; // User's position for permission resolution
   group: string | null; // User's group name
   designation_name: string | null; // User's designation name
+  permissions: {
+    viewAllLeads: boolean;
+    viewAssignedLeads: boolean;
+    assignLeads: boolean;
+    uploadLeads: boolean;
+  } | null;
   isAuthenticated: boolean;
 }
 
@@ -33,6 +45,11 @@ const initialState: AuthState = {
   position: getSecureCookie('position'),
   group: getSecureCookie('group'),
   designation_name: getSecureCookie('designation_name'),
+  permissions: (() => {
+    const userData = getSecureCookie('user');
+    const user = userData ? JSON.parse(userData) : null;
+    return user?.permissions || null;
+  })(),
   isAuthenticated: !!getSecureCookie('token'),
 };
 
@@ -50,6 +67,7 @@ const authSlice = createSlice({
   state.position = String(user.designation_id) || '1'; // Use designation_id as position, default to '1' (Member)
   state.group = user.group_name || null; // User's group name from API
   state.designation_name = user.designation_name || null; // User's designation name
+  state.permissions = user.permissions || null;
   state.isAuthenticated = true;
 
   setSecureCookie('token', token);
@@ -67,6 +85,7 @@ const authSlice = createSlice({
       state.position = null;
       state.group = null;
       state.designation_name = null;
+      state.permissions = null;
       state.isAuthenticated = false;
       clearSecureCookies();
     },

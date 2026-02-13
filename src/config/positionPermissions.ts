@@ -5,7 +5,7 @@ export const POSITION_PERMISSIONS = {
     canApprove: true,
     canViewAll: true,      // Head can view all leads
     canAssignGroup: true,   // Head can assign leads
-    canViewAllLeads: false,
+    canViewAllLeads: true,
     canViewAssignedLeads: true,
     canAssignLeads: true,
     canReceiveLeadIdsForAssignment: true,
@@ -44,7 +44,7 @@ export const POSITION_PERMISSIONS = {
     canApprove: true,
     canViewAll: true,      // Head can view all leads
     canAssignGroup: true,   // Head can assign leads
-    canViewAllLeads: false,
+    canViewAllLeads: true,
     canViewAssignedLeads: true,
     canAssignLeads: true,
     canReceiveLeadIdsForAssignment: true,

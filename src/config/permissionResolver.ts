@@ -25,12 +25,24 @@ export function resolvePermissions(user: {
   position: string;
   group?: string;
   designation_name?: string;
+  permissions?: {
+    viewAllLeads: boolean;
+    viewAssignedLeads: boolean;
+    assignLeads: boolean;
+    uploadLeads: boolean;
+  };
 }) {
+  // If permissions are provided directly from backend, use them
+  if (user.permissions) {
+    return user.permissions;
+  }
+
+  // Fallback to role-based resolution if permissions not provided
   // Map the role name to internal permission key
   const mappedRole = ROLE_MAPPING[user.role] || ROLE_MAPPING[user.role.toLowerCase()] || 'staff';
 
   // Get position permissions with case-insensitive matching
-  const positionKey = (user.position || '').toLowerCase();
+  const positionKey = (user.designation_name || user.position || '').toLowerCase();
   const positionPermissions = (POSITION_PERMISSIONS as any)[positionKey] || {};
 
   // Start with base permissions
@@ -38,7 +50,13 @@ export function resolvePermissions(user: {
 
   // For admin role, position permissions should NOT override role permissions
   if (mappedRole === 'admin') {
-    return GLOBAL_ROLES[mappedRole]; // Admin gets all permissions, no restrictions
+    const adminPerms = GLOBAL_ROLES[mappedRole];
+    return {
+      viewAllLeads: adminPerms.canViewAllLeads || true,
+      viewAssignedLeads: adminPerms.canViewAssignedLeads || true,
+      assignLeads: adminPerms.canAssignLeads || true,
+      uploadLeads: adminPerms.canUploadLeads || true,
+    };
   }
 
   // Apply group-based restrictions for non-admin users
@@ -64,5 +82,12 @@ export function resolvePermissions(user: {
   }
 
   // For other roles, position permissions can enhance role permissions
-  return permissions;
+  
+  // Map old permission keys to new ones
+  return {
+    viewAllLeads: permissions.canViewAllLeads || false,
+    viewAssignedLeads: permissions.canViewAssignedLeads || false,
+    assignLeads: permissions.canAssignLeads || false,
+    uploadLeads: permissions.canUploadLeads || false,
+  };
 }

@@ -26,34 +26,34 @@ export const SIDEBAR_MENU: MenuItem[] = [
   {
     title: 'Leads & Pipeline',
     path: '',
-    requiredPermissions: ['canViewAllLeads', 'canViewAssignedLeads'], // Users with lead viewing permissions
+    requiredPermissions: ['viewAllLeads', 'viewAssignedLeads'], // Users with lead viewing permissions
     submenu: [
       {
         title: 'All Leads',
         path: '/leads',
-        requiredPermissions: ['canViewAllLeads'] // Admin, Manager, and authorized Staff
+        requiredPermissions: ['assignLeads'] // Only users with assign permission can see all leads
       },
       {
         title: 'Assigned Leads',
         path: '/leads/assigned',
-        requiredPermissions: ['canViewAssignedLeads'] // Staff Members, Heads, Interns with assigned leads
+        requiredPermissions: ['viewAssignedLeads'] // Staff Members, Heads, Interns with assigned leads
       }
     ]
   },
   {
     title: 'Proposal',
     path: '/proposals',
-    requiredPermissions: ['canViewAll'] // Admin and Head level access only
+    requiredPermissions: ['uploadLeads'] // Staff members don't have upload permission
   },
 {
     title: 'Onboarded Clients',
     path: '/clients',
-    requiredPermissions: ['canViewAll', 'canAssignGroup']
+    requiredPermissions: ['viewAllLeads'] // Staff Head can access clients
   },
    {
     title: 'Calendar',
     path: '/calendar',
-    requiredPermissions: ['canViewCalendar'] // Require specific permission for calendar access
+    requiredPermissions: ['viewAllLeads'] // Staff Head can access calendar
   },
   {
     title: 'Worksheet',

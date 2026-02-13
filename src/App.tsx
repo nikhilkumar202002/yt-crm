@@ -1,18 +1,16 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Auth/Login';
 import Dashboard from './pages/Intelligence/Dashboard';
+import PermissionProtectedRoute from './components/layout/PermissionProtectedRoute';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import DashboardLayout from './components/layout/DashboardLayout';
 import RoleManagement from './pages/Settings/RoleManagement';
 import LeadsPage from './pages/Leads/LeadsPage';
 
-import DepartmentsPage from './pages/Settings/DepartmentsPage';
-import DesignationsPage from './pages/Settings/DesignationsPage';
-
 import EmployeesPage from './pages/Employees/EmployeesPage';
 import EmployeeRegistration from './pages/Employees/EmployeeRegistration';
-
-import AssignedLeadsPage from './pages/Leads/AssignedLeadsPage';
+import DepartmentsPage from './pages/Settings/DepartmentsPage';
+import DesignationsPage from './pages/Settings/DesignationsPage';
 import ServicesPage from './pages/Settings/ServicesPage';
 import CalendarWorkCreativesPage from './pages/Settings/CalendarWorkCreativesPage';
 
@@ -48,8 +46,16 @@ function App() {
             <Route path="/settings/designations" element={<DesignationsPage />} />
             <Route path="/employees" element={<EmployeesPage />} />
             <Route path="/employees/register" element={<EmployeeRegistration />} />
-            <Route path="/leads" element={<LeadsPage />} />
-            <Route path="/leads/assigned" element={<AssignedLeadsPage />} />
+            <Route path="/leads" element={
+              <PermissionProtectedRoute requiredPermissions={['viewAllLeads']}>
+                <LeadsPage />
+              </PermissionProtectedRoute>
+            } />
+            <Route path="/leads/assigned" element={
+              <PermissionProtectedRoute requiredPermissions={['viewAssignedLeads']}>
+                <LeadsPage />
+              </PermissionProtectedRoute>
+            } />
             <Route path="/settings/services" element={<ServicesPage />} />
             <Route path="/settings/calendar-work-creatives" element={<CalendarWorkCreativesPage />} />
             <Route path="/proposals" element={<ProposalPage />} />

@@ -16,19 +16,16 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
-  const { roleName, position, group, designation_name } = useAppSelector((state) => state.auth);
+  const { permissions, roleName, position, group, designation_name } = useAppSelector((state) => state.auth);
   const location = useLocation();
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
 
-  // Convert role to lowercase to match GLOBAL_ROLES keys
-  const currentRole = roleName?.toLowerCase() || 'staff';
-
-  // Get user permissions based on role, position, and group
-  const userPermissions = resolvePermissions({
-    role: currentRole,
-    position: position || 'Member', // Use stored position or default to Member
-    group: group || undefined, // Pass group for additional restrictions
-    designation_name: designation_name || undefined // Pass designation name for position checks
+  // Use permissions from state if available, else resolve from role
+  const userPermissions = permissions || resolvePermissions({
+    role: roleName?.toLowerCase() || 'staff',
+    position: position || 'Member',
+    group: group || undefined,
+    designation_name: designation_name || undefined
   });
 
   // Updated iconMap to match the new "Onboarded Clients" title
