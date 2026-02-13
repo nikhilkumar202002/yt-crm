@@ -1,11 +1,15 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserPlus, Mail, Shield, MoreVertical, Search } from 'lucide-react';
+import { UserPlus, Mail, Shield, MoreVertical, Search, Phone } from 'lucide-react';
+import { format } from 'date-fns';
 import { Button } from '../../components/common/Button';
 import { getEmployees, Employee } from '../../api/services/authService';
 
 interface ExtendedEmployee extends Employee {
   status?: boolean | number;
+  mobile_number?: string;
+  position_name?: string;
+  created_at?: string;
 }
 import { useAppSelector } from '../../store/store';
 
@@ -102,6 +106,10 @@ const EmployeesPage = () => {
                               <Mail size={10} className="text-slate-300" /> 
                               <span className="truncate max-w-[180px]">{emp.email || ''}</span>
                             </p>
+                            <p className="text-[10px] text-slate-400 mt-1.5 flex items-center gap-1.5">
+                              <Phone size={10} className="text-slate-300" /> 
+                              <span>{emp.mobile_number || ''}</span>
+                            </p>
                           </div>
                         </div>
                       </td>
@@ -112,6 +120,9 @@ const EmployeesPage = () => {
                           </div>
                           <p className="text-[10px] text-slate-400 font-medium italic">
                             {emp.designation_name || ''} 
+                          </p>
+                          <p className="text-[10px] text-slate-400 font-medium">
+                            {emp.position_name || ''}
                           </p>
                         </div>
                       </td>
@@ -128,6 +139,9 @@ const EmployeesPage = () => {
                             <span className={`h-1 w-1 rounded-full mr-1.5 ${(emp.is_active === 1 || emp.is_active === true) || (emp.status === 1 || emp.status === true) ? 'bg-green-500' : 'bg-red-500'}`} />
                             {(emp.is_active === 1 || emp.is_active === true) || (emp.status === 1 || emp.status === true) ? 'Active' : 'Inactive'}
                           </span>
+                          <p className="text-[10px] text-slate-400 mt-1">
+                            Joined {emp.created_at ? format(new Date(emp.created_at), 'MMM dd, yyyy') : ''}
+                          </p>
                         </div>
                       </td>
                       <td className="px-5 py-3 text-right">
