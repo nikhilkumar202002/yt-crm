@@ -557,7 +557,7 @@ export const deleteCalendarWorkCreative = async (id: number) => {
  */
 export const assignDesignersToWork = async (id: number, designerIds: number[]) => {
   const response = await apiClient.put(`/calendar-works/${id}/designers/assign`, { 
-    designer_ids: designerIds 
+    assigned_to: JSON.stringify(designerIds) 
   });
   return response.data;
 };

@@ -58,9 +58,11 @@ interface CalendarWork {
   notes: string;
   is_special_day: boolean;
   assigned_to: string | null;
+  assigned_to_names?: Record<string, string>;
   assigned_by: string | null;
   assigned_time: string | null;
   content_assigned_to: string | null;
+  content_assigned_to_names?: Record<string, string>;
   creatives: Creative[];
   client: Client;
   tracking_no: string;
@@ -134,11 +136,11 @@ const WorksheetCreativePage = () => {
 
   const handleAssignDesigner = async (workId: number, userIds: number[]) => {
     try {
-      await assignDesignersToWork(workId, userIds);
-      const payload = JSON.stringify(userIds);
-      setCalendarWorks(prev => prev.map(w => 
-        w.id === workId ? { ...w, assigned_to: payload === "[]" ? null : payload } : w
-      ));
+      const response = await assignDesignersToWork(workId, userIds);
+      const updatedWork = response.data;
+      if (updatedWork) {
+        setCalendarWorks(prev => prev.map(w => w.id === workId ? updatedWork : w));
+      }
       setAssignmentModal(prev => ({ ...prev, isOpen: false }));
     } catch (err) {
       console.error('Failed to assign designer:', err);
@@ -147,11 +149,11 @@ const WorksheetCreativePage = () => {
 
   const handleAssignContent = async (workId: number, userIds: number[]) => {
     try {
-      const payload = JSON.stringify(userIds);
-      await assignCalendarWorkContent(workId, { content_assigned_to: payload });
-      setCalendarWorks(prev => prev.map(w => 
-        w.id === workId ? { ...w, content_assigned_to: payload === "[]" ? null : payload } : w
-      ));
+      const response = await assignCalendarWorkContent(workId, { content_assigned_to: JSON.stringify(userIds) });
+      const updatedWork = response.data;
+      if (updatedWork) {
+        setCalendarWorks(prev => prev.map(w => w.id === workId ? updatedWork : w));
+      }
       setAssignmentModal(prev => ({ ...prev, isOpen: false }));
     } catch (err) {
       console.error('Failed to assign content:', err);
@@ -195,10 +197,23 @@ const WorksheetCreativePage = () => {
     }
   };
 
-  const getAssignedNames = (assignedTo: string | null, type: 'designer' | 'content') => {
+  const getAssignedNames = (work: CalendarWork, type: 'designer' | 'content') => {
+    const assignedTo = type === 'designer' ? work.assigned_to : work.content_assigned_to;
+    const assignedNames = type === 'designer' ? work.assigned_to_names : work.content_assigned_to_names;
+    
     const ids = parseIds(assignedTo);
     if (ids.length === 0) return type === 'designer' ? 'Assign Designer' : 'Assign Content';
     
+    // 1. Try to use names directly from the work object (provided by API)
+    if (assignedNames) {
+      const names = ids.map(id => assignedNames[id.toString()]).filter(Boolean);
+      if (names.length > 0) {
+        if (names.length > 2) return `${names[0]}, ${names[1]} +${names.length - 2}`;
+        return names.join(', ');
+      }
+    }
+
+    // 2. Fallback to global users list
     const names = ids
       .map(id => users.find(u => u.id === Number(id))?.name)
       .filter(Boolean);
@@ -382,7 +397,7 @@ const WorksheetCreativePage = () => {
                                 });
                               }}
                             >
-                              {getAssignedNames(work.assigned_to, 'designer')}
+                            {getAssignedNames(work, 'designer')}
                             </Button>
                           );
                         })()}
@@ -407,7 +422,7 @@ const WorksheetCreativePage = () => {
                                   });
                                 }}
                               >
-                                {getAssignedNames(work.content_assigned_to, 'content')}
+                                {getAssignedNames(work, 'content')}
                               </Button>
                             );
                           })()}

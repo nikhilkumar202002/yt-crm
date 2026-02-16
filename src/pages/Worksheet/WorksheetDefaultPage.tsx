@@ -58,6 +58,7 @@ interface CalendarWork {
   notes: string;
   is_special_day: boolean;
   assigned_to: string | null;
+  assigned_to_names?: Record<string, string>;
   assigned_by: string | null;
   assigned_time: string | null;
   content_assigned_to: string | null;
@@ -117,11 +118,11 @@ const WorksheetDefaultPage = () => {
 
   const handleAssignDesigner = async (workId: number, userIds: number[]) => {
     try {
-      await assignDesignersToWork(workId, userIds);
-      const payload = JSON.stringify(userIds);
-      setCalendarWorks(prev => prev.map(w => 
-        w.id === workId ? { ...w, assigned_to: payload === "[]" ? null : payload } : w
-      ));
+      const response = await assignDesignersToWork(workId, userIds);
+      const updatedWork = response.data;
+      if (updatedWork) {
+        setCalendarWorks(prev => prev.map(w => w.id === workId ? updatedWork : w));
+      }
       setAssignmentModal({ isOpen: false, workId: null, initialIds: [] });
     } catch (err) {
       console.error('Failed to assign designer:', err);
@@ -161,10 +162,23 @@ const WorksheetDefaultPage = () => {
     }
   };
 
-  const getAssignedNames = (assignedTo: string | null) => {
+  const getAssignedNames = (work: CalendarWork) => {
+    const assignedTo = work.assigned_to;
+    const assignedNames = work.assigned_to_names;
+    
     const ids = parseIds(assignedTo);
     if (ids.length === 0) return 'Assign Designer';
     
+    // 1. Try to use names directly from the work object (provided by API)
+    if (assignedNames) {
+      const names = ids.map(id => assignedNames[id.toString()]).filter(Boolean);
+      if (names.length > 0) {
+        if (names.length > 2) return `${names[0]}, ${names[1]} +${names.length - 2}`;
+        return names.join(', ');
+      }
+    }
+
+    // 2. Fallback to global users list
     const names = ids
       .map(id => users.find(u => u.id === Number(id))?.name)
       .filter(Boolean);
@@ -336,7 +350,7 @@ const WorksheetDefaultPage = () => {
                                 });
                               }}
                             >
-                              {getAssignedNames(work.assigned_to)}
+                            {getAssignedNames(work)}
                             </Button>
                           );
                         })()}
