@@ -48,7 +48,8 @@ const WorksheetPage = () => {
     }
 
     // DM roles: DM Executive
-    if (roleName?.toLowerCase() === 'dm executive') {
+    const dmGroups = ['Digital Marketing', 'DM', 'DM Executive'];
+    if (roleName?.toLowerCase() === 'dm executive' || dmGroups.includes(currentUserGroup)) {
       return <WorksheetDMPage />;
     }
 
