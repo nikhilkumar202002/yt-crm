@@ -125,6 +125,14 @@ const LeadsPage = () => {
     }
   };
 
+  const toggleSelectLead = (id: number) => {
+    if (selectedLeads.includes(id)) {
+      setSelectedLeads(selectedLeads.filter(leadId => leadId !== id));
+    } else {
+      setSelectedLeads([...selectedLeads, id]);
+    }
+  };
+
   const handleUpdateComment = async () => {
     if (!commentModal.id) return;
     try {

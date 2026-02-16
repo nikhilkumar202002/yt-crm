@@ -52,6 +52,7 @@ export function resolvePermissions(user: {
   if (mappedRole === 'admin') {
     const adminPerms = GLOBAL_ROLES[mappedRole];
     return {
+      ...adminPerms,
       viewAllLeads: adminPerms.canViewAllLeads || true,
       viewAssignedLeads: adminPerms.canViewAssignedLeads || true,
       assignLeads: adminPerms.canAssignLeads || true,
@@ -85,6 +86,7 @@ export function resolvePermissions(user: {
   
   // Map old permission keys to new ones
   return {
+    ...permissions,
     viewAllLeads: permissions.canViewAllLeads || false,
     viewAssignedLeads: permissions.canViewAssignedLeads || false,
     assignLeads: permissions.canAssignLeads || false,

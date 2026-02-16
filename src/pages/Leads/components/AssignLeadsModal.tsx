@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X, UserCheck, Users } from 'lucide-react';
 import { Button } from '../../../components/common/Button';
-import { getEmployees } from '../../../api/services/authService';
-import { assignLeads } from '../../../api/services/microService';
+import { assignLeads, getEmployeesForAssignment } from '../../../api/services/microService';
+import { useAppSelector } from '../../../store/store';
 
 interface AssignLeadsModalProps {
   selectedLeadIds: number[];
@@ -13,18 +13,29 @@ interface AssignLeadsModalProps {
 }
 
 export const AssignLeadsModal = ({ selectedLeadIds, onSuccess, isOpen, onOpenChange }: AssignLeadsModalProps) => {
+  const { user, roleName } = useAppSelector((state) => state.auth);
   const [staff, setStaff] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedStaffId, setSelectedStaffId] = useState<string>('');
 
   useEffect(() => {
     const fetchStaff = async () => {
-      const result = await getEmployees();
-      // Accessing the nested array from paginated directory
-      setStaff(result?.data?.data || []);
+      try {
+        const result = await getEmployeesForAssignment();
+        // Accessing the nested array from paginated directory
+        const allStaff = result?.data || [];
+        
+        if (roleName?.toUpperCase() === 'ADMIN') {
+          setStaff(allStaff);
+        } else {
+          setStaff(allStaff.filter((s: any) => s.department_name === user?.department_name));
+        }
+      } catch (error) {
+        console.error("Failed to fetch staff", error);
+      }
     };
     if (isOpen) fetchStaff();
-  }, [isOpen]);
+  }, [isOpen, roleName, user?.department_name]);
 
   const handleAssign = async () => {
     if (!selectedStaffId) return;

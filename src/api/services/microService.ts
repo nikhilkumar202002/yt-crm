@@ -165,6 +165,8 @@ export interface Employee {
   role_name: string;
   designation_name: string;
   status: boolean;
+  position_name?: string;
+  department_name?: string;
 }
 
 /**
@@ -180,14 +182,17 @@ export const getEmployees = async () => {
  */
 export const getEmployeesForAssignment = async () => {
   const response = await getUsersList();
-  const employees: Employee[] = response.data?.data || [];
+  let employees: Employee[] = [];
 
-  // Filter out employees with roles containing "head" (case insensitive)
-  const filteredEmployees = employees.filter(employee =>
-    !employee.role_name?.toLowerCase().includes('head')
-  );
+  if (Array.isArray(response)) {
+    employees = response;
+  } else if (response?.data && Array.isArray(response.data)) {
+    employees = response.data;
+  } else if (response?.data?.data && Array.isArray(response.data.data)) {
+    employees = response.data.data;
+  }
 
-  return { ...response, data: filteredEmployees };
+  return { ...response, data: employees };
 };
 
 // Leads Management
