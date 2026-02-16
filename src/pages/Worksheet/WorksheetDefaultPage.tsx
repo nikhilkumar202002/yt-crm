@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAppSelector } from '../../store/store';
 import {
   Clipboard, Search,
@@ -6,8 +6,9 @@ import {
   Upload,
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
-import { getCalendarWorks } from '../../api/services/microService';
+import { getCalendarWorks, assignDesignersToWork } from '../../api/services/microService';
 import { getUsersList } from '../../api/services/authService';
+import AssignmentModal from './components/AssignmentModal';
 
 interface Creative {
   id: string;
@@ -74,6 +75,15 @@ const WorksheetDefaultPage = () => {
   const [calendarWorks, setCalendarWorks] = useState<CalendarWork[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [workStatuses, setWorkStatuses] = useState<{ [key: number]: string }>({});
+  
+  // Modal state
+  const [assignmentModal, setAssignmentModal] = useState<{ isOpen: boolean; workId: number | null; initialIds: number[] }>({
+    isOpen: false,
+    workId: null,
+    initialIds: []
+  });
 
   // For default roles, show tracking, date, assign designer, but not content assign
 
@@ -95,7 +105,8 @@ const WorksheetDefaultPage = () => {
     const fetchUsers = async () => {
       try {
         const response = await getUsersList();
-        setUsers(response.data?.data || []);
+        const usersData = response.data?.data || response.data || [];
+        setUsers(usersData);
       } catch (err) {
       }
     };
@@ -103,6 +114,77 @@ const WorksheetDefaultPage = () => {
     fetchCalendarWorks();
     fetchUsers();
   }, []);
+
+  const handleAssignDesigner = async (workId: number, userIds: number[]) => {
+    try {
+      await assignDesignersToWork(workId, userIds);
+      const payload = JSON.stringify(userIds);
+      setCalendarWorks(prev => prev.map(w => 
+        w.id === workId ? { ...w, assigned_to: payload === "[]" ? null : payload } : w
+      ));
+      setAssignmentModal({ isOpen: false, workId: null, initialIds: [] });
+    } catch (err) {
+      console.error('Failed to assign designer:', err);
+    }
+  };
+
+  const designerUsers = useMemo(() => 
+    users.filter(u => u.group_name?.toLowerCase().includes('graphics') || u.group_name?.toLowerCase().includes('creative')),
+  [users]);
+
+  const parseIds = (data: any): number[] => {
+    if (!data) return [];
+    
+    // Handle native arrays (of numbers or objects)
+    if (Array.isArray(data)) {
+      return data.map(item => (typeof item === 'object' && item !== null ? item.id : item))
+                 .map(Number)
+                 .filter(n => !isNaN(n));
+    }
+
+    try {
+      // Handle JSON strings
+      if (typeof data === 'string' && (data.startsWith('[') || data.startsWith('{'))) {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) {
+          return parsed.map(item => (typeof item === 'object' && item !== null ? item.id : item))
+                       .map(Number)
+                       .filter(n => !isNaN(n));
+        }
+      }
+      
+      // Handle comma-separated strings or single IDs
+      const stringData = String(data);
+      return stringData.split(',').map(s => s.trim()).map(Number).filter(n => !isNaN(n));
+    } catch (e) {
+      return [];
+    }
+  };
+
+  const getAssignedNames = (assignedTo: string | null) => {
+    const ids = parseIds(assignedTo);
+    if (ids.length === 0) return 'Assign Designer';
+    
+    const names = ids
+      .map(id => users.find(u => u.id === Number(id))?.name)
+      .filter(Boolean);
+      
+    if (names.length === 0) return 'Assign Designer';
+    
+    if (names.length > 2) {
+      return `${names[0]}, ${names[1]} +${names.length - 2}`;
+    }
+    return names.join(', ');
+  };
+
+  const getFullAssignedNames = (assignedTo: string | null) => {
+    const ids = parseIds(assignedTo);
+    const names = ids
+      .map(id => users.find(u => u.id === Number(id))?.name)
+      .filter(Boolean);
+    
+    return names.length > 0 ? names.join(', ') : undefined;
+  };
 
   // Filter works based on search term
   const filteredCalendarWorks = calendarWorks.filter(work => {
@@ -237,9 +319,27 @@ const WorksheetDefaultPage = () => {
                         </div>
                       </td>
                       <td className="px-5 py-3">
-                        <Button variant="secondary" size="sm" className="text-[10px]">
-                          Assign
-                        </Button>
+                        {(() => {
+                          const designerIds = parseIds(work.assigned_to);
+                          const isAssigned = designerIds.length > 0;
+                          return (
+                            <Button 
+                              variant="secondary" 
+                              size="sm" 
+                              className={`text-[10px] w-full justify-between transition-all ${isAssigned ? '!bg-orange-500 !text-white !border-orange-600 hover:!bg-orange-600' : ''}`}
+                              title={getFullAssignedNames(work.assigned_to)}
+                              onClick={() => {
+                                setAssignmentModal({
+                                  isOpen: true,
+                                  workId: work.id,
+                                  initialIds: designerIds
+                                });
+                              }}
+                            >
+                              {getAssignedNames(work.assigned_to)}
+                            </Button>
+                          );
+                        })()}
                       </td>
                       <td className="px-5 py-3">
                         <Button variant="secondary" size="sm" className="text-[10px]">
@@ -289,6 +389,19 @@ const WorksheetDefaultPage = () => {
           </div>
         )}
       </div>
+
+      <AssignmentModal
+        isOpen={assignmentModal.isOpen}
+        onClose={() => setAssignmentModal({ isOpen: false, workId: null, initialIds: [] })}
+        onAssign={(userIds) => {
+          if (assignmentModal.workId) {
+            handleAssignDesigner(assignmentModal.workId, userIds);
+          }
+        }}
+        users={designerUsers}
+        initialSelectedIds={assignmentModal.initialIds}
+        title="Assign Designers"
+      />
     </div>
   );
 };

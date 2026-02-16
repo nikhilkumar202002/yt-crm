@@ -44,6 +44,7 @@ export function resolvePermissions(user: {
   // Get position permissions with case-insensitive matching
   const positionKey = (user.designation_name || user.position || '').toLowerCase();
   const positionPermissions = (POSITION_PERMISSIONS as any)[positionKey] || {};
+  const groupLower = (user.group || '').toLowerCase().trim();
 
   // Start with base permissions
   let permissions = { ...GLOBAL_ROLES[mappedRole], ...positionPermissions };
@@ -61,7 +62,7 @@ export function resolvePermissions(user: {
   }
 
   // Apply group-based restrictions for non-admin users
-  if (user.group === 'Content Creator' && 
+  if (groupLower === 'content creator' && 
       (user.position === '1' || user.position === 'member' || user.position === 'employee' || 
        positionKey === 'member' || positionKey === 'employee' ||
        user.designation_name?.toLowerCase() === 'member' || user.designation_name?.toLowerCase() === 'employee')) {
@@ -76,10 +77,22 @@ export function resolvePermissions(user: {
     permissions.canAssignLeads = false;
     permissions.canReceiveLeadIdsForAssignment = false;
     permissions.canViewCalendar = false;
-  } else if (user.group === 'Content Creator') {
+  } else if (groupLower === 'content creator') {
     // Other Content Creator positions have normal access
     permissions.canViewAllLeads = false;
     permissions.canViewAssignedLeads = false;
+  }
+
+  // Ensure Digital Marketing has worksheet access
+  if (groupLower === 'digital marketing' || groupLower === 'dm') {
+    permissions.canAssignGroup = true;
+  }
+
+  // Restrict Graphics Department and Creative Designers from seeing Leads and Clients
+  if (groupLower === 'graphics department' || groupLower === 'creative designers' || groupLower === 'graphics') {
+    permissions.canViewAllLeads = false;
+    permissions.canViewAssignedLeads = false;
+    permissions.canAssignGroup = true;
   }
 
   // For other roles, position permissions can enhance role permissions

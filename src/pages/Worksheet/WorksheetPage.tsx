@@ -42,7 +42,7 @@ const WorksheetPage = () => {
   // Determine which component to render based on user group
   const renderWorksheetComponent = () => {
     // Creative roles: Creative Designers, Content Creator, Creative Team Lead
-    const creativeGroups = ['Creative Designers', 'Content Creator', 'Creative Team Lead'];
+    const creativeGroups = ['Creative Designers', 'Content Creator', 'Creative Team Lead', 'Graphics Department'];
     if (creativeGroups.includes(currentUserGroup)) {
       return <WorksheetCreativePage />;
     }

@@ -450,8 +450,10 @@ export const deleteClient = async (clientId: number) => {
 /**
  * GET All calendar works
  */
-export const getCalendarWorks = async () => {
-  const response = await apiClient.get(ENDPOINTS.CALENDAR_WORKS.BASE);
+export const getCalendarWorks = async (page: number = 1) => {
+  const response = await apiClient.get(ENDPOINTS.CALENDAR_WORKS.BASE, {
+    params: { page }
+  });
   return response.data;
 };
 
@@ -546,5 +548,16 @@ export const updateCalendarWorkCreative = async (id: number, data: CalendarWorkC
  */
 export const deleteCalendarWorkCreative = async (id: number) => {
   const response = await apiClient.delete(`${ENDPOINTS.CALENDAR_WORK_CREATIVES.BASE}/${id}`);
+  return response.data;
+};
+
+/**
+ * PUT Assign designers to a calendar work
+ * Endpoint: PUT /calendar-works/{id}/designers/assign
+ */
+export const assignDesignersToWork = async (id: number, designerIds: number[]) => {
+  const response = await apiClient.put(`/calendar-works/${id}/designers/assign`, { 
+    designer_ids: designerIds 
+  });
   return response.data;
 };

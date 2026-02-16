@@ -1,5 +1,8 @@
 // src/config/menu.ts
-import { resolvePermissions } from './permissionResolver';
+import { ADMIN_MENU } from './adminMenu';
+import { GRAPHICS_MENU } from './graphicsMenu';
+import { DM_MENU } from './dmMenu';
+import { CONTENT_MENU } from './contentMenu';
 
 export interface MenuItem {
   title: string;
@@ -16,102 +19,31 @@ export function hasMenuAccess(userPermissions: any, requiredPermissions?: string
   return requiredPermissions.some(perm => userPermissions[perm] === true);
 }
 
-export const SIDEBAR_MENU: MenuItem[] = [
-  {
-    title: 'Dashboard',
-    path: '/dashboard',
-    requiredPermissions: [] // Everyone can access dashboard
-  },
+/**
+ * Get the appropriate menu based on user role and group
+ */
+export function getMenuByDepartment(role: string, group?: string): MenuItem[] {
+  const roleLower = role?.toLowerCase() || '';
+  const groupLower = group?.toLowerCase().trim() || '';
+  
+  // Admin access - can access all menus
+  if (roleLower === 'admin' || roleLower === 'administrator') {
+    return ADMIN_MENU;
+  }
 
-  {
-    title: 'Leads & Pipeline',
-    path: '',
-    requiredPermissions: ['viewAllLeads', 'viewAssignedLeads'], // Users with lead viewing permissions
-    submenu: [
-      {
-        title: 'All Leads',
-        path: '/leads',
-        requiredPermissions: ['assignLeads'] // Only users with assign permission can see all leads
-      },
-      {
-        title: 'Assigned Leads',
-        path: '/leads/assigned',
-        requiredPermissions: ['viewAssignedLeads'] // Staff Members, Heads, Interns with assigned leads
-      }
-    ]
-  },
-  {
-    title: 'Proposal',
-    path: '/proposals',
-    requiredPermissions: ['uploadLeads'] // Staff members don't have upload permission
-  },
-{
-    title: 'Onboarded Clients',
-    path: '/clients',
-    requiredPermissions: ['viewAllLeads'] // Staff Head can access clients
-  },
-   {
-    title: 'Calendar',
-    path: '/calendar',
-    requiredPermissions: ['viewAllLeads'] // Staff Head can access calendar
-  },
-  {
-    title: 'Worksheet',
-    path: '/worksheet',
-    requiredPermissions: ['canAssignGroup'] // Can work on assigned tasks
-  },
-  {
-    title: 'Strategy & Pitch',
-    path: '/strategy',
-    requiredPermissions: ['canViewAll', 'canAssignGroup']
-  },
-  {
-    title: 'Campaign Setup',
-    path: '/campaigns',
-    requiredPermissions: ['canViewAll', 'canAssignGroup']
-  },
-  {
-    title: 'Creative Workflow',
-    path: '/creative',
-    requiredPermissions: ['canViewAll', 'canAssignGroup'] // Creative team access - require canViewAll to restrict Content Creator
-  },
-  {
-    title: 'Asset Hub',
-    path: '/assets',
-    requiredPermissions: ['canViewAll', 'canAssignGroup'] // Can access assigned assets - require canViewAll to restrict Content Creator
-  },
-  {
-    title: 'Ad Operations',
-    path: '/execution',
-    requiredPermissions: ['canViewAll', 'canAssignGroup']
-  },
-  {
-    title: 'Intelligence',
-    path: '/intelligence',
-    requiredPermissions: ['canViewAll'] // Analytics access
-  },
-  {
-    title: 'Finance & Billing',
-    path: '/finance',
-    requiredPermissions: ['canViewAll'] // Finance access
-  },
-  {
-    title: 'Employees',
-    path: '/employees',
-    requiredPermissions: ['canManageGroups', 'canViewAll'] // Management access
-  },
-  {
-    title: 'Settings',
-    path: '/settings',
-    requiredPermissions: ['canManageGroups', 'canViewAll'], // Admin access
-    submenu: [
-      { title: 'Role Management', path: '/settings/roles', requiredPermissions: ['canManageGroups'] },
-      { title: 'Departments', path: '/settings/departments', requiredPermissions: ['canManageGroups'] },
-      { title: 'Designations', path: '/settings/designations', requiredPermissions: ['canManageGroups'] },
-      { title: 'Groups', path: '/settings/groups', requiredPermissions: ['canManageGroups'] },
-      { title: 'Positions', path: '/settings/positions', requiredPermissions: ['canManageGroups'] },
-      { title: 'Services', path: '/settings/services', requiredPermissions: ['canManageGroups'] },
-      { title: 'Calendar Work Creatives', path: '/settings/calendar-work-creatives', requiredPermissions: ['canManageGroups'] },
-    ]
-  },
-];
+  // Department specific menus
+  if (groupLower === 'graphics department' || groupLower === 'creative designers' || groupLower === 'graphics') {
+    return GRAPHICS_MENU;
+  }
+  if (groupLower === 'digital marketing' || groupLower === 'dm' || groupLower === 'dm executive') {
+    return DM_MENU;
+  }
+  if (groupLower === 'content creator' || groupLower === 'content') {
+    return CONTENT_MENU;
+  }
+
+  // Default fallback
+  return ADMIN_MENU;
+}
+
+export const SIDEBAR_MENU: MenuItem[] = ADMIN_MENU;

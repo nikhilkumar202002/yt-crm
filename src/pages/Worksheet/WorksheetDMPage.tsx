@@ -6,8 +6,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
-import { getCalendarWorks } from '../../api/services/microService';
-import { getUsersList } from '../../api/services/authService';
+import { getCalendarWorks, assignCalendarWork, assignCalendarWorkContent } from '../../api/services/microService';
 
 interface Creative {
   id: string;
@@ -74,6 +73,7 @@ const WorksheetDMPage = () => {
   const [calendarWorks, setCalendarWorks] = useState<CalendarWork[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [workStatuses, setWorkStatuses] = useState<{ [key: number]: string }>({});
 
   // For DM roles, show all columns including content assign
 
@@ -92,16 +92,7 @@ const WorksheetDMPage = () => {
       }
     };
 
-    const fetchUsers = async () => {
-      try {
-        const response = await getUsersList();
-        setUsers(response.data?.data || []);
-      } catch (err) {
-      }
-    };
-
     fetchCalendarWorks();
-    fetchUsers();
   }, []);
 
   // Filter works based on search term
@@ -171,8 +162,8 @@ const WorksheetDMPage = () => {
                   <th className="px-5 py-3">Content Description</th>
                   <th className="px-5 py-3">Creatives</th>
                   <th className="px-5 py-3">Notes</th>
-                  <th className="px-5 py-3">Assign Designer</th>
-                  <th className="px-5 py-3">Assign Content</th>
+                  <th className="px-5 py-3">Designer</th>
+                  <th className="px-5 py-3">Content</th>
                   <th className="px-5 py-3">Design Upload</th>
                   <th className="px-5 py-3 text-center">Status</th>
                   <th className="px-5 py-3 text-right">Actions</th>
@@ -245,14 +236,18 @@ const WorksheetDMPage = () => {
                         </div>
                       </td>
                       <td className="px-5 py-3">
-                        <Button variant="secondary" size="sm" className="text-[10px]">
-                          Assign
-                        </Button>
+                        <div className="text-[10px] text-slate-600">
+                          {work.assigned_to && JSON.parse(work.assigned_to).length > 0 
+                            ? `${JSON.parse(work.assigned_to).length} Assigned` 
+                            : 'Not Assigned'}
+                        </div>
                       </td>
                       <td className="px-5 py-3">
-                        <Button variant="secondary" size="sm" className="text-[10px]">
-                          Assign
-                        </Button>
+                        <div className="text-[10px] text-slate-600">
+                          {work.content_assigned_to && JSON.parse(work.content_assigned_to).length > 0 
+                            ? `${JSON.parse(work.content_assigned_to).length} Assigned` 
+                            : 'Not Assigned'}
+                        </div>
                       </td>
                       <td className="px-5 py-3">
                         <Button variant="secondary" size="sm" className="text-[10px]">

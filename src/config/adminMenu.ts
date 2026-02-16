@@ -1,0 +1,100 @@
+import { MenuItem } from './menu';
+
+export const ADMIN_MENU: MenuItem[] = [
+  {
+    title: 'Dashboard',
+    path: '/dashboard',
+    requiredPermissions: []
+  },
+  {
+    title: 'Leads & Pipeline',
+    path: '',
+    requiredPermissions: ['viewAllLeads', 'viewAssignedLeads'],
+    submenu: [
+      {
+        title: 'All Leads',
+        path: '/leads',
+        requiredPermissions: ['assignLeads']
+      },
+      {
+        title: 'Assigned Leads',
+        path: '/leads/assigned',
+        requiredPermissions: ['viewAssignedLeads']
+      }
+    ]
+  },
+  {
+    title: 'Proposal',
+    path: '/proposals',
+    requiredPermissions: ['uploadLeads']
+  },
+  {
+    title: 'Onboarded Clients',
+    path: '/clients',
+    requiredPermissions: ['viewAllLeads']
+  },
+  {
+    title: 'Calendar',
+    path: '/calendar',
+    requiredPermissions: ['viewAllLeads']
+  },
+  {
+    title: 'Worksheet',
+    path: '/worksheet',
+    requiredPermissions: ['canAssignGroup']
+  },
+  {
+    title: 'Strategy & Pitch',
+    path: '/strategy',
+    requiredPermissions: ['canViewAll', 'canAssignGroup']
+  },
+  {
+    title: 'Campaign Setup',
+    path: '/campaigns',
+    requiredPermissions: ['canViewAll', 'canAssignGroup']
+  },
+  {
+    title: 'Creative Workflow',
+    path: '/creative',
+    requiredPermissions: ['canViewAll', 'canAssignGroup']
+  },
+  {
+    title: 'Asset Hub',
+    path: '/assets',
+    requiredPermissions: ['canViewAll', 'canAssignGroup']
+  },
+  {
+    title: 'Ad Operations',
+    path: '/execution',
+    requiredPermissions: ['canViewAll', 'canAssignGroup']
+  },
+  {
+    title: 'Intelligence',
+    path: '/intelligence',
+    requiredPermissions: ['canViewAll']
+  },
+  {
+    title: 'Finance & Billing',
+    path: '/finance',
+    requiredPermissions: ['canViewAll']
+  },
+  {
+    title: 'Employees',
+    path: '/employees',
+    requiredPermissions: ['canManageGroups', 'canViewAll']
+  },
+  {
+    title: 'Settings',
+    path: '/settings',
+    requiredPermissions: ['canManageGroups', 'canViewAll'],
+    submenu: [
+      { title: 'Role Management', path: '/settings/roles', requiredPermissions: ['canManageGroups'] },
+      { title: 'Departments', path: '/settings/departments', requiredPermissions: ['canManageGroups'] },
+      { title: 'Designations', path: '/settings/designations', requiredPermissions: ['canManageGroups'] },
+      { title: 'Groups', path: '/settings/groups', requiredPermissions: ['canManageGroups'] },
+      { title: 'Positions', path: '/settings/positions', requiredPermissions: ['canManageGroups'] },
+      { title: 'Services', path: '/settings/services', requiredPermissions: ['canManageGroups'] },
+      { title: 'Calendar Work Creatives', path: '/settings/calendar-work-creatives', requiredPermissions: ['canManageGroups'] },
+    ]
+  },
+];

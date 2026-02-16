@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAppSelector } from '../../store/store';
 import {
   Clipboard, Search,
@@ -6,8 +6,9 @@ import {
   Upload,
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
-import { getCalendarWorks } from '../../api/services/microService';
+import { getCalendarWorks, assignCalendarWorkContent, assignDesignersToWork } from '../../api/services/microService';
 import { getUsersList } from '../../api/services/authService';
+import AssignmentModal from './components/AssignmentModal';
 
 interface Creative {
   id: string;
@@ -74,11 +75,30 @@ const WorksheetCreativePage = () => {
   const [calendarWorks, setCalendarWorks] = useState<CalendarWork[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
   const [currentUserGroup, setCurrentUserGroup] = useState<string>('');
+  const [workStatuses, setWorkStatuses] = useState<{ [key: number]: string }>({});
+
+  // Modal state
+  const [assignmentModal, setAssignmentModal] = useState<{ isOpen: boolean; workId: number | null; initialIds: number[]; type: 'designer' | 'content' }>({
+    isOpen: false,
+    workId: null,
+    initialIds: [],
+    type: 'designer'
+  });
 
   // Conditional visibility based on user group
-  const shouldShowTrackingNo = currentUserGroup !== 'Content Creator';
-  const shouldShowDate = currentUserGroup !== 'Content Creator' && currentUserGroup !== 'Creative Designers';
+  const shouldShowTrackingNo = 
+    currentUserGroup !== 'Content Creator' && 
+    currentUserGroup !== 'Graphics Department' && 
+    currentUserGroup !== 'Creative Designers';
+  const shouldShowDate = 
+    currentUserGroup !== 'Content Creator' && 
+    currentUserGroup !== 'Graphics Department' && 
+    currentUserGroup !== 'Creative Designers';
+  const shouldShowAssignContent = 
+    currentUserGroup !== 'Graphics Department' && 
+    currentUserGroup !== 'Creative Designers';
 
   useEffect(() => {
     const fetchCalendarWorks = async () => {
@@ -98,7 +118,8 @@ const WorksheetCreativePage = () => {
     const fetchUsers = async () => {
       try {
         const response = await getUsersList();
-        const usersData = response.data?.data || [];
+        const usersData = response.data?.data || response.data || [];
+        setUsers(usersData);
         // Set current user group
         const currentUser = user?.id ? usersData.find((u: User) => u.id === user.id) : null;
         setCurrentUserGroup(currentUser?.group_name || '');
@@ -110,6 +131,94 @@ const WorksheetCreativePage = () => {
     fetchCalendarWorks();
     fetchUsers();
   }, [user?.id]);
+
+  const handleAssignDesigner = async (workId: number, userIds: number[]) => {
+    try {
+      await assignDesignersToWork(workId, userIds);
+      const payload = JSON.stringify(userIds);
+      setCalendarWorks(prev => prev.map(w => 
+        w.id === workId ? { ...w, assigned_to: payload === "[]" ? null : payload } : w
+      ));
+      setAssignmentModal(prev => ({ ...prev, isOpen: false }));
+    } catch (err) {
+      console.error('Failed to assign designer:', err);
+    }
+  };
+
+  const handleAssignContent = async (workId: number, userIds: number[]) => {
+    try {
+      const payload = JSON.stringify(userIds);
+      await assignCalendarWorkContent(workId, { content_assigned_to: payload });
+      setCalendarWorks(prev => prev.map(w => 
+        w.id === workId ? { ...w, content_assigned_to: payload === "[]" ? null : payload } : w
+      ));
+      setAssignmentModal(prev => ({ ...prev, isOpen: false }));
+    } catch (err) {
+      console.error('Failed to assign content:', err);
+    }
+  };
+
+  const designerUsers = useMemo(() => 
+    users.filter(u => u.group_name?.toLowerCase().includes('graphics') || u.group_name?.toLowerCase().includes('creative')),
+  [users]);
+
+  const contentUsers = useMemo(() => 
+    users.filter(u => u.group_name?.toLowerCase().includes('content')),
+  [users]);
+
+  const parseIds = (data: any): number[] => {
+    if (!data) return [];
+    
+    // Handle native arrays (of numbers or objects)
+    if (Array.isArray(data)) {
+      return data.map(item => (typeof item === 'object' && item !== null ? item.id : item))
+                 .map(Number)
+                 .filter(n => !isNaN(n));
+    }
+
+    try {
+      // Handle JSON strings
+      if (typeof data === 'string' && (data.startsWith('[') || data.startsWith('{'))) {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) {
+          return parsed.map(item => (typeof item === 'object' && item !== null ? item.id : item))
+                       .map(Number)
+                       .filter(n => !isNaN(n));
+        }
+      }
+      
+      // Handle comma-separated strings or single IDs
+      const stringData = String(data);
+      return stringData.split(',').map(s => s.trim()).map(Number).filter(n => !isNaN(n));
+    } catch (e) {
+      return [];
+    }
+  };
+
+  const getAssignedNames = (assignedTo: string | null, type: 'designer' | 'content') => {
+    const ids = parseIds(assignedTo);
+    if (ids.length === 0) return type === 'designer' ? 'Assign Designer' : 'Assign Content';
+    
+    const names = ids
+      .map(id => users.find(u => u.id === Number(id))?.name)
+      .filter(Boolean);
+      
+    if (names.length === 0) return type === 'designer' ? 'Assign Designer' : 'Assign Content';
+    
+    if (names.length > 2) {
+      return `${names[0]}, ${names[1]} +${names.length - 2}`;
+    }
+    return names.join(', ');
+  };
+
+  const getFullAssignedNames = (assignedTo: string | null) => {
+    const ids = parseIds(assignedTo);
+    const names = ids
+      .map(id => users.find(u => u.id === Number(id))?.name)
+      .filter(Boolean);
+    
+    return names.length > 0 ? names.join(', ') : undefined;
+  };
 
   // Filter works based on search term
   const filteredCalendarWorks = calendarWorks.filter(work => {
@@ -175,6 +284,10 @@ const WorksheetCreativePage = () => {
                   <th className="px-5 py-3">Content Description</th>
                   <th className="px-5 py-3">Creatives</th>
                   <th className="px-5 py-3">Notes</th>
+                  <th className="px-5 py-3">Assign Designer</th>
+                  {shouldShowAssignContent && (
+                    <th className="px-5 py-3">Assign Content</th>
+                  )}
                   <th className="px-5 py-3">Design Upload</th>
                   <th className="px-5 py-3 text-center">Status</th>
                   <th className="px-5 py-3 text-right">Actions</th>
@@ -251,6 +364,56 @@ const WorksheetCreativePage = () => {
                         </div>
                       </td>
                       <td className="px-5 py-3">
+                        {(() => {
+                          const designerIds = parseIds(work.assigned_to);
+                          const isAssigned = designerIds.length > 0;
+                          return (
+                            <Button 
+                              variant="secondary" 
+                              size="sm" 
+                              className={`text-[10px] w-full justify-between transition-all ${isAssigned ? '!bg-orange-500 !text-white !border-orange-600 hover:!bg-orange-600' : ''}`}
+                              title={getFullAssignedNames(work.assigned_to)}
+                              onClick={() => {
+                                setAssignmentModal({
+                                  isOpen: true,
+                                  workId: work.id,
+                                  initialIds: designerIds,
+                                  type: 'designer'
+                                });
+                              }}
+                            >
+                              {getAssignedNames(work.assigned_to, 'designer')}
+                            </Button>
+                          );
+                        })()}
+                      </td>
+                      {shouldShowAssignContent && (
+                        <td className="px-5 py-3">
+                          {(() => {
+                            const contentIds = parseIds(work.content_assigned_to);
+                            const isAssigned = contentIds.length > 0;
+                            return (
+                              <Button 
+                                variant="secondary" 
+                                size="sm" 
+                                className={`text-[10px] w-full justify-between transition-all ${isAssigned ? '!bg-orange-500 !text-white !border-orange-600 hover:!bg-orange-600' : ''}`}
+                                title={getFullAssignedNames(work.content_assigned_to)}
+                                onClick={() => {
+                                  setAssignmentModal({
+                                    isOpen: true,
+                                    workId: work.id,
+                                    initialIds: contentIds,
+                                    type: 'content'
+                                  });
+                                }}
+                              >
+                                {getAssignedNames(work.content_assigned_to, 'content')}
+                              </Button>
+                            );
+                          })()}
+                        </td>
+                      )}
+                      <td className="px-5 py-3">
                         <Button variant="secondary" size="sm" className="text-[10px]">
                           <Upload size={12} className="mr-1" /> Upload
                         </Button>
@@ -278,7 +441,7 @@ const WorksheetCreativePage = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={9 + (shouldShowTrackingNo ? 1 : 0) + (shouldShowDate ? 1 : 0)} className="px-6 py-20 text-center align-top">
+                    <td colSpan={10 + (shouldShowTrackingNo ? 1 : 0) + (shouldShowDate ? 1 : 0) + (shouldShowAssignContent ? 1 : 0)} className="px-6 py-20 text-center align-top">
                       <div className="flex flex-col items-center gap-2">
                         <div className="p-3 bg-slate-50 rounded-full text-slate-300">
                           <Clipboard size={24} />
@@ -298,6 +461,23 @@ const WorksheetCreativePage = () => {
           </div>
         )}
       </div>
+
+      <AssignmentModal
+        isOpen={assignmentModal.isOpen}
+        onClose={() => setAssignmentModal(prev => ({ ...prev, isOpen: false }))}
+        onAssign={(userIds) => {
+          if (assignmentModal.workId) {
+            if (assignmentModal.type === 'designer') {
+              handleAssignDesigner(assignmentModal.workId, userIds);
+            } else {
+              handleAssignContent(assignmentModal.workId, userIds);
+            }
+          }
+        }}
+        users={assignmentModal.type === 'designer' ? designerUsers : contentUsers}
+        initialSelectedIds={assignmentModal.initialIds}
+        title={assignmentModal.type === 'designer' ? "Assign Designers" : "Assign Content Writers"}
+      />
     </div>
   );
 };

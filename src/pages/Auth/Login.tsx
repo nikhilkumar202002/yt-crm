@@ -36,122 +36,86 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 font-sans overflow-hidden">
-      {/* --- Left Side: Branding / Marketing (Hidden on Mobile) --- */}
-      <div className="hidden lg:flex lg:w-3/5 bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 items-center justify-center p-16 text-white relative">
-        {/* Abstract Background Decoration */}
-        <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
-          <div className="absolute top-20 left-20 w-72 h-72 bg-white rounded-full blur-3xl" />
-          <div className="absolute bottom-20 right-20 w-96 h-96 bg-slate-400 rounded-full blur-3xl opacity-10" />
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 font-sans">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 p-8 sm:p-10 animate-in fade-in zoom-in duration-500">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-50 rounded-2xl mb-6">
+            <ShieldCheck size={32} className="text-blue-600" />
+          </div>
+          <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Welcome Back</h2>
+          <p className="text-slate-500 mt-2 font-medium">Sign in to your YT CRM account</p>
         </div>
 
-        <div className="max-w-xl relative z-10">
-          <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-2xl w-fit mb-12 shadow-xl">
-            <ShieldCheck size={44} className="text-white" />
-          </div>
-          <h1 className="text-7xl font-bold mb-8 tracking-tight leading-tight text-white">
-            YT CRM <span className="text-gray-300 font-light text-6xl">2.0</span>
-          </h1>
-          <p className="text-gray-200 text-lg leading-relaxed font-normal mb-16">
-            Enterprise-grade CRM platform for comprehensive lead management, execution tracking, and business intelligence.
-          </p>
-          
-          {/* Trust Badges / Stats */}
-          <div className="grid grid-cols-2 gap-8 pt-12 border-t border-white/10">
-            <div>
-              <p className="text-4xl font-bold text-white mb-2">99.9%</p>
-              <p className="text-gray-300 text-sm font-medium uppercase tracking-wide">Uptime SLA</p>
-            </div>
-            <div>
-              <p className="text-4xl font-bold text-white mb-2">Enterprise</p>
-              <p className="text-gray-300 text-sm font-medium uppercase tracking-wide">Security</p>
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">
+              Email Address
+            </label>
+            <div className="relative group">
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
+              <input 
+                type="email" 
+                placeholder="name@company.com" 
+                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-600 focus:bg-white outline-none transition-all text-slate-900 text-sm font-medium placeholder:text-slate-400"
+                onChange={(e) => setEmail(e.target.value)} 
+                required 
+              />
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* --- Right Side: Login Form (Full width on Mobile) --- */}
-      <div className="w-full lg:w-2/5 flex items-center justify-center p-8 sm:p-16">
-        <div className="w-full max-w-md animate-in fade-in slide-in-from-right-10 duration-700">
-          
-          <div className="mb-12">
-            <h2 className="text-5xl font-bold text-gray-900 mb-4 tracking-tight">Login</h2>
-            <p className="text-gray-600 text-lg font-normal">Sign in to your corporate account</p>
-          </div>
-
-          <form onSubmit={handleLogin} className="space-y-8">
-            {/* Email Field */}
-            <div className="space-y-3">
-              <label className="text-sm font-semibold uppercase tracking-wider text-gray-700 block">
-                Email Address
+          <div className="space-y-2">
+            <div className="flex justify-between items-center ml-1">
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                Password
               </label>
-              <div className="relative group">
-                <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-700 transition-colors" size={20} />
-                <input 
-                  type="email" 
-                  placeholder="name@company.com" 
-                  className="w-full pl-14 pr-5 py-4 bg-white border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 outline-none transition-all text-gray-800 text-base font-normal placeholder:text-gray-400 shadow-sm hover:border-gray-300"
-                  onChange={(e) => setEmail(e.target.value)} 
-                  required 
-                />
-              </div>
+              <button type="button" className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors">
+                Forgot?
+              </button>
             </div>
-
-            {/* Password Field with Eye Toggle */}
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <label className="text-sm font-semibold uppercase tracking-wider text-gray-700">
-                  Password
-                </label>
-                <button type="button" className="text-sm font-semibold text-blue-700 hover:text-blue-800 uppercase tracking-wider transition-colors">
-                  Forgot?
-                </button>
-              </div>
-              <div className="relative group">
-                <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-700 transition-colors" size={20} />
-                <input 
-                  type={showPassword ? "text" : "password"} 
-                  placeholder="••••••••••••••" 
-                  className="w-full pl-14 pr-14 py-4 bg-white border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 outline-none transition-all text-gray-800 text-base font-normal placeholder:text-gray-400 shadow-sm hover:border-gray-300"
-                  onChange={(e) => setPassword(e.target.value)} 
-                  required 
-                />
-                <button 
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-                >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
+            <div className="relative group">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
+              <input 
+                type={showPassword ? "text" : "password"} 
+                placeholder="••••••••" 
+                className="w-full pl-12 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-600 focus:bg-white outline-none transition-all text-slate-900 text-sm font-medium placeholder:text-slate-400"
+                onChange={(e) => setPassword(e.target.value)} 
+                required 
+              />
+              <button 
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
+          </div>
 
-            <div className="flex items-center gap-3 pt-2">
-              <input type="checkbox" id="rem" className="w-5 h-5 rounded border-gray-300 text-blue-700 focus:ring-2 focus:ring-blue-500 cursor-pointer" />
-              <label htmlFor="rem" className="text-base font-normal text-gray-700 cursor-pointer">Keep me signed in</label>
-            </div>
+          <div className="flex items-center gap-2.5 py-1">
+            <input type="checkbox" id="rem" className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
+            <label htmlFor="rem" className="text-sm font-medium text-slate-600 cursor-pointer select-none">Keep me signed in</label>
+          </div>
 
-            <button 
-              disabled={loading}
-              className="w-full group relative flex items-center justify-center h-16 bg-blue-700 hover:bg-blue-800 text-white font-semibold text-base uppercase tracking-wide rounded-lg shadow-lg transition-all active:scale-[0.98] disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <Loader2 className="animate-spin" size={22} />
-              ) : (
-                <>
-                  Sign In
-                  <ChevronRight size={20} className="ml-3 group-hover:translate-x-1 transition-transform" />
-                </>
-              )}
-            </button>
-          </form>
+          <button 
+            disabled={loading}
+            className="w-full flex items-center justify-center h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm uppercase tracking-widest rounded-xl shadow-lg shadow-blue-600/20 transition-all active:scale-[0.98] disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <Loader2 className="animate-spin" size={20} />
+            ) : (
+              <>
+                Sign In
+                <ChevronRight size={18} className="ml-2" />
+              </>
+            )}
+          </button>
+        </form>
 
-          <footer className="mt-12 text-center border-t border-gray-200 pt-8">
-            <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider">
-              Enterprise Edition • Powered by Yellowtooths
-            </p>
-          </footer>
-        </div>
+        <footer className="mt-10 text-center pt-8 border-t border-slate-100">
+          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">
+            YT CRM Enterprise • v2.0
+          </p>
+        </footer>
       </div>
     </div>
   );
