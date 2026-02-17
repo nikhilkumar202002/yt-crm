@@ -35,10 +35,10 @@ const ContentDashboard: React.FC<ContentDashboardProps> = ({ user, groupName }) 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="md:col-span-1">
+        <div className="md:col-span-1 items-start">
           <AttendanceTracker groupName={groupName} />
         </div>
-        <div className="md:col-span-1 bg-slate-900 p-6 rounded-2xl text-white flex flex-col justify-center relative overflow-hidden">
+        <div className="md:col-span-1 bg-slate-900 p-6 rounded-none text-white flex flex-col justify-center relative overflow-hidden items-start">
           <div className="absolute -right-4 -bottom-4 opacity-10">
             <FileText size={100} />
           </div>
@@ -46,8 +46,8 @@ const ContentDashboard: React.FC<ContentDashboardProps> = ({ user, groupName }) 
           <h2 className="text-xl font-black text-blue-400 leading-none mb-2">{user?.name}</h2>
           <p className="text-[10px] text-slate-500 font-medium">Content Writer</p>
         </div>
-        <div className="md:col-span-1 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center items-center">
-          <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600 mb-2">
+        <div className="md:col-span-1 bg-white p-5 rounded-none shadow-sm border border-slate-100 flex flex-col justify-center items-start">
+          <div className="p-3 bg-emerald-50 rounded-none text-emerald-600 mb-2">
             <FileText size={20} />
           </div>
           <p className="text-2xl font-black text-slate-900">{worksCount}</p>

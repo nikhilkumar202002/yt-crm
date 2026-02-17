@@ -36,7 +36,7 @@ const EditContentModal = ({ isOpen, onClose, onSave, initialDescription }: EditC
     <Dialog.Root open={isOpen} onOpenChange={onClose}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl z-[110] font-sans">
+        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-none p-6 shadow-2xl z-[110] font-sans items-start">
           <div className="flex justify-between items-center mb-6">
             <Dialog.Title className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
               <FileText size={18} className="text-blue-600" /> Edit Content
@@ -50,7 +50,7 @@ const EditContentModal = ({ isOpen, onClose, onSave, initialDescription }: EditC
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Content Description</label>
               <textarea
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none min-h-[120px]"
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-none text-sm focus:ring-2 focus:ring-blue-500 outline-none min-h-[120px]"
                 placeholder="Enter content description..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -69,7 +69,7 @@ const EditContentModal = ({ isOpen, onClose, onSave, initialDescription }: EditC
                 />
                 <label
                   htmlFor="content-file"
-                  className="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed border-slate-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer group"
+                  className="flex items-center justify-start gap-2 w-full px-4 py-3 border-2 border-dashed border-slate-200 rounded-none hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer group"
                 >
                   <Upload size={16} className="text-slate-400 group-hover:text-blue-500" />
                   <span className="text-xs font-medium text-slate-500 group-hover:text-blue-600">

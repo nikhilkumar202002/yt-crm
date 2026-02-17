@@ -6,9 +6,10 @@ import {
   Upload,
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
-import { getCalendarWorks, assignCalendarWorkContent, assignDesignersToWork } from '../../api/services/microService';
+import { getCalendarWorks, assignCalendarWorkContent, assignDesignersToWork, uploadDesignerFiles, updateCalendarWorkStatus } from '../../api/services/microService';
 import { getUsersList } from '../../api/services/authService';
 import AssignmentModal from './components/AssignmentModal';
+import ImageLightbox from '../../components/common/ImageLightbox';
 
 interface Creative {
   id: string;
@@ -69,6 +70,9 @@ interface CalendarWork {
   is_deleted: boolean;
   deleted_by: string | null;
   content_assigned_by: string | null;
+  designer_files?: any;
+  designer_file?: any;
+  status?: string;
 }
 
 const WorksheetDMPage = () => {
@@ -81,6 +85,8 @@ const WorksheetDMPage = () => {
   const [currentUserGroup, setCurrentUserGroup] = useState<string>('');
   const [currentUserPosition, setCurrentUserPosition] = useState<string>('');
   const [workStatuses, setWorkStatuses] = useState<{ [key: number]: string }>({});
+  const [uploadingWorkId, setUploadingWorkId] = useState<number | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   // Modal state
   const [assignmentModal, setAssignmentModal] = useState<{ isOpen: boolean; workId: number | null; initialIds: number[]; type: 'designer' | 'content' }>({
@@ -137,6 +143,18 @@ const WorksheetDMPage = () => {
     }
   };
 
+  const handleStatusChange = async (workId: number, newStatus: string) => {
+    try {
+      const response = await updateCalendarWorkStatus(workId, newStatus);
+      if (response.status || response.data) {
+        setWorkStatuses(prev => ({ ...prev, [workId]: newStatus }));
+        setCalendarWorks(prev => prev.map(w => w.id === workId ? { ...w, status: newStatus } : w));
+      }
+    } catch (err) {
+      console.error('Failed to update status:', err);
+    }
+  };
+
   const handleAssignContent = async (workId: number, userIds: number[]) => {
     try {
       // Ensure we send the exact format expected: a stringified array of IDs
@@ -153,6 +171,32 @@ const WorksheetDMPage = () => {
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !uploadingWorkId) return;
+
+    try {
+      const workId = uploadingWorkId;
+      const response = await uploadDesignerFiles(workId, Array.from(files));
+      
+      // Robustly extract the work object from the response
+      let updatedWork = response?.data || response;
+      if (response?.status === true && response?.data) {
+        updatedWork = response.data;
+      }
+
+      // Only update if we have a valid work object with an ID
+      if (updatedWork && (updatedWork.id || updatedWork.tracking_no)) {
+        setCalendarWorks(prev => prev.map(w => w.id === workId ? updatedWork : w));
+      }
+    } catch (err) {
+      console.error('Failed to upload files:', err);
+    } finally {
+      setUploadingWorkId(null);
+      if (e.target) e.target.value = '';
+    }
+  };
+
   const designerUsers = useMemo(() => 
     users.filter(u => u.group_name?.toLowerCase().includes('graphics') || u.group_name?.toLowerCase().includes('creative')),
   [users]);
@@ -160,6 +204,37 @@ const WorksheetDMPage = () => {
   const contentUsers = useMemo(() => 
     users.filter(u => u.group_name?.toLowerCase().includes('content')),
   [users]);
+
+  const parseFiles = (data: any): string[] => {
+    if (!data) return [];
+    
+    const extractUrl = (item: any): string | null => {
+      if (typeof item === 'string') return item;
+      if (item && typeof item === 'object' && item.file_url) return item.file_url;
+      return null;
+    };
+
+    if (Array.isArray(data)) {
+      return data.map(extractUrl).filter((item): item is string => item !== null);
+    }
+    
+    if (typeof data === 'string') {
+      const trimmed = data.trim();
+      if (!trimmed) return [];
+      
+      try {
+        if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+          const parsed = JSON.parse(trimmed);
+          const array = Array.isArray(parsed) ? parsed : [parsed];
+          return array.map(extractUrl).filter((item): item is string => item !== null);
+        }
+        return trimmed.split(',').map(s => s.trim()).filter(Boolean);
+      } catch (e) {
+        return [trimmed];
+      }
+    }
+    return [];
+  };
 
   const parseIds = (data: any): number[] => {
     if (!data) return [];
@@ -221,7 +296,7 @@ const WorksheetDMPage = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 font-sans">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div>
           <h1 className="text-xl font-bold text-slate-900 tracking-tight">DM Worksheet</h1>
           <p className="text-[11px] text-slate-500 font-medium">Manage calendar works and assignments</p>
@@ -243,16 +318,16 @@ const WorksheetDMPage = () => {
             placeholder="Search by client, content, or notes..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm font-normal"
+            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm font-normal"
           />
         </div>
       </div>
 
       {/* Calendar Works Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200/60 overflow-hidden relative">
+      <div className="bg-white rounded-none shadow-sm border border-slate-200/60 overflow-hidden relative">
         {loading ? (
           <div className="flex-1 flex flex-col items-center justify-center p-20 gap-3">
-            <div className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full" />
+            <div className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-none" />
             <p className="text-xs font-medium text-slate-500 uppercase tracking-widest">Loading Calendar Works...</p>
           </div>
         ) : error ? (
@@ -267,7 +342,7 @@ const WorksheetDMPage = () => {
             <table className="w-full text-left border-collapse min-w-[1600px]">
               <thead className="bg-slate-50/50 border-b border-slate-100">
                 <tr className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                  <th className="px-4 py-3 w-12 text-center">#</th>
+                  <th className="px-4 py-3 w-12 text-left">#</th>
                   <th className="px-4 py-3 w-28">Tracking No</th>
                   <th className="px-4 py-3 w-24">Date</th>
                   <th className="px-4 py-3 w-24">Special Day</th>
@@ -278,15 +353,15 @@ const WorksheetDMPage = () => {
                   <th className="px-4 py-3 w-40">Assign Designer</th>
                   <th className="px-4 py-3 w-40">Assign Content</th>
                   <th className="px-4 py-3 w-32">Design Upload</th>
-                  <th className="px-4 py-3 w-24 text-center">Status</th>
-                  <th className="px-4 py-3 w-24 text-right">Actions</th>
+                  <th className="px-4 py-3 w-24 text-left">Status</th>
+                  <th className="px-4 py-3 w-24 text-left">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {filteredCalendarWorks.length > 0 ? (
                   filteredCalendarWorks.map((work, index) => (
                     <tr key={work.id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-4 py-3 text-center text-[10px] font-medium text-slate-400">{index + 1}</td>
+                      <td className="px-4 py-3 text-left text-[10px] font-medium text-slate-400">{index + 1}</td>
                       <td className="px-4 py-3">
                         <div className="text-[11px] font-bold text-slate-900">
                           {work.tracking_no || 'N/A'}
@@ -303,7 +378,7 @@ const WorksheetDMPage = () => {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           {work.is_special_day ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                            <span className="inline-flex items-center px-2 py-1 rounded-none text-[10px] font-medium bg-purple-100 text-purple-800 border border-purple-200">
                               <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mr-1.5"></span>
                               Special Day
                             </span>
@@ -412,10 +487,10 @@ const WorksheetDMPage = () => {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <button className="p-2 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all">
+                          <button className="p-2 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded-none transition-all">
                             <Edit size={14} />
                           </button>
-                          <button className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
+                          <button className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-none transition-all">
                             <Trash2 size={14} />
                           </button>
                         </div>
@@ -426,7 +501,7 @@ const WorksheetDMPage = () => {
                   <tr>
                     <td colSpan={13} className="px-6 py-20 text-center align-top">
                       <div className="flex flex-col items-center gap-2">
-                        <div className="p-3 bg-slate-50 rounded-full text-slate-300">
+                        <div className="p-3 bg-slate-50 rounded-none text-slate-300">
                           <Clipboard size={24} />
                         </div>
                         <p className="text-sm font-medium text-slate-400">
@@ -461,6 +536,22 @@ const WorksheetDMPage = () => {
         initialSelectedIds={assignmentModal.initialIds}
         title={assignmentModal.type === 'designer' ? "Assign Designers" : "Assign Content Writers"}
       />
+
+      <input
+        type="file"
+        id="dm-designer-file-upload"
+        className="hidden"
+        multiple
+        accept="image/*"
+        onChange={handleFileChange}
+      />
+
+      {lightboxImage && (
+        <ImageLightbox 
+          src={lightboxImage} 
+          onClose={() => setLightboxImage(null)} 
+        />
+      )}
     </div>
   );
 };

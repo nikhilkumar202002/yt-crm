@@ -45,7 +45,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-none shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{title}</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
@@ -58,7 +58,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
             users.map(user => (
               <label 
                 key={user.id} 
-                className={`flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                className={`flex items-start justify-between p-3 rounded-none border-2 cursor-pointer transition-all ${
                   selectedIds.includes(user.id) 
                     ? 'border-blue-500 bg-blue-50/50' 
                     : 'border-slate-100 hover:border-slate-200 bg-white'
@@ -75,7 +75,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                     checked={selectedIds.includes(user.id)}
                     onChange={() => toggleUser(user.id)}
                   />
-                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                  <div className={`w-5 h-5 rounded-none border-2 flex items-center justify-center transition-all ${
                     selectedIds.includes(user.id) 
                       ? 'bg-blue-600 border-blue-600' 
                       : 'bg-white border-slate-200'

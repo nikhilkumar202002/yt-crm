@@ -222,6 +222,27 @@ export const uploadLeads = async (file: File) => {
   return response.data;
 };
 
+/**
+ * PUT Upload designer files (poster images) to a calendar work
+ * Endpoint: PUT /calendar-works/{id}/designer-files
+ */
+export const uploadDesignerFiles = async (id: number, files: File[]) => {
+  const formData = new FormData();
+  files.forEach((file) => {
+    formData.append('designer_files[]', file);
+  });
+
+  // Using POST with _method: 'PUT' for multipart compatibility with certain backends
+  const response = await apiClient.post(`/calendar-works/${id}/designer-files`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+    params: { _method: 'PUT' },
+    timeout: 60000 // Increase timeout to 60 seconds for file uploads
+  });
+  return response.data;
+};
+
 export const assignLeads = async (data: { lead_ids: number[], user_id: number, status: string }) => {
   const response = await apiClient.post('/lead-assigns', data); //
   return response.data;
@@ -577,5 +598,14 @@ export const updateCalendarWorkContentDetails = async (id: number, data: { conte
     headers: { 'Content-Type': 'multipart/form-data' },
     params: { _method: 'PUT' }
   });
+  return response.data;
+};
+
+/**
+ * PUT Update calendar work status
+ * Endpoint: PUT /calendar-works/{id}/status
+ */
+export const updateCalendarWorkStatus = async (id: number, status: string) => {
+  const response = await apiClient.put(`/calendar-works/${id}/status`, { status });
   return response.data;
 };

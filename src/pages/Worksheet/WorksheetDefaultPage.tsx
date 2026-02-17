@@ -213,7 +213,7 @@ const WorksheetDefaultPage = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 font-sans">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div>
           <h1 className="text-xl font-bold text-slate-900 tracking-tight">Worksheet</h1>
           <p className="text-[11px] text-slate-500 font-medium">View and manage calendar works</p>
@@ -228,16 +228,16 @@ const WorksheetDefaultPage = () => {
             placeholder="Search by client, content, or notes..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm font-normal"
+            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm font-normal"
           />
         </div>
       </div>
 
       {/* Calendar Works Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200/60 overflow-hidden relative">
+      <div className="bg-white rounded-none shadow-sm border border-slate-200/60 overflow-hidden relative border border-slate-200">
         {loading ? (
           <div className="flex-1 flex flex-col items-center justify-center p-20 gap-3">
-            <div className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full" />
+            <div className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-none" />
             <p className="text-xs font-medium text-slate-500 uppercase tracking-widest">Loading Calendar Works...</p>
           </div>
         ) : error ? (
@@ -249,34 +249,34 @@ const WorksheetDefaultPage = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[1400px]">
-              <thead className="bg-slate-50/50 border-b border-slate-100">
-                <tr className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                  <th className="px-4 py-3 w-12 text-center">#</th>
-                  <th className="px-4 py-3 w-28">Tracking No</th>
-                  <th className="px-4 py-3 w-24">Date</th>
-                  <th className="px-4 py-3 w-24">Special Day</th>
-                  <th className="px-4 py-3 w-48">Client</th>
-                  <th className="px-4 py-3 min-w-[250px]">Content Description</th>
-                  <th className="px-4 py-3 w-32">Creatives</th>
-                  <th className="px-4 py-3 min-w-[200px]">Notes</th>
-                  <th className="px-4 py-3 w-40">Assign Designer</th>
-                  <th className="px-4 py-3 w-32">Design Upload</th>
-                  <th className="px-4 py-3 w-24 text-center">Status</th>
-                  <th className="px-4 py-3 w-24 text-right">Actions</th>
+            <table className="w-full text-left border-collapse min-w-[1400px] border border-slate-200">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                  <th className="px-4 py-3 w-12 text-left border border-slate-200">#</th>
+                  <th className="px-4 py-3 w-28 border border-slate-200">Tracking No</th>
+                  <th className="px-4 py-3 w-24 border border-slate-200">Date</th>
+                  <th className="px-4 py-3 w-24 border border-slate-200">Special Day</th>
+                  <th className="px-4 py-3 w-48 border border-slate-200">Client</th>
+                  <th className="px-4 py-3 min-w-[250px] border border-slate-200">Content Description</th>
+                  <th className="px-4 py-3 w-32 border border-slate-200">Creatives</th>
+                  <th className="px-4 py-3 min-w-[200px] border border-slate-200">Notes</th>
+                  <th className="px-4 py-3 w-40 border border-slate-200">Assign Designer</th>
+                  <th className="px-4 py-3 w-32 border border-slate-200">Design Upload</th>
+                  <th className="px-4 py-3 w-24 text-left border border-slate-200">Status</th>
+                  <th className="px-4 py-3 w-24 text-left border border-slate-200">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody className="divide-y divide-slate-200">
                 {filteredCalendarWorks.length > 0 ? (
                   filteredCalendarWorks.map((work, index) => (
                     <tr key={work.id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-4 py-3 text-center text-[10px] font-medium text-slate-400">{index + 1}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 text-left align-top text-[10px] font-medium text-slate-400 border border-slate-200">{index + 1}</td>
+                      <td className="px-4 py-3 align-top border border-slate-200">
                         <div className="text-[11px] font-bold text-slate-900">
                           {work.tracking_no || 'N/A'}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 align-top border border-slate-200">
                         <div className="text-[11px] font-medium text-slate-900">
                           {work.date ? (() => {
                             const date = new Date(work.date);
@@ -284,10 +284,10 @@ const WorksheetDefaultPage = () => {
                           })() : 'No Date'}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
+                      <td className="px-4 py-3 align-top border border-slate-200">
+                        <div className="flex items-start gap-2">
                           {work.is_special_day ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                            <span className="inline-flex items-center px-2 py-1 rounded-none text-[10px] font-medium bg-purple-100 text-purple-800 border border-purple-200">
                               <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mr-1.5"></span>
                               Special Day
                             </span>
@@ -296,7 +296,7 @@ const WorksheetDefaultPage = () => {
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 align-top border border-slate-200">
                         <div className="min-w-0">
                           <p className="text-[11px] font-bold text-slate-900 leading-none truncate max-w-37.5">
                             {work.client?.company_name || 'N/A'}
@@ -306,12 +306,12 @@ const WorksheetDefaultPage = () => {
                           </p>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 align-top border border-slate-200">
                         <div className="text-[11px] text-slate-700">
                           {work.content_description || 'No description'}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 align-top border border-slate-200">
                         <div className="space-y-1">
                           {work.creatives && work.creatives.length > 0 ? (
                             work.creatives.slice(0, 2).map((creative, index) => (
@@ -327,12 +327,12 @@ const WorksheetDefaultPage = () => {
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 align-top border border-slate-200">
                         <div className="text-[11px] text-slate-700">
                           {work.notes || 'No notes'}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 align-top border border-slate-200">
                         {(() => {
                           const designerIds = parseIds(work.assigned_to);
                           const isAssigned = designerIds.length > 0;
@@ -355,13 +355,13 @@ const WorksheetDefaultPage = () => {
                           );
                         })()}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 align-top border border-slate-200">
                         <Button variant="secondary" size="sm" className="text-[10px]">
                           <Upload size={12} className="mr-1" /> Upload
                         </Button>
                       </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-[9px] font-medium ${
+                      <td className="px-4 py-3 text-left align-top border border-slate-200">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-none text-[9px] font-medium ${
                           workStatuses[work.id] === 'completed' ? 'bg-green-100 text-green-800' :
                           workStatuses[work.id] === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
                           'bg-gray-100 text-gray-800'
@@ -369,12 +369,12 @@ const WorksheetDefaultPage = () => {
                           {workStatuses[work.id] || 'pending'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button className="p-2 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all">
+                      <td className="px-4 py-3 text-left align-top border border-slate-200">
+                        <div className="flex items-start justify-start gap-1">
+                          <button className="p-2 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded-none transition-all">
                             <Edit size={14} />
                           </button>
-                          <button className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
+                          <button className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-none transition-all">
                             <Trash2 size={14} />
                           </button>
                         </div>
@@ -383,9 +383,9 @@ const WorksheetDefaultPage = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={12} className="px-6 py-20 text-center align-top">
+                    <td colSpan={12} className="px-6 py-20 text-center align-top border border-slate-200">
                       <div className="flex flex-col items-center gap-2">
-                        <div className="p-3 bg-slate-50 rounded-full text-slate-300">
+                        <div className="p-3 bg-slate-50 rounded-none text-slate-300">
                           <Clipboard size={24} />
                         </div>
                         <p className="text-sm font-medium text-slate-400">

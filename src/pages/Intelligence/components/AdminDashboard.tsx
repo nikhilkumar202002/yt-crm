@@ -60,14 +60,14 @@ const AdminDashboard = () => {
       {/* Row 1: KPI Statistics */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
         {topStats.map((stat, i) => (
-          <div key={i} className={`bg-white p-3 rounded-xl shadow-sm border-l-2 ${stat.color} hover:shadow-md transition-all cursor-default`}>
+          <div key={i} className={`bg-white p-3 rounded-none shadow-sm border-l-2 ${stat.color} hover:shadow-md transition-all cursor-default`}>
              <div className="flex items-center gap-1.5 mb-2">
                {stat.icon}
                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{stat.label}</span>
              </div>
              <div className="flex items-end justify-between">
                <p className="text-base font-bold text-slate-900 leading-none">{stat.value}</p>
-               <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${stat.trend.startsWith('+') ? 'text-green-600 bg-green-50' : 'text-red-500 bg-red-50'}`}>
+               <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-none ${stat.trend.startsWith('+') ? 'text-green-600 bg-green-50' : 'text-red-500 bg-red-50'}`}>
                  {stat.trend}
                </span>
              </div>
@@ -80,7 +80,7 @@ const AdminDashboard = () => {
         
         {/* Row 2: Lead Source & Pipeline */}
         {/* Lead Source Donut */}
-        <div className="col-span-12 lg:col-span-3 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+        <div className="col-span-12 lg:col-span-3 bg-white p-5 rounded-none shadow-sm border border-slate-100">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Lead Source</h3>
             <button className="text-slate-400 hover:text-slate-600"><MoreHorizontal size={14} /></button>
@@ -103,7 +103,7 @@ const AdminDashboard = () => {
                 </Pie>
                 <Tooltip 
                   contentStyle={{ 
-                    borderRadius: '12px', 
+                    borderRadius: '0px', 
                     border: 'none', 
                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                     fontSize: '10px',
@@ -122,7 +122,7 @@ const AdminDashboard = () => {
             {leadSourceData.map((item, i) => (
               <div key={i} className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <div className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                  <div className="h-1.5 w-1.5 rounded-none shrink-0" style={{ backgroundColor: item.color }} />
                   <span className="text-[9px] font-bold text-slate-500 truncate">{item.name}</span>
                 </div>
                 <span className="text-[9px] font-bold text-slate-800">{item.value}%</span>
@@ -132,7 +132,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Sales Pipeline Steps */}
-        <div className="col-span-12 lg:col-span-6 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+        <div className="col-span-12 lg:col-span-6 bg-white p-5 rounded-none shadow-sm border border-slate-100 flex flex-col">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Sales Pipeline Performance</h3>
             <div className="flex items-center gap-3">
@@ -161,7 +161,7 @@ const AdminDashboard = () => {
                 <YAxis hide />
                 <Tooltip 
                    contentStyle={{ 
-                    borderRadius: '12px', 
+                    borderRadius: '0px', 
                     border: 'none', 
                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                     fontSize: '10px',
@@ -189,7 +189,7 @@ const AdminDashboard = () => {
               { label: 'Won', count: '27', value: '₹39.8L', color: 'text-green-600' },
               { label: 'Lost', count: '14', value: '₹3.8L', color: 'text-red-500' },
             ].map((stat, i) => (
-              <div key={i} className="bg-slate-50/80 p-3 rounded-xl border border-slate-100 flex flex-col justify-between hover:bg-white hover:shadow-sm transition-all">
+              <div key={i} className="bg-slate-50/80 p-3 rounded-none border border-slate-100 flex flex-col justify-between hover:bg-white hover:shadow-sm transition-all">
                 <p className="text-[9px] font-bold text-slate-400 uppercase mb-2">{stat.label}</p>
                 <div>
                   <p className="text-xl font-black text-slate-900 leading-none mb-1.5">{stat.count}</p>
@@ -201,13 +201,13 @@ const AdminDashboard = () => {
         </div>
 
         {/* Conversion Funnel Viz */}
-        <div className="col-span-12 lg:col-span-3 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+        <div className="col-span-12 lg:col-span-3 bg-white p-5 rounded-none shadow-sm border border-slate-100">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Conversion Funnel</h3>
             <button className="text-slate-400 hover:text-slate-600"><MoreHorizontal size={14} /></button>
           </div>
           <div className="flex flex-col items-center gap-1.5 py-4">
-            <div className="w-full bg-orange-400/90 h-10 rounded-t-lg flex items-center justify-between px-4 text-white">
+            <div className="w-full bg-orange-400/90 h-10 rounded-none flex items-center justify-between px-4 text-white">
                <span className="text-[9px] font-bold uppercase tracking-wider">Leads</span>
                <span className="text-[11px] font-black tracking-widest">245</span>
             </div>
@@ -219,13 +219,13 @@ const AdminDashboard = () => {
                <span className="text-[9px] font-bold uppercase tracking-wider">Proposals</span>
                <span className="text-[11px] font-black tracking-widest">62</span>
             </div>
-            <div className="w-[55%] bg-purple-600/90 h-10 rounded-b-lg flex items-center justify-between px-4 text-white">
+            <div className="w-[55%] bg-purple-600/90 h-10 rounded-none flex items-center justify-between px-4 text-white">
                <span className="text-[9px] font-bold uppercase tracking-wider">Closed</span>
                <span className="text-[11px] font-black tracking-widest">31</span>
             </div>
           </div>
           <div className="mt-6 flex flex-col gap-2 pt-2 border-t border-slate-50">
-             <div className="flex justify-between items-center bg-slate-50 p-2 rounded-lg">
+             <div className="flex justify-between items-center bg-slate-50 p-2 rounded-none">
                 <span className="text-[9px] font-bold text-slate-400 uppercase">Lead to Closed</span>
                 <span className="text-[10px] font-black text-green-600">12.6%</span>
              </div>
@@ -234,7 +234,7 @@ const AdminDashboard = () => {
 
         {/* Row 3: Tracking & Publishing */}
         {/* Active Campaigns Table */}
-        <div className="col-span-12 lg:col-span-5 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+        <div className="col-span-12 lg:col-span-5 bg-white p-5 rounded-none shadow-sm border border-slate-100">
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
               <Activity size={14} className="text-blue-600" />
@@ -264,12 +264,12 @@ const AdminDashboard = () => {
                      <td className="py-3 text-[10px] font-bold text-slate-800">{row.client}</td>
                      <td className="py-3 text-[10px] text-slate-500 font-medium">{row.campaign}</td>
                      <td className="py-3">
-                        <div className="h-5 w-5 rounded-full bg-blue-100 flex items-center justify-center text-[8px] font-bold text-blue-600 border border-white">
+                        <div className="h-5 w-5 rounded-none bg-blue-100 flex items-center justify-center text-[8px] font-bold text-blue-600 border border-white">
                           {row.manager}
                         </div>
                      </td>
                      <td className="py-3 text-right">
-                       <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-md ${row.status === 'Active' ? 'text-green-600 bg-green-50' : row.status === 'Paused' ? 'text-orange-500 bg-orange-50' : 'text-slate-500 bg-slate-100'}`}>
+                       <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-none ${row.status === 'Active' ? 'text-green-600 bg-green-50' : row.status === 'Paused' ? 'text-orange-500 bg-orange-50' : 'text-slate-500 bg-slate-100'}`}>
                          {row.status}
                        </span>
                      </td>
@@ -281,7 +281,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Task Overview Bars */}
-        <div className="col-span-12 lg:col-span-3 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+        <div className="col-span-12 lg:col-span-3 bg-white p-5 rounded-none shadow-sm border border-slate-100">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Operation Tasks</h3>
             <span className="text-[10px] font-black text-slate-400">42 Total</span>
@@ -299,13 +299,13 @@ const AdminDashboard = () => {
                   <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tight">{task.label}</span>
                   <span className="text-[10px] font-black text-slate-800">{task.value}</span>
                 </div>
-                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                   <div className={`h-full ${task.color} rounded-full`} style={{ width: `${(task.value / task.max) * 100}%` }} />
+                <div className="h-1.5 w-full bg-slate-100 rounded-none overflow-hidden">
+                   <div className={`h-full ${task.color} rounded-none`} style={{ width: `${(task.value / task.max) * 100}%` }} />
                 </div>
               </div>
             ))}
           </div>
-          <div className="mt-8 p-3 bg-slate-50 rounded-xl border border-slate-100">
+          <div className="mt-8 p-3 bg-slate-50 rounded-none border border-slate-100">
              <p className="text-[9px] font-bold text-slate-400 uppercase mb-1">Weekly completion</p>
              <div className="flex items-center gap-2">
                 <p className="text-lg font-black text-slate-800 tracking-tighter">₹1.2L</p>
@@ -315,7 +315,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Top Ad Performance Table */}
-        <div className="col-span-12 lg:col-span-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+        <div className="col-span-12 lg:col-span-4 bg-white p-5 rounded-none shadow-sm border border-slate-100">
            <div className="flex items-center justify-between mb-5">
             <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Top Ad Performance</h3>
             <button className="text-slate-400 hover:text-slate-600"><Settings size={14} /></button>
@@ -339,8 +339,8 @@ const AdminDashboard = () => {
                  ].map((row, i) => (
                    <tr key={i} className="hover:bg-slate-50/50 transition-colors">
                      <td className="py-3">
-                        <div className="flex items-center gap-2">
-                          <div className={`h-6 w-6 rounded flex items-center justify-center ${row.c}`}>
+                        <div className="flex items-start gap-2">
+                          <div className={`h-6 w-6 rounded-none flex items-center justify-center ${row.c}`}>
                             {row.icon}
                           </div>
                           <span className="text-[10px] font-bold text-slate-800">{row.name}</span>

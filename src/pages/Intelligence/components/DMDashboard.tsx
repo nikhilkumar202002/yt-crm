@@ -12,10 +12,10 @@ const DMDashboard: React.FC<DMDashboardProps> = ({ user, groupName }) => {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="md:col-span-1">
+        <div className="md:col-span-1 items-start">
           <AttendanceTracker groupName={groupName} />
         </div>
-        <div className="md:col-span-2 bg-slate-900 p-6 rounded-2xl text-white flex flex-col justify-center relative overflow-hidden">
+        <div className="md:col-span-2 bg-slate-900 p-6 rounded-none text-white flex flex-col justify-center relative overflow-hidden items-start">
           <div className="absolute -right-4 -bottom-4 opacity-10">
             <Globe size={100} />
           </div>

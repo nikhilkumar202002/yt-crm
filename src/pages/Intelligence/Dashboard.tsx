@@ -52,7 +52,7 @@ const Dashboard = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <div className="h-5 w-5 bg-blue-600 rounded flex items-center justify-center text-white">
+            <div className="h-5 w-5 bg-blue-600 rounded-none flex items-center justify-center text-white">
               <span className="font-black text-[10px] italic">YT</span>
             </div>
             <h1 className="text-lg font-bold text-slate-900 tracking-tight uppercase">

@@ -23,9 +23,9 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({ groupName }) => {
   };
 
   return (
-    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between h-full">
+    <div className="bg-white p-5 rounded-none shadow-sm border border-slate-100 flex flex-col justify-between h-full">
       <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+        <div className="p-2 bg-blue-50 rounded-none text-blue-600">
           <Clock size={20} />
         </div>
         <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Attendance Tracker</h3>
