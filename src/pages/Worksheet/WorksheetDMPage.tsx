@@ -72,12 +72,14 @@ interface CalendarWork {
 }
 
 const WorksheetDMPage = () => {
-  const { group } = useAppSelector((state) => state.auth);
+  const { user } = useAppSelector((state) => state.auth);
   const [searchTerm, setSearchTerm] = useState('');
   const [calendarWorks, setCalendarWorks] = useState<CalendarWork[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<User[]>([]);
+  const [currentUserGroup, setCurrentUserGroup] = useState<string>('');
+  const [currentUserPosition, setCurrentUserPosition] = useState<string>('');
   const [workStatuses, setWorkStatuses] = useState<{ [key: number]: string }>({});
 
   // Modal state
@@ -109,6 +111,10 @@ const WorksheetDMPage = () => {
         const response = await getUsersList();
         const usersData = response.data?.data || response.data || [];
         setUsers(usersData);
+        // Set current user group
+        const currentUser = user?.id ? usersData.find((u: User) => u.id === user.id) : null;
+        setCurrentUserGroup(currentUser?.group_name || '');
+        setCurrentUserPosition(currentUser?.position_name || '');
       } catch (err) {
         console.error('Failed to fetch users:', err);
       }
@@ -116,12 +122,12 @@ const WorksheetDMPage = () => {
 
     fetchCalendarWorks();
     fetchUsers();
-  }, []);
+  }, [user?.id]);
 
   const handleAssignDesigner = async (workId: number, userIds: number[]) => {
     try {
       const response = await assignDesignersToWork(workId, userIds);
-      const updatedWork = response.data;
+      const updatedWork = response.data || response;
       if (updatedWork) {
         setCalendarWorks(prev => prev.map(w => w.id === workId ? updatedWork : w));
       }

@@ -108,18 +108,18 @@ const WorksheetCreativePage = () => {
 
   // Conditional visibility based on user group
   const shouldShowSLno = true;
-  const shouldShowTrackingNo = false;
-  const shouldShowDate = false;
+  const shouldShowTrackingNo = isHead;
+  const shouldShowDate = isHead;
   const shouldShowSpecialDay = true;
   const shouldShowClient = true;
   const shouldShowContentDescription = true;
   const shouldShowCreatives = !isContentWriter;
   const shouldShowNotes = true;
   const shouldShowAssignDesigner = !isContentWriter;
-  const shouldShowAssignContent = false;
+  const shouldShowAssignContent = isHead;
   const shouldShowDesignUpload = !isContentWriter;
   const shouldShowStatus = true;
-  const shouldShowActions = false;
+  const shouldShowActions = isHead;
 
   const totalVisibleCols = 
     (shouldShowSLno ? 1 : 0) +
