@@ -561,3 +561,21 @@ export const assignDesignersToWork = async (id: number, designerIds: number[]) =
   });
   return response.data;
 };
+
+/**
+ * PUT Update calendar work content details (description and file)
+ * Endpoint: PUT /calendar-works/{id}/content/changes
+ */
+export const updateCalendarWorkContentDetails = async (id: number, data: { content_description: string; content_file?: File }) => {
+  const formData = new FormData();
+  formData.append('content_description', data.content_description);
+  if (data.content_file) {
+    formData.append('content_file', data.content_file);
+  }
+
+  const response = await apiClient.post(`/calendar-works/${id}/content/changes`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    params: { _method: 'PUT' }
+  });
+  return response.data;
+};

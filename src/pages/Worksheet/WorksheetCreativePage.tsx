@@ -6,9 +6,10 @@ import {
   Upload,
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
-import { getCalendarWorks, assignCalendarWorkContent, assignDesignersToWork } from '../../api/services/microService';
+import { getCalendarWorks, assignCalendarWorkContent, assignDesignersToWork, updateCalendarWorkContentDetails } from '../../api/services/microService';
 import { getUsersList } from '../../api/services/authService';
 import AssignmentModal from './components/AssignmentModal';
+import EditContentModal from './components/EditContentModal';
 
 interface Creative {
   id: string;
@@ -89,8 +90,18 @@ const WorksheetCreativePage = () => {
     initialIds: [],
     type: 'designer'
   });
+  const [editContentModal, setEditContentModal] = useState<{
+    isOpen: boolean;
+    workId: number | null;
+    description: string;
+  }>({
+    isOpen: false,
+    workId: null,
+    description: ''
+  });
 
   const isHead = currentUserPosition.toLowerCase().includes('head');
+  const isContentWriter = currentUserGroup === 'Content Creator' || currentUserGroup === 'Content';
 
   // Conditional visibility based on user group
   const shouldShowTrackingNo = 
@@ -112,11 +123,10 @@ const WorksheetCreativePage = () => {
   const shouldShowAssignDesigner = isHead || (currentUserGroup !== 'Content Creator' && currentUserGroup !== 'Content');
   const shouldShowDesignUpload = isHead || (currentUserGroup !== 'Content Creator' && currentUserGroup !== 'Content');
   const shouldShowActions = 
-    isHead || (
-    currentUserGroup !== 'Content Creator' && 
-    currentUserGroup !== 'Content' && 
-    currentUserGroup !== 'Graphics Department' && 
-    currentUserGroup !== 'Creative Designers');
+    isHead || 
+    isContentWriter || 
+    (currentUserGroup !== 'Graphics Department' && 
+     currentUserGroup !== 'Creative Designers');
 
   useEffect(() => {
     const fetchCalendarWorks = async () => {
@@ -154,7 +164,7 @@ const WorksheetCreativePage = () => {
   const handleAssignDesigner = async (workId: number, userIds: number[]) => {
     try {
       const response = await assignDesignersToWork(workId, userIds);
-      const updatedWork = response.data;
+      const updatedWork = response.data || response;
       if (updatedWork) {
         setCalendarWorks(prev => prev.map(w => w.id === workId ? updatedWork : w));
       }
@@ -167,13 +177,29 @@ const WorksheetCreativePage = () => {
   const handleAssignContent = async (workId: number, userIds: number[]) => {
     try {
       const response = await assignCalendarWorkContent(workId, { content_assigned_to: JSON.stringify(userIds) });
-      const updatedWork = response.data;
+      const updatedWork = response.data || response;
       if (updatedWork) {
         setCalendarWorks(prev => prev.map(w => w.id === workId ? updatedWork : w));
       }
       setAssignmentModal(prev => ({ ...prev, isOpen: false }));
     } catch (err) {
       console.error('Failed to assign content:', err);
+    }
+  };
+
+  const handleUpdateContent = async (workId: number, description: string, file?: File) => {
+    try {
+      const response = await updateCalendarWorkContentDetails(workId, { 
+        content_description: description, 
+        content_file: file 
+      });
+      const updatedWork = response.data || response;
+      if (updatedWork) {
+        setCalendarWorks(prev => prev.map(w => w.id === workId ? updatedWork : w));
+      }
+      setEditContentModal(prev => ({ ...prev, isOpen: false }));
+    } catch (err) {
+      console.error('Failed to update content:', err);
     }
   };
 
@@ -490,12 +516,28 @@ const WorksheetCreativePage = () => {
                       {shouldShowActions && (
                         <td className="px-5 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <button className="p-2 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all">
-                              <Edit size={14} />
-                            </button>
-                            <button className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
-                              <Trash2 size={14} />
-                            </button>
+                            {isContentWriter && !isHead ? (
+                              <button 
+                                onClick={() => setEditContentModal({
+                                  isOpen: true,
+                                  workId: work.id,
+                                  description: work.content_description || ''
+                                })}
+                                className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all"
+                                title="Edit Content"
+                              >
+                                <Edit size={14} />
+                              </button>
+                            ) : (
+                              <>
+                                <button className="p-2 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all">
+                                  <Edit size={14} />
+                                </button>
+                                <button className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
+                                  <Trash2 size={14} />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       )}
@@ -539,6 +581,17 @@ const WorksheetCreativePage = () => {
         users={assignmentModal.type === 'designer' ? designerUsers : contentUsers}
         initialSelectedIds={assignmentModal.initialIds}
         title={assignmentModal.type === 'designer' ? "Assign Designers" : "Assign Content Writers"}
+      />
+
+      <EditContentModal
+        isOpen={editContentModal.isOpen}
+        onClose={() => setEditContentModal(prev => ({ ...prev, isOpen: false }))}
+        onSave={(description, file) => {
+          if (editContentModal.workId) {
+            handleUpdateContent(editContentModal.workId, description, file);
+          }
+        }}
+        initialDescription={editContentModal.description}
       />
     </div>
   );
