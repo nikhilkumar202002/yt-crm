@@ -133,8 +133,11 @@ const WorksheetDMPage = () => {
 
   const handleAssignContent = async (workId: number, userIds: number[]) => {
     try {
-      const response = await assignCalendarWorkContent(workId, { content_assigned_to: JSON.stringify(userIds) });
-      const updatedWork = response.data;
+      // Ensure we send the exact format expected: a stringified array of IDs
+      const payload = { content_assigned_to: JSON.stringify(userIds) };
+      
+      const response = await assignCalendarWorkContent(workId, payload);
+      const updatedWork = response.data || response;
       if (updatedWork) {
         setCalendarWorks(prev => prev.map(w => w.id === workId ? updatedWork : w));
       }

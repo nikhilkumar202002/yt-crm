@@ -507,7 +507,7 @@ export const assignCalendarWork = async (id: number, data: AssignCalendarWorkPay
  * PUT Assign calendar work content to content writers
  */
 export const assignCalendarWorkContent = async (id: number, data: { content_assigned_to: string }) => {
-  const response = await apiClient.put(ENDPOINTS.CALENDAR_WORKS.CONTENT_ASSIGN(id), data);
+  const response = await apiClient.put(`/calendar-works/${id}/content/assign`, data);
   return response.data;
 };
 

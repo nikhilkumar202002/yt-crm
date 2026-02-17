@@ -105,6 +105,11 @@ const WorksheetCreativePage = () => {
     currentUserGroup !== 'Creative Designers';
   const shouldShowAssignDesigner = currentUserGroup !== 'Content Creator' && currentUserGroup !== 'Content';
   const shouldShowDesignUpload = currentUserGroup !== 'Content Creator' && currentUserGroup !== 'Content';
+  const shouldShowActions = 
+    currentUserGroup !== 'Content Creator' && 
+    currentUserGroup !== 'Content' && 
+    currentUserGroup !== 'Graphics Department' && 
+    currentUserGroup !== 'Creative Designers';
 
   useEffect(() => {
     const fetchCalendarWorks = async () => {
@@ -241,6 +246,15 @@ const WorksheetCreativePage = () => {
 
   // Filter works based on search term
   const filteredCalendarWorks = calendarWorks.filter(work => {
+    // Filter by assignment for Content team members
+    const isContentGroup = currentUserGroup === 'Content Creator' || currentUserGroup === 'Content';
+    if (isContentGroup && user?.id) {
+      const assignedContentIds = parseIds(work.content_assigned_to);
+      if (!assignedContentIds.includes(Number(user.id))) {
+        return false;
+      }
+    }
+
     const searchLower = searchTerm.toLowerCase();
     return (
       work.client?.company_name?.toLowerCase().includes(searchLower) ||
@@ -313,7 +327,9 @@ const WorksheetCreativePage = () => {
                     <th className="px-5 py-3">Design Upload</th>
                   )}
                   <th className="px-5 py-3 text-center">Status</th>
-                  <th className="px-5 py-3 text-right">Actions</th>
+                  {shouldShowActions && (
+                    <th className="px-5 py-3 text-right">Actions</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -454,21 +470,23 @@ const WorksheetCreativePage = () => {
                           {workStatuses[work.id] || 'pending'}
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button className="p-2 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all">
-                            <Edit size={14} />
-                          </button>
-                          <button className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
+                      {shouldShowActions && (
+                        <td className="px-5 py-3 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button className="p-2 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all">
+                              <Edit size={14} />
+                            </button>
+                            <button className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={8 + (shouldShowTrackingNo ? 1 : 0) + (shouldShowDate ? 1 : 0) + (shouldShowAssignDesigner ? 1 : 0) + (shouldShowAssignContent ? 1 : 0) + (shouldShowDesignUpload ? 1 : 0)} className="px-6 py-20 text-center align-top">
+                    <td colSpan={7 + (shouldShowTrackingNo ? 1 : 0) + (shouldShowDate ? 1 : 0) + (shouldShowAssignDesigner ? 1 : 0) + (shouldShowAssignContent ? 1 : 0) + (shouldShowDesignUpload ? 1 : 0) + (shouldShowActions ? 1 : 0)} className="px-6 py-20 text-center align-top">
                       <div className="flex flex-col items-center gap-2">
                         <div className="p-3 bg-slate-50 rounded-full text-slate-300">
                           <Clipboard size={24} />
