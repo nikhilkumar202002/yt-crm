@@ -79,6 +79,7 @@ const WorksheetCreativePage = () => {
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [currentUserGroup, setCurrentUserGroup] = useState<string>('');
+  const [currentUserPosition, setCurrentUserPosition] = useState<string>('');
   const [workStatuses, setWorkStatuses] = useState<{ [key: number]: string }>({});
 
   // Modal state
@@ -89,27 +90,33 @@ const WorksheetCreativePage = () => {
     type: 'designer'
   });
 
+  const isHead = currentUserPosition.toLowerCase().includes('head');
+
   // Conditional visibility based on user group
   const shouldShowTrackingNo = 
+    isHead || (
     currentUserGroup !== 'Content Creator' && 
     currentUserGroup !== 'Content' && 
     currentUserGroup !== 'Graphics Department' && 
-    currentUserGroup !== 'Creative Designers';
+    currentUserGroup !== 'Creative Designers');
   const shouldShowDate = 
+    isHead || (
     currentUserGroup !== 'Content Creator' && 
     currentUserGroup !== 'Content' && 
     currentUserGroup !== 'Graphics Department' && 
-    currentUserGroup !== 'Creative Designers';
+    currentUserGroup !== 'Creative Designers');
   const shouldShowAssignContent = 
+    isHead || (
     currentUserGroup !== 'Graphics Department' && 
-    currentUserGroup !== 'Creative Designers';
-  const shouldShowAssignDesigner = currentUserGroup !== 'Content Creator' && currentUserGroup !== 'Content';
-  const shouldShowDesignUpload = currentUserGroup !== 'Content Creator' && currentUserGroup !== 'Content';
+    currentUserGroup !== 'Creative Designers');
+  const shouldShowAssignDesigner = isHead || (currentUserGroup !== 'Content Creator' && currentUserGroup !== 'Content');
+  const shouldShowDesignUpload = isHead || (currentUserGroup !== 'Content Creator' && currentUserGroup !== 'Content');
   const shouldShowActions = 
+    isHead || (
     currentUserGroup !== 'Content Creator' && 
     currentUserGroup !== 'Content' && 
     currentUserGroup !== 'Graphics Department' && 
-    currentUserGroup !== 'Creative Designers';
+    currentUserGroup !== 'Creative Designers');
 
   useEffect(() => {
     const fetchCalendarWorks = async () => {
@@ -134,6 +141,7 @@ const WorksheetCreativePage = () => {
         // Set current user group
         const currentUser = user?.id ? usersData.find((u: User) => u.id === user.id) : null;
         setCurrentUserGroup(currentUser?.group_name || '');
+        setCurrentUserPosition(currentUser?.position_name || '');
       } catch (error) {
         console.error('Failed to fetch users:', error);
       }
@@ -248,9 +256,18 @@ const WorksheetCreativePage = () => {
   const filteredCalendarWorks = calendarWorks.filter(work => {
     // Filter by assignment for Content team members
     const isContentGroup = currentUserGroup === 'Content Creator' || currentUserGroup === 'Content';
-    if (isContentGroup && user?.id) {
+    if (isContentGroup && user?.id && !isHead) {
       const assignedContentIds = parseIds(work.content_assigned_to);
       if (!assignedContentIds.includes(Number(user.id))) {
+        return false;
+      }
+    }
+
+    // Filter by assignment for Graphics team members
+    const isGraphicsGroup = currentUserGroup === 'Graphics Department' || currentUserGroup === 'Creative Designers';
+    if (isGraphicsGroup && user?.id && !isHead) {
+      const assignedDesignerIds = parseIds(work.assigned_to);
+      if (!assignedDesignerIds.includes(Number(user.id))) {
         return false;
       }
     }
