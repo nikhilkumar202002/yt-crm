@@ -72,24 +72,24 @@ const Header = ({ onMenuClick }: HeaderProps) => {
         </button>
 
         {/* Global CRM Search */}
-        <div className="hidden md:flex items-start relative w-full max-w-sm group">
+        <div className="hidden md:flex items-center relative w-full max-w-sm group">
           <Search className="absolute left-3 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={14} />
           <input 
             type="text" 
             placeholder="Search leads, clients or invoices..." 
             className="w-full pl-9 pr-12 py-1.5 bg-slate-50 border border-slate-100 rounded-none text-[11px] font-medium focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
           />
-          <div className="absolute right-2 flex items-start gap-0.5 px-1.5 py-0.5 bg-white border border-slate-200 rounded-none text-[9px] font-bold text-slate-400">
+          <div className="absolute right-2 flex items-center gap-0.5 px-1.5 py-0.5 bg-white border border-slate-200 rounded-none text-[9px] font-bold text-slate-400">
             <Command size={8} /> K
           </div>
         </div>
       </div>
       
       {/* Right: CRM Tools & Profile */}
-      <div className="flex items-start gap-3 lg:gap-5">
+      <div className="flex items-center gap-3 lg:gap-5">
         
         {/* Quick Action Button */}
-        <button className="hidden sm:flex items-start gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-none transition-all shadow-sm shadow-blue-200">
+        <button className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-none transition-all shadow-sm shadow-blue-200">
           <Plus size={12} strokeWidth={3} />
           <span className="text-[10px] font-black uppercase tracking-wider">New Lead</span>
         </button>
@@ -97,7 +97,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
         <div className="h-6 w-[1px] bg-slate-200 mx-1 hidden sm:block" />
 
         {/* System Utilities */}
-        <div className="flex items-start gap-1">
+        <div className="flex items-center gap-1">
           <Link to="/calendar">
             <button title="Calendar" className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-none transition-all">
               <Calendar size={15} />
@@ -125,7 +125,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                 align="end"
               >
                 <div className="p-4 border-b border-slate-100">
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-center justify-between">
                     <h3 className="text-sm font-bold text-slate-900">Notifications</h3>
                     {unreadCount > 0 && (
                       <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
@@ -197,7 +197,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
         {/* Profile Dropdown */}
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild>
-            <button className="flex items-start gap-2.5 group outline-none pl-2 border-l border-slate-100">
+            <button className="flex items-center gap-2.5 group outline-none pl-2 border-l border-slate-100">
               <div className="text-left hidden sm:block">
                 <p className="text-[11px] font-bold text-slate-900 group-hover:text-blue-600 transition-colors leading-none">
                   {user?.name}
@@ -224,7 +224,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Account</p>
               </div>
               
-              <DropdownMenu.Item className="flex items-start gap-2.5 px-3 py-1.5 text-[11px] text-slate-600 font-semibold rounded-none hover:bg-blue-50 hover:text-blue-700 outline-none cursor-pointer transition-colors">
+              <DropdownMenu.Item className="flex items-center gap-2.5 px-3 py-1.5 text-[11px] text-slate-600 font-semibold rounded-none hover:bg-blue-50 hover:text-blue-700 outline-none cursor-pointer transition-colors">
                 <ExternalLink size={14} />
                 Support Portal
               </DropdownMenu.Item>
@@ -233,7 +233,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
               
               <DropdownMenu.Item 
                 onClick={() => dispatch(logout())}
-                className="flex items-start gap-2.5 px-3 py-1.5 text-[11px] text-red-500 font-bold rounded-none hover:bg-red-50 outline-none cursor-pointer transition-colors"
+                className="flex items-center gap-2.5 px-3 py-1.5 text-[11px] text-red-500 font-bold rounded-none hover:bg-red-50 outline-none cursor-pointer transition-colors"
               >
                 <LogOut size={14} />
                 Sign Out

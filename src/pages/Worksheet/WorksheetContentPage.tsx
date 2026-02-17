@@ -5,7 +5,7 @@ import {
   Edit,
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
-import { getCalendarWorks, updateCalendarWorkContentDetails, updateCalendarWorkStatus, updateClientApprovedStatus } from '../../api/services/microService';
+import { getCalendarWorks, updateCalendarWorkContentDetails, updateCalendarWorkStatus } from '../../api/services/microService';
 import EditContentModal from './components/EditContentModal';
 
 interface Creative {
@@ -66,7 +66,6 @@ const WorksheetContentPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [workStatuses, setWorkStatuses] = useState<{ [key: number]: string }>({});
-  const [clientApprovedStatuses, setClientApprovedStatuses] = useState<{ [key: number]: string }>({});
 
   const [editContentModal, setEditContentModal] = useState<{
     isOpen: boolean;
@@ -105,18 +104,6 @@ const WorksheetContentPage = () => {
       }
     } catch (err) {
       console.error('Failed to update status:', err);
-    }
-  };
-
-  const handleClientApprovedStatusChange = async (workId: number, newStatus: string) => {
-    try {
-      const response = await updateClientApprovedStatus(workId, newStatus);
-      if (response.status || response.data) {
-        setClientApprovedStatuses(prev => ({ ...prev, [workId]: newStatus }));
-        setCalendarWorks(prev => prev.map(w => w.id === workId ? { ...w, client_approved_status: newStatus } : w));
-      }
-    } catch (err) {
-      console.error('Failed to update client approval status:', err);
     }
   };
 
@@ -271,23 +258,15 @@ const WorksheetContentPage = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-left align-top border border-slate-200">
-                        <select
-                          value={clientApprovedStatuses[work.id] || work.client_approved_status || 'pending'}
-                          onChange={(e) => handleClientApprovedStatusChange(work.id, e.target.value)}
-                          className={`text-[9px] font-bold px-2 py-1 rounded-none border-none outline-none cursor-pointer transition-all w-full min-w-[100px] ${
-                            (clientApprovedStatuses[work.id] || work.client_approved_status) === 'approved' ? 'bg-green-100 text-green-700' :
-                            (clientApprovedStatuses[work.id] || work.client_approved_status) === 'not_approved' ? 'bg-red-100 text-red-700' :
-                            (clientApprovedStatuses[work.id] || work.client_approved_status) === 'needed_edit' ? 'bg-orange-100 text-orange-700' :
-                            (clientApprovedStatuses[work.id] || work.client_approved_status) === 'images_changed' ? 'bg-blue-100 text-blue-700' :
-                            'bg-slate-100 text-slate-600'
-                          }`}
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="approved">Approved</option>
-                          <option value="not_approved">Not Approved</option>
-                          <option value="needed_edit">Needed Edit</option>
-                          <option value="images_changed">Images Changed</option>
-                        </select>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-none text-[9px] font-bold uppercase tracking-wider ${
+                          work.client_approved_status === 'approved' ? 'bg-green-100 text-green-700' :
+                          work.client_approved_status === 'not_approved' ? 'bg-red-100 text-red-700' :
+                          work.client_approved_status === 'needed_edit' ? 'bg-orange-100 text-orange-700' :
+                          work.client_approved_status === 'images_changed' ? 'bg-blue-100 text-blue-700' :
+                          'bg-slate-100 text-slate-600'
+                        }`}>
+                          {work.client_approved_status?.replace('_', ' ') || 'Pending'}
+                        </span>
                       </td>
                       <td className="px-4 py-3 text-left align-top border border-slate-200">
                         <select

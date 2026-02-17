@@ -96,7 +96,7 @@ const NotificationModal = ({ isOpen, onOpenChange }: NotificationModalProps) => 
     <Dialog.Root open={isOpen} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-none shadow-2xl z-[110] font-sans max-h-[80vh] overflow-hidden items-start">
+        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-none shadow-2xl z-[110] font-sans max-h-[80vh] overflow-hidden">
           <div className="flex justify-between items-center p-6 border-b border-slate-100">
             <Dialog.Title className="text-lg font-bold text-slate-900 flex items-center gap-2">
               <Bell size={20} className="text-blue-600" />

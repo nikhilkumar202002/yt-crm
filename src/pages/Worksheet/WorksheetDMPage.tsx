@@ -2,11 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { useAppSelector } from '../../store/store';
 import {
   Clipboard, Plus, Search,
-  Edit, Trash2,
-  Upload,
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
-import { getCalendarWorks, assignCalendarWorkContent, assignDesignersToWork, uploadDesignerFiles, updateCalendarWorkStatus, updateClientApprovedStatus } from '../../api/services/microService';
+import { getCalendarWorks, assignCalendarWorkContent, assignDesignersToWork, updateClientApprovedStatus } from '../../api/services/microService';
 import { getUsersList } from '../../api/services/authService';
 import AssignmentModal from './components/AssignmentModal';
 import ImageLightbox from '../../components/common/ImageLightbox';
@@ -85,9 +83,7 @@ const WorksheetDMPage = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [currentUserGroup, setCurrentUserGroup] = useState<string>('');
   const [currentUserPosition, setCurrentUserPosition] = useState<string>('');
-  const [workStatuses, setWorkStatuses] = useState<{ [key: number]: string }>({});
   const [clientApprovedStatuses, setClientApprovedStatuses] = useState<{ [key: number]: string }>({});
-  const [uploadingWorkId, setUploadingWorkId] = useState<number | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   // Modal state
@@ -157,18 +153,6 @@ const WorksheetDMPage = () => {
     }
   };
 
-  const handleStatusChange = async (workId: number, newStatus: string) => {
-    try {
-      const response = await updateCalendarWorkStatus(workId, newStatus);
-      if (response.status || response.data) {
-        setWorkStatuses(prev => ({ ...prev, [workId]: newStatus }));
-        setCalendarWorks(prev => prev.map(w => w.id === workId ? { ...w, status: newStatus } : w));
-      }
-    } catch (err) {
-      console.error('Failed to update status:', err);
-    }
-  };
-
   const handleAssignContent = async (workId: number, userIds: number[]) => {
     try {
       // Ensure we send the exact format expected: a stringified array of IDs
@@ -182,32 +166,6 @@ const WorksheetDMPage = () => {
       setAssignmentModal(prev => ({ ...prev, isOpen: false }));
     } catch (err) {
       console.error('Failed to assign content:', err);
-    }
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0 || !uploadingWorkId) return;
-
-    try {
-      const workId = uploadingWorkId;
-      const response = await uploadDesignerFiles(workId, Array.from(files));
-      
-      // Robustly extract the work object from the response
-      let updatedWork = response?.data || response;
-      if (response?.status === true && response?.data) {
-        updatedWork = response.data;
-      }
-
-      // Only update if we have a valid work object with an ID
-      if (updatedWork && (updatedWork.id || updatedWork.tracking_no)) {
-        setCalendarWorks(prev => prev.map(w => w.id === workId ? updatedWork : w));
-      }
-    } catch (err) {
-      console.error('Failed to upload files:', err);
-    } finally {
-      setUploadingWorkId(null);
-      if (e.target) e.target.value = '';
     }
   };
 
@@ -366,10 +324,9 @@ const WorksheetDMPage = () => {
                   <th className="px-4 py-3 min-w-[200px] border border-slate-200">Notes</th>
                   <th className="px-4 py-3 w-40 border border-slate-200">Assign Designer</th>
                   <th className="px-4 py-3 w-40 border border-slate-200">Assign Content</th>
-                  <th className="px-4 py-3 w-32 border border-slate-200">Design Upload</th>
+                  <th className="px-4 py-3 w-32 border border-slate-200">Designs</th>
+                  <th className="px-4 py-3 w-32 text-left border border-slate-200">Work Status</th>
                   <th className="px-4 py-3 w-32 border border-slate-200">Client Approval</th>
-                  <th className="px-4 py-3 w-24 text-left border border-slate-200">Status</th>
-                  <th className="px-4 py-3 w-24 text-left border border-slate-200">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
@@ -487,34 +444,88 @@ const WorksheetDMPage = () => {
                         })()}
                       </td>
                       <td className="px-4 py-3 align-top border border-slate-200">
-                        <Button variant="secondary" size="sm" className="text-[10px]">
-                          <Upload size={12} className="mr-1" /> Upload
-                        </Button>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-[9px] font-medium ${
-                          workStatuses[work.id] === 'completed' ? 'bg-green-100 text-green-800' :
-                          workStatuses[work.id] === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {workStatuses[work.id] || 'pending'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-left align-top border border-slate-200">
-                        <div className="flex items-start justify-start gap-1">
-                          <button className="p-2 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded-none transition-all">
-                            <Edit size={14} />
-                          </button>
-                          <button className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-none transition-all">
-                            <Trash2 size={14} />
-                          </button>
+                        <div className="flex flex-col items-start gap-2">
+                          {(() => {
+                            const files = parseFiles(work.designer_files || work.designer_file);
+                            return files.length > 0 ? (
+                              <div className="flex flex-wrap items-start gap-2">
+                                {files.map((file, idx) => {
+                                  const imageUrl = file.startsWith('http') ? file : `${import.meta.env.VITE_API_BASE_URL || ''}/${file.replace(/^\//, '')}`;
+                                  return (
+                                    <button 
+                                      key={idx} 
+                                      onClick={() => setLightboxImage(imageUrl)}
+                                      className="block group/img relative"
+                                    >
+                                      <img 
+                                        src={imageUrl} 
+                                        alt="Design" 
+                                        className="h-20 w-20 object-cover rounded-none border border-slate-200 shadow-sm group-hover/img:border-blue-400 transition-all cursor-zoom-in"
+                                        onError={(e) => {
+                                          (e.target as HTMLImageElement).src = 'https://placehold.co/80x80?text=Error';
+                                        }}
+                                      />
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <span className="text-[10px] text-slate-400">No designs</span>
+                            );
+                          })()}
                         </div>
+                      </td>
+                     
+                      <td className="px-4 py-3 text-left align-top border border-slate-200">
+                        <div className="flex flex-col gap-2">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">Content</span>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-none text-[9px] font-bold uppercase tracking-wider w-fit ${
+                              work.status === 'completed' ? 'bg-green-100 text-green-700' :
+                              work.status === 'working_progress' ? 'bg-blue-100 text-blue-700' :
+                              work.status === 'approval_pending' ? 'bg-purple-100 text-purple-700' :
+                              'bg-slate-100 text-slate-600'
+                            }`}>
+                              {(work.status || 'pending').replace('_', ' ')}
+                            </span>
+                          </div>
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">Designer</span>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-none text-[9px] font-bold uppercase tracking-wider w-fit ${
+                              work.designer_status === 'completed' ? 'bg-green-100 text-green-700' :
+                              work.designer_status === 'working_progress' ? 'bg-blue-100 text-blue-700' :
+                              work.designer_status === 'approval_pending' ? 'bg-purple-100 text-purple-700' :
+                              'bg-slate-100 text-slate-600'
+                            }`}>
+                              {(work.designer_status || 'pending').replace('_', ' ')}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                       <td className="px-4 py-3 align-top border border-slate-200">
+                        <select
+                          value={clientApprovedStatuses[work.id] || work.client_approved_status || 'pending'}
+                          onChange={(e) => handleClientApprovedStatusChange(work.id, e.target.value)}
+                          className={`text-[9px] font-bold px-2 py-1 rounded-none border-none outline-none cursor-pointer transition-all w-full min-w-[100px] ${
+                            (clientApprovedStatuses[work.id] || work.client_approved_status) === 'approved' ? 'bg-green-100 text-green-700' :
+                            (clientApprovedStatuses[work.id] || work.client_approved_status) === 'not_approved' ? 'bg-red-100 text-red-700' :
+                            (clientApprovedStatuses[work.id] || work.client_approved_status) === 'needed_edit' ? 'bg-orange-100 text-orange-700' :
+                            (clientApprovedStatuses[work.id] || work.client_approved_status) === 'images_changed' ? 'bg-blue-100 text-blue-700' :
+                            'bg-slate-100 text-slate-600'
+                          }`}
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="approved">Approved</option>
+                          <option value="not_approved">Not Approved</option>
+                          <option value="needed_edit">Needed Edit</option>
+                          <option value="images_changed">Images Changed</option>
+                        </select>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={14} className="px-6 py-20 text-center align-top border border-slate-200">
+                    <td colSpan={13} className="px-6 py-20 text-center align-top border border-slate-200">
                       <div className="flex flex-col items-center gap-2">
                         <div className="p-3 bg-slate-50 rounded-none text-slate-300">
                           <Clipboard size={24} />
@@ -550,15 +561,6 @@ const WorksheetDMPage = () => {
         users={assignmentModal.type === 'designer' ? designerUsers : contentUsers}
         initialSelectedIds={assignmentModal.initialIds}
         title={assignmentModal.type === 'designer' ? "Assign Designers" : "Assign Content Writers"}
-      />
-
-      <input
-        type="file"
-        id="dm-designer-file-upload"
-        className="hidden"
-        multiple
-        accept="image/*"
-        onChange={handleFileChange}
       />
 
       {lightboxImage && (
