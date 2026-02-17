@@ -6,7 +6,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
-import { getCalendarWorks, assignCalendarWorkContent, assignDesignersToWork, uploadDesignerFiles, updateCalendarWorkStatus } from '../../api/services/microService';
+import { getCalendarWorks, assignCalendarWorkContent, assignDesignersToWork, uploadDesignerFiles, updateCalendarWorkStatus, updateClientApprovedStatus } from '../../api/services/microService';
 import { getUsersList } from '../../api/services/authService';
 import AssignmentModal from './components/AssignmentModal';
 import ImageLightbox from '../../components/common/ImageLightbox';
@@ -73,6 +73,7 @@ interface CalendarWork {
   designer_files?: any;
   designer_file?: any;
   status?: string;
+  client_approved_status?: string;
 }
 
 const WorksheetDMPage = () => {
@@ -85,6 +86,7 @@ const WorksheetDMPage = () => {
   const [currentUserGroup, setCurrentUserGroup] = useState<string>('');
   const [currentUserPosition, setCurrentUserPosition] = useState<string>('');
   const [workStatuses, setWorkStatuses] = useState<{ [key: number]: string }>({});
+  const [clientApprovedStatuses, setClientApprovedStatuses] = useState<{ [key: number]: string }>({});
   const [uploadingWorkId, setUploadingWorkId] = useState<number | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
@@ -140,6 +142,18 @@ const WorksheetDMPage = () => {
       setAssignmentModal(prev => ({ ...prev, isOpen: false }));
     } catch (err) {
       console.error('Failed to assign designer:', err);
+    }
+  };
+
+  const handleClientApprovedStatusChange = async (workId: number, newStatus: string) => {
+    try {
+      const response = await updateClientApprovedStatus(workId, newStatus);
+      if (response.status || response.data) {
+        setClientApprovedStatuses(prev => ({ ...prev, [workId]: newStatus }));
+        setCalendarWorks(prev => prev.map(w => w.id === workId ? { ...w, client_approved_status: newStatus } : w));
+      }
+    } catch (err) {
+      console.error('Failed to update client approval status:', err);
     }
   };
 
@@ -324,7 +338,7 @@ const WorksheetDMPage = () => {
       </div>
 
       {/* Calendar Works Table */}
-      <div className="bg-white rounded-none shadow-sm border border-slate-200/60 overflow-hidden relative">
+      <div className="bg-white rounded-none shadow-sm border border-slate-200 overflow-hidden relative border border-slate-200">
         {loading ? (
           <div className="flex-1 flex flex-col items-center justify-center p-20 gap-3">
             <div className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-none" />
@@ -339,35 +353,36 @@ const WorksheetDMPage = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[1600px]">
-              <thead className="bg-slate-50/50 border-b border-slate-100">
-                <tr className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                  <th className="px-4 py-3 w-12 text-left">#</th>
-                  <th className="px-4 py-3 w-28">Tracking No</th>
-                  <th className="px-4 py-3 w-24">Date</th>
-                  <th className="px-4 py-3 w-24">Special Day</th>
-                  <th className="px-4 py-3 w-48">Client</th>
-                  <th className="px-4 py-3 min-w-[250px]">Content Description</th>
-                  <th className="px-4 py-3 w-32">Creatives</th>
-                  <th className="px-4 py-3 min-w-[200px]">Notes</th>
-                  <th className="px-4 py-3 w-40">Assign Designer</th>
-                  <th className="px-4 py-3 w-40">Assign Content</th>
-                  <th className="px-4 py-3 w-32">Design Upload</th>
-                  <th className="px-4 py-3 w-24 text-left">Status</th>
-                  <th className="px-4 py-3 w-24 text-left">Actions</th>
+            <table className="w-full text-left border-collapse min-w-[1600px] border border-slate-200">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                  <th className="px-4 py-3 w-12 text-left border border-slate-200">#</th>
+                  <th className="px-4 py-3 w-28 border border-slate-200">Tracking No</th>
+                  <th className="px-4 py-3 w-24 border border-slate-200">Date</th>
+                  <th className="px-4 py-3 w-24 border border-slate-200">Special Day</th>
+                  <th className="px-4 py-3 w-48 border border-slate-200">Client</th>
+                  <th className="px-4 py-3 min-w-[250px] border border-slate-200">Content Description</th>
+                  <th className="px-4 py-3 w-32 border border-slate-200">Creatives</th>
+                  <th className="px-4 py-3 min-w-[200px] border border-slate-200">Notes</th>
+                  <th className="px-4 py-3 w-40 border border-slate-200">Assign Designer</th>
+                  <th className="px-4 py-3 w-40 border border-slate-200">Assign Content</th>
+                  <th className="px-4 py-3 w-32 border border-slate-200">Design Upload</th>
+                  <th className="px-4 py-3 w-32 border border-slate-200">Client Approval</th>
+                  <th className="px-4 py-3 w-24 text-left border border-slate-200">Status</th>
+                  <th className="px-4 py-3 w-24 text-left border border-slate-200">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody className="divide-y divide-slate-200">
                 {filteredCalendarWorks.length > 0 ? (
                   filteredCalendarWorks.map((work, index) => (
                     <tr key={work.id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-4 py-3 text-left text-[10px] font-medium text-slate-400">{index + 1}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 text-left align-top text-[10px] font-medium text-slate-400 border border-slate-200">{index + 1}</td>
+                      <td className="px-4 py-3 align-top border border-slate-200">
                         <div className="text-[11px] font-bold text-slate-900">
                           {work.tracking_no || 'N/A'}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 align-top border border-slate-200">
                         <div className="text-[11px] font-medium text-slate-900">
                           {work.date ? (() => {
                             const date = new Date(work.date);
@@ -375,8 +390,8 @@ const WorksheetDMPage = () => {
                           })() : 'No Date'}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
+                      <td className="px-4 py-3 align-top border border-slate-200">
+                        <div className="flex items-start gap-2">
                           {work.is_special_day ? (
                             <span className="inline-flex items-center px-2 py-1 rounded-none text-[10px] font-medium bg-purple-100 text-purple-800 border border-purple-200">
                               <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mr-1.5"></span>
@@ -387,7 +402,7 @@ const WorksheetDMPage = () => {
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 align-top border border-slate-200">
                         <div className="min-w-0">
                           <p className="text-[11px] font-bold text-slate-900 leading-none truncate max-w-37.5">
                             {work.client?.company_name || 'N/A'}
@@ -397,12 +412,12 @@ const WorksheetDMPage = () => {
                           </p>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 align-top border border-slate-200">
                         <div className="text-[11px] text-slate-700">
                           {work.content_description || 'No description'}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 align-top border border-slate-200">
                         <div className="space-y-1">
                           {work.creatives && work.creatives.length > 0 ? (
                             work.creatives.slice(0, 2).map((creative, index) => (
@@ -418,12 +433,12 @@ const WorksheetDMPage = () => {
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 align-top border border-slate-200">
                         <div className="text-[11px] text-slate-700">
                           {work.notes || 'No notes'}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 align-top border border-slate-200">
                         {(() => {
                           const designerIds = parseIds(work.assigned_to);
                           const isAssigned = designerIds.length > 0;
@@ -447,7 +462,7 @@ const WorksheetDMPage = () => {
                           );
                         })()}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 align-top border border-slate-200">
                         {(() => {
                           const contentIds = parseIds(work.content_assigned_to);
                           const isAssigned = contentIds.length > 0;
@@ -471,7 +486,7 @@ const WorksheetDMPage = () => {
                           );
                         })()}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 align-top border border-slate-200">
                         <Button variant="secondary" size="sm" className="text-[10px]">
                           <Upload size={12} className="mr-1" /> Upload
                         </Button>
@@ -485,8 +500,8 @@ const WorksheetDMPage = () => {
                           {workStatuses[work.id] || 'pending'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-1">
+                      <td className="px-4 py-3 text-left align-top border border-slate-200">
+                        <div className="flex items-start justify-start gap-1">
                           <button className="p-2 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded-none transition-all">
                             <Edit size={14} />
                           </button>
@@ -499,7 +514,7 @@ const WorksheetDMPage = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={13} className="px-6 py-20 text-center align-top">
+                    <td colSpan={14} className="px-6 py-20 text-center align-top border border-slate-200">
                       <div className="flex flex-col items-center gap-2">
                         <div className="p-3 bg-slate-50 rounded-none text-slate-300">
                           <Clipboard size={24} />

@@ -6,7 +6,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
-import { getCalendarWorks, assignCalendarWorkContent, assignDesignersToWork, updateCalendarWorkContentDetails, uploadDesignerFiles, updateCalendarWorkStatus } from '../../api/services/microService';
+import { getCalendarWorks, assignCalendarWorkContent, assignDesignersToWork, updateCalendarWorkContentDetails, uploadDesignerFiles, updateCalendarWorkStatus, updateDesignerStatus, updateClientApprovedStatus } from '../../api/services/microService';
 import { getUsersList } from '../../api/services/authService';
 import AssignmentModal from './components/AssignmentModal';
 import EditContentModal from './components/EditContentModal';
@@ -74,6 +74,8 @@ interface CalendarWork {
   designer_files?: any;
   designer_file?: any;
   status?: string;
+  designer_status?: string;
+  client_approved_status?: string;
 }
 
 const WorksheetCreativePage = () => {
@@ -86,6 +88,7 @@ const WorksheetCreativePage = () => {
   const [currentUserGroup, setCurrentUserGroup] = useState<string>('');
   const [currentUserPosition, setCurrentUserPosition] = useState<string>('');
   const [workStatuses, setWorkStatuses] = useState<{ [key: number]: string }>({});
+  const [clientApprovedStatuses, setClientApprovedStatuses] = useState<{ [key: number]: string }>({});
   const [uploadingWorkId, setUploadingWorkId] = useState<number | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
@@ -125,6 +128,7 @@ const WorksheetCreativePage = () => {
   const shouldShowAssignContent = false;
   const shouldShowDesignUpload = !isContentWriter;
   const shouldShowStatus = true;
+  const shouldShowClientApproval = true;
   const shouldShowActions = false;
 
   const totalVisibleCols = 
@@ -139,6 +143,7 @@ const WorksheetCreativePage = () => {
     (shouldShowAssignDesigner ? 1 : 0) +
     (shouldShowAssignContent ? 1 : 0) +
     (shouldShowDesignUpload ? 1 : 0) +
+    (shouldShowClientApproval ? 1 : 0) +
     (shouldShowStatus ? 1 : 0) +
     (shouldShowActions ? 1 : 0);
 
@@ -230,13 +235,25 @@ const WorksheetCreativePage = () => {
 
   const handleStatusChange = async (workId: number, newStatus: string) => {
     try {
-      const response = await updateCalendarWorkStatus(workId, newStatus);
+      const response = await updateDesignerStatus(workId, newStatus);
       if (response.status || response.data) {
         setWorkStatuses(prev => ({ ...prev, [workId]: newStatus }));
-        setCalendarWorks(prev => prev.map(w => w.id === workId ? { ...w, status: newStatus } : w));
+        setCalendarWorks(prev => prev.map(w => w.id === workId ? { ...w, designer_status: newStatus } : w));
       }
     } catch (err) {
       console.error('Failed to update status:', err);
+    }
+  };
+
+  const handleClientApprovedStatusChange = async (workId: number, newStatus: string) => {
+    try {
+      const response = await updateClientApprovedStatus(workId, newStatus);
+      if (response.status || response.data) {
+        setClientApprovedStatuses(prev => ({ ...prev, [workId]: newStatus }));
+        setCalendarWorks(prev => prev.map(w => w.id === workId ? { ...w, client_approved_status: newStatus } : w));
+      }
+    } catch (err) {
+      console.error('Failed to update client approval status:', err);
     }
   };
 
@@ -466,6 +483,9 @@ const WorksheetCreativePage = () => {
                   {shouldShowDesignUpload && (
                     <th className="px-4 py-3 w-32 border border-slate-200">Design Upload</th>
                   )}
+                  {shouldShowClientApproval && (
+                    <th className="px-4 py-3 w-32 border border-slate-200">Client Approval</th>
+                  )}
                   {shouldShowStatus && (
                     <th className="px-4 py-3 w-24 text-left border border-slate-200">Status</th>
                   )}
@@ -655,21 +675,42 @@ const WorksheetCreativePage = () => {
                           </div>
                         </td>
                       )}
-                      {shouldShowStatus && (
-                        <td className="px-4 py-3 text-left align-top border border-slate-200">
+                      {shouldShowClientApproval && (
+                        <td className="px-4 py-3 align-top border border-slate-200">
                           <select
-                            value={workStatuses[work.id] || work.status || 'pending'}
-                            onChange={(e) => handleStatusChange(work.id, e.target.value)}
-                            className={`text-[9px] font-bold px-2 py-1 rounded-none border-none outline-none cursor-pointer transition-all ${
-                              (workStatuses[work.id] || work.status) === 'completed' ? 'bg-green-100 text-green-800' :
-                              (workStatuses[work.id] || work.status) === 'working_progress' ? 'bg-yellow-100 text-yellow-800' :
-                              (workStatuses[work.id] || work.status) === 'approval_pending' ? 'bg-purple-100 text-purple-800' :
-                              'bg-gray-100 text-gray-800'
+                            value={clientApprovedStatuses[work.id] || work.client_approved_status || 'pending'}
+                            onChange={(e) => handleClientApprovedStatusChange(work.id, e.target.value)}
+                            className={`text-[9px] font-bold px-2 py-1 rounded-none border-none outline-none cursor-pointer transition-all w-full min-w-[100px] ${
+                              (clientApprovedStatuses[work.id] || work.client_approved_status) === 'approved' ? 'bg-green-100 text-green-700' :
+                              (clientApprovedStatuses[work.id] || work.client_approved_status) === 'not_approved' ? 'bg-red-100 text-red-700' :
+                              (clientApprovedStatuses[work.id] || work.client_approved_status) === 'needed_edit' ? 'bg-orange-100 text-orange-700' :
+                              (clientApprovedStatuses[work.id] || work.client_approved_status) === 'images_changed' ? 'bg-blue-100 text-blue-700' :
+                              'bg-slate-100 text-slate-600'
                             }`}
                           >
                             <option value="pending">Pending</option>
-                            <option value="working_progress">Working Progress</option>
-                            <option value="approval_pending">Approval from Client and Head</option>
+                            <option value="approved">Approved</option>
+                            <option value="not_approved">Not Approved</option>
+                            <option value="needed_edit">Needed Edit</option>
+                            <option value="images_changed">Images Changed</option>
+                          </select>
+                        </td>
+                      )}
+                      {shouldShowStatus && (
+                        <td className="px-4 py-3 text-left align-top border border-slate-200">
+                          <select
+                            value={workStatuses[work.id] || work.designer_status || 'pending'}
+                            onChange={(e) => handleStatusChange(work.id, e.target.value)}
+                            className={`text-[9px] font-bold px-2 py-1 rounded-none border-none outline-none cursor-pointer transition-all w-full min-w-[100px] ${
+                              (workStatuses[work.id] || work.designer_status) === 'completed' ? 'bg-green-100 text-green-700' :
+                              (workStatuses[work.id] || work.designer_status) === 'working_progress' ? 'bg-blue-100 text-blue-700' :
+                              (workStatuses[work.id] || work.designer_status) === 'approval_pending' ? 'bg-purple-100 text-purple-700' :
+                              'bg-slate-100 text-slate-600'
+                            }`}
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="working_progress">In Progress</option>
+                            <option value="approval_pending">Approval</option>
                             <option value="completed">Completed</option>
                           </select>
                         </td>

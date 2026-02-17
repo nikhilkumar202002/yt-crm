@@ -207,19 +207,19 @@ const AdminDashboard = () => {
             <button className="text-slate-400 hover:text-slate-600"><MoreHorizontal size={14} /></button>
           </div>
           <div className="flex flex-col items-center gap-1.5 py-4">
-            <div className="w-full bg-orange-400/90 h-10 rounded-none flex items-center justify-between px-4 text-white">
+            <div className="w-full bg-orange-400/90 h-10 rounded-none flex items-start justify-between px-4 text-white pt-2">
                <span className="text-[9px] font-bold uppercase tracking-wider">Leads</span>
                <span className="text-[11px] font-black tracking-widest">245</span>
             </div>
-            <div className="w-[85%] bg-green-500/90 h-10 flex items-center justify-between px-4 text-white">
+            <div className="w-[85%] bg-green-500/90 h-10 flex items-start justify-between px-4 text-white pt-2">
                <span className="text-[9px] font-bold uppercase tracking-wider">Qualified</span>
                <span className="text-[11px] font-black tracking-widest">98</span>
             </div>
-            <div className="w-[70%] bg-blue-500/90 h-10 flex items-center justify-between px-4 text-white">
+            <div className="w-[70%] bg-blue-500/90 h-10 flex items-start justify-between px-4 text-white pt-2">
                <span className="text-[9px] font-bold uppercase tracking-wider">Proposals</span>
                <span className="text-[11px] font-black tracking-widest">62</span>
             </div>
-            <div className="w-[55%] bg-purple-600/90 h-10 rounded-none flex items-center justify-between px-4 text-white">
+            <div className="w-[55%] bg-purple-600/90 h-10 rounded-none flex items-start justify-between px-4 text-white pt-2">
                <span className="text-[9px] font-bold uppercase tracking-wider">Closed</span>
                <span className="text-[11px] font-black tracking-widest">31</span>
             </div>

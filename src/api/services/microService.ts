@@ -223,6 +223,17 @@ export const uploadLeads = async (file: File) => {
 };
 
 /**
+ * PUT Update designer status for a calendar work
+ * Endpoint: PUT /calendar-works/{id}/designer-status
+ */
+export const updateDesignerStatus = async (id: number, status: string) => {
+  const response = await apiClient.put(`/calendar-works/${id}/designer-status`, { 
+    designer_status: status 
+  });
+  return response.data;
+};
+
+/**
  * PUT Upload designer files (poster images) to a calendar work
  * Endpoint: PUT /calendar-works/{id}/designer-files
  */
@@ -607,5 +618,16 @@ export const updateCalendarWorkContentDetails = async (id: number, data: { conte
  */
 export const updateCalendarWorkStatus = async (id: number, status: string) => {
   const response = await apiClient.put(`/calendar-works/${id}/status`, { status });
+  return response.data;
+};
+
+/**
+ * PUT Update client approval status for a calendar work
+ * Endpoint: PUT /calendar-works/{id}/client-approved-status
+ */
+export const updateClientApprovedStatus = async (id: number, status: string) => {
+  const response = await apiClient.put(`/calendar-works/${id}/client-approved-status`, { 
+    client_approved_status: status 
+  });
   return response.data;
 };

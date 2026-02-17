@@ -44,7 +44,7 @@ const WorkSchedule: React.FC<WorkScheduleProps> = ({ userId, groupName }) => {
   }, [userId, groupName]);
 
   return (
-    <div className="bg-white rounded-none shadow-sm border border-slate-100 overflow-hidden border border-slate-200">
+    <div className="bg-white rounded-none shadow-sm border border-slate-200 overflow-hidden">
       <div className="p-5 border-b border-slate-50 flex items-center justify-between">
         <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
           <Calendar size={16} className="text-blue-600" />
