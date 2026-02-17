@@ -100,24 +100,41 @@ const WorksheetCreativePage = () => {
     description: ''
   });
 
-  const isHead = currentUserPosition.toLowerCase().includes('head');
-  const isContentWriter = currentUserGroup === 'Content Creator' || currentUserGroup === 'Content';
-  const isGraphics = currentUserGroup === 'Graphics Department' || currentUserGroup === 'Creative Designers';
-
-  const shouldShowCreatives = isHead || (!isContentWriter && !isGraphics);
-  const shouldShowNotes = isHead || (!isContentWriter && !isGraphics);
+  const groupLower = currentUserGroup.toLowerCase().trim();
+  const positionLower = currentUserPosition.toLowerCase().trim();
+  const isHead = positionLower.includes('head');
+  const isContentWriter = ['content creator', 'content'].includes(groupLower);
+  const isGraphics = ['creative designers', 'creative team lead', 'graphics department', 'graphics'].includes(groupLower);
 
   // Conditional visibility based on user group
-  const shouldShowTrackingNo = isHead || (!isContentWriter && !isGraphics);
-  const shouldShowDate = isHead || (!isContentWriter && !isGraphics);
-  const shouldShowAssignContent = isHead || (!isContentWriter && !isGraphics);
-  const shouldShowAssignDesigner = isHead || !isContentWriter;
-  const shouldShowDesignUpload = isHead || !isContentWriter;
-  const shouldShowActions = 
-    isHead || 
-    isContentWriter || 
-    (currentUserGroup !== 'Graphics Department' && 
-     currentUserGroup !== 'Creative Designers');
+  const shouldShowSLno = true;
+  const shouldShowTrackingNo = false;
+  const shouldShowDate = false;
+  const shouldShowSpecialDay = true;
+  const shouldShowClient = true;
+  const shouldShowContentDescription = true;
+  const shouldShowCreatives = !isContentWriter;
+  const shouldShowNotes = true;
+  const shouldShowAssignDesigner = !isContentWriter;
+  const shouldShowAssignContent = false;
+  const shouldShowDesignUpload = !isContentWriter;
+  const shouldShowStatus = true;
+  const shouldShowActions = false;
+
+  const totalVisibleCols = 
+    (shouldShowSLno ? 1 : 0) +
+    (shouldShowTrackingNo ? 1 : 0) +
+    (shouldShowDate ? 1 : 0) +
+    (shouldShowSpecialDay ? 1 : 0) +
+    (shouldShowClient ? 1 : 0) +
+    (shouldShowContentDescription ? 1 : 0) +
+    (shouldShowCreatives ? 1 : 0) +
+    (shouldShowNotes ? 1 : 0) +
+    (shouldShowAssignDesigner ? 1 : 0) +
+    (shouldShowAssignContent ? 1 : 0) +
+    (shouldShowDesignUpload ? 1 : 0) +
+    (shouldShowStatus ? 1 : 0) +
+    (shouldShowActions ? 1 : 0);
 
   useEffect(() => {
     const fetchCalendarWorks = async () => {
@@ -272,8 +289,7 @@ const WorksheetCreativePage = () => {
   // Filter works based on search term
   const filteredCalendarWorks = calendarWorks.filter(work => {
     // Filter by assignment for Content team members
-    const isContentGroup = currentUserGroup === 'Content Creator' || currentUserGroup === 'Content';
-    if (isContentGroup && user?.id && !isHead) {
+    if (isContentWriter && user?.id && !isHead) {
       const assignedContentIds = parseIds(work.content_assigned_to);
       if (!assignedContentIds.includes(Number(user.id))) {
         return false;
@@ -338,16 +354,24 @@ const WorksheetCreativePage = () => {
             <table className="w-full text-left border-collapse min-w-[1500px]">
               <thead className="bg-slate-50/50 border-b border-slate-100">
                 <tr className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                  <th className="px-4 py-3 w-12 text-center">#</th>
+                  {shouldShowSLno && (
+                    <th className="px-4 py-3 w-12 text-center">#</th>
+                  )}
                   {shouldShowTrackingNo && (
                     <th className="px-4 py-3 w-28">Tracking No</th>
                   )}
                   {shouldShowDate && (
                     <th className="px-4 py-3 w-24">Date</th>
                   )}
-                  <th className="px-4 py-3 w-24">Special Day</th>
-                  <th className="px-4 py-3 w-48">Client</th>
-                  <th className="px-4 py-3 min-w-[250px]">Content Description</th>
+                  {shouldShowSpecialDay && (
+                    <th className="px-4 py-3 w-24">Special Day</th>
+                  )}
+                  {shouldShowClient && (
+                    <th className="px-4 py-3 w-48">Client</th>
+                  )}
+                  {shouldShowContentDescription && (
+                    <th className="px-4 py-3 min-w-[250px]">Content Description</th>
+                  )}
                   {shouldShowCreatives && (
                     <th className="px-4 py-3 w-32">Creatives</th>
                   )}
@@ -363,7 +387,9 @@ const WorksheetCreativePage = () => {
                   {shouldShowDesignUpload && (
                     <th className="px-4 py-3 w-32">Design Upload</th>
                   )}
-                  <th className="px-4 py-3 w-24 text-center">Status</th>
+                  {shouldShowStatus && (
+                    <th className="px-4 py-3 w-24 text-center">Status</th>
+                  )}
                   {shouldShowActions && (
                     <th className="px-4 py-3 w-24 text-right">Actions</th>
                   )}
@@ -373,7 +399,9 @@ const WorksheetCreativePage = () => {
                 {filteredCalendarWorks.length > 0 ? (
                   filteredCalendarWorks.map((work, index) => (
                     <tr key={work.id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-4 py-3 text-center text-[10px] font-medium text-slate-400">{index + 1}</td>
+                      {shouldShowSLno && (
+                        <td className="px-4 py-3 text-center text-[10px] font-medium text-slate-400">{index + 1}</td>
+                      )}
                       {shouldShowTrackingNo && (
                         <td className="px-4 py-3">
                           <div className="text-[11px] font-bold text-slate-900">
@@ -391,33 +419,39 @@ const WorksheetCreativePage = () => {
                           </div>
                         </td>
                       )}
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          {work.is_special_day ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium bg-purple-100 text-purple-800 border border-purple-200">
-                              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mr-1.5"></span>
-                              Special Day
-                            </span>
-                          ) : (
-                            <span className="text-[10px] text-slate-400">Regular</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="min-w-0">
-                          <p className="text-[11px] font-bold text-slate-900 leading-none truncate max-w-37.5">
-                            {work.client?.company_name || 'N/A'}
-                          </p>
-                          <p className="text-[9px] text-slate-500 mt-1.5 truncate max-w-37.5">
-                            {work.client?.name || 'N/A'}
-                          </p>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="text-[11px] text-slate-700">
-                          {work.content_description || 'No description'}
-                        </div>
-                      </td>
+                      {shouldShowSpecialDay && (
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            {work.is_special_day ? (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mr-1.5"></span>
+                                Special Day
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-slate-400">Regular</span>
+                            )}
+                          </div>
+                        </td>
+                      )}
+                      {shouldShowClient && (
+                        <td className="px-4 py-3">
+                          <div className="min-w-0">
+                            <p className="text-[11px] font-bold text-slate-900 leading-none truncate max-w-37.5">
+                              {work.client?.company_name || 'N/A'}
+                            </p>
+                            <p className="text-[9px] text-slate-500 mt-1.5 truncate max-w-37.5">
+                              {work.client?.name || 'N/A'}
+                            </p>
+                          </div>
+                        </td>
+                      )}
+                      {shouldShowContentDescription && (
+                        <td className="px-4 py-3">
+                          <div className="text-[11px] text-slate-700">
+                            {work.content_description || 'No description'}
+                          </div>
+                        </td>
+                      )}
                       {shouldShowCreatives && (
                         <td className="px-4 py-3">
                           <div className="space-y-1">
@@ -504,15 +538,17 @@ const WorksheetCreativePage = () => {
                           </Button>
                         </td>
                       )}
-                      <td className="px-4 py-3 text-center">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-[9px] font-medium ${
-                          workStatuses[work.id] === 'completed' ? 'bg-green-100 text-green-800' :
-                          workStatuses[work.id] === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {workStatuses[work.id] || 'pending'}
-                        </span>
-                      </td>
+                      {shouldShowStatus && (
+                        <td className="px-4 py-3 text-center">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-[9px] font-medium ${
+                            workStatuses[work.id] === 'completed' ? 'bg-green-100 text-green-800' :
+                            workStatuses[work.id] === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {workStatuses[work.id] || 'pending'}
+                          </span>
+                        </td>
+                      )}
                       {shouldShowActions && (
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
@@ -545,7 +581,7 @@ const WorksheetCreativePage = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5 + (shouldShowTrackingNo ? 1 : 0) + (shouldShowDate ? 1 : 0) + (shouldShowCreatives ? 1 : 0) + (shouldShowNotes ? 1 : 0) + (shouldShowAssignDesigner ? 1 : 0) + (shouldShowAssignContent ? 1 : 0) + (shouldShowDesignUpload ? 1 : 0) + (shouldShowActions ? 1 : 0)} className="px-6 py-20 text-center align-top">
+                    <td colSpan={totalVisibleCols} className="px-6 py-20 text-center align-top">
                       <div className="flex flex-col items-center gap-2">
                         <div className="p-3 bg-slate-50 rounded-full text-slate-300">
                           <Clipboard size={24} />

@@ -42,21 +42,23 @@ const WorksheetPage = () => {
 
   // Determine which component to render based on user group
   const renderWorksheetComponent = () => {
+    const groupLower = currentUserGroup.toLowerCase().trim();
+
     // Content roles
-    const contentGroups = ['Content Creator', 'Content'];
-    if (contentGroups.includes(currentUserGroup)) {
+    const contentGroups = ['content creator', 'content'];
+    if (contentGroups.includes(groupLower)) {
       return <WorksheetContentPage />;
     }
 
-    // Creative roles: Creative Designers, Creative Team Lead, Graphics Department
-    const creativeGroups = ['Creative Designers', 'Creative Team Lead', 'Graphics Department'];
-    if (creativeGroups.includes(currentUserGroup)) {
+    // Creative roles: Creative Designers, Creative Team Lead, Graphics Department, Graphics
+    const creativeGroups = ['creative designers', 'creative team lead', 'graphics department', 'graphics'];
+    if (creativeGroups.includes(groupLower)) {
       return <WorksheetCreativePage />;
     }
 
     // DM roles: DM Executive
-    const dmGroups = ['Digital Marketing', 'DM', 'DM Executive'];
-    if (roleName?.toLowerCase() === 'dm executive' || dmGroups.includes(currentUserGroup)) {
+    const dmGroups = ['digital marketing', 'dm', 'dm executive'];
+    if (roleName?.toLowerCase() === 'dm executive' || dmGroups.includes(groupLower)) {
       return <WorksheetDMPage />;
     }
 
