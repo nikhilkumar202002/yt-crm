@@ -37,9 +37,9 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 font-sans">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 p-8 sm:p-10 animate-in fade-in zoom-in duration-500">
+      <div className="w-full max-w-md bg-white rounded-none shadow-xl border border-slate-200 p-8 sm:p-10 animate-in fade-in zoom-in duration-500">
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-50 rounded-2xl mb-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-50 rounded-none mb-6">
             <ShieldCheck size={32} className="text-blue-600" />
           </div>
           <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Welcome Back</h2>
@@ -56,7 +56,7 @@ const Login = () => {
               <input 
                 type="email" 
                 placeholder="name@company.com" 
-                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-600 focus:bg-white outline-none transition-all text-slate-900 text-sm font-medium placeholder:text-slate-400"
+                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-600 focus:bg-white outline-none transition-all text-slate-900 text-sm font-medium placeholder:text-slate-400"
                 onChange={(e) => setEmail(e.target.value)} 
                 required 
               />
@@ -77,7 +77,7 @@ const Login = () => {
               <input 
                 type={showPassword ? "text" : "password"} 
                 placeholder="••••••••" 
-                className="w-full pl-12 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-600 focus:bg-white outline-none transition-all text-slate-900 text-sm font-medium placeholder:text-slate-400"
+                className="w-full pl-12 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-600 focus:bg-white outline-none transition-all text-slate-900 text-sm font-medium placeholder:text-slate-400"
                 onChange={(e) => setPassword(e.target.value)} 
                 required 
               />
@@ -92,13 +92,13 @@ const Login = () => {
           </div>
 
           <div className="flex items-center gap-2.5 py-1">
-            <input type="checkbox" id="rem" className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
+            <input type="checkbox" id="rem" className="w-4 h-4 rounded-none border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
             <label htmlFor="rem" className="text-sm font-medium text-slate-600 cursor-pointer select-none">Keep me signed in</label>
           </div>
 
           <button 
             disabled={loading}
-            className="w-full flex items-center justify-center h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm uppercase tracking-widest rounded-xl shadow-lg shadow-blue-600/20 transition-all active:scale-[0.98] disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm uppercase tracking-widest rounded-none shadow-lg shadow-blue-600/20 transition-all active:scale-[0.98] disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed"
           >
             {loading ? (
               <Loader2 className="animate-spin" size={20} />

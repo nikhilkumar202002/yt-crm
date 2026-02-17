@@ -3,6 +3,7 @@ import { useAppSelector } from '../../store/store';
 import WorksheetCreativePage from './WorksheetCreativePage';
 import WorksheetContentPage from './WorksheetContentPage';
 import WorksheetDMPage from './WorksheetDMPage';
+import AllWorksheetPage from './AllWorksheetPage';
 import WorksheetDefaultPage from './WorksheetDefaultPage';
 import { getUsersList } from '../../api/services/authService';
 
@@ -43,6 +44,11 @@ const WorksheetPage = () => {
   // Determine which component to render based on user group
   const renderWorksheetComponent = () => {
     const groupLower = currentUserGroup.toLowerCase().trim();
+
+    // Admin role
+    if (roleName?.toUpperCase() === 'ADMIN') {
+      return <AllWorksheetPage />;
+    }
 
     // Content roles
     const contentGroups = ['content creator', 'content'];

@@ -5,7 +5,7 @@ import {
   Edit,
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
-import { getCalendarWorks, updateCalendarWorkContentDetails, updateCalendarWorkStatus } from '../../api/services/microService';
+import { getCalendarWorks, updateCalendarWorkContentDetails, updateDesignerStatus } from '../../api/services/microService';
 import { getUsersList } from '../../api/services/authService';
 import EditContentModal from './components/EditContentModal';
 
@@ -69,17 +69,24 @@ interface CalendarWork {
   deleted_by: string | null;
   content_assigned_by: string | null;
   status?: string;
+  designer_status?: string;
   client_approved_status?: string;
 }
 
 const WorksheetContentPage = () => {
-  const { user } = useAppSelector((state) => state.auth);
+  const { user, roleName } = useAppSelector((state) => state.auth);
   const [searchTerm, setSearchTerm] = useState('');
   const [calendarWorks, setCalendarWorks] = useState<CalendarWork[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [workStatuses, setWorkStatuses] = useState<{ [key: number]: string }>({});
+
+  const [expandedRows, setExpandedRows] = useState<{ [key: number]: boolean }>({});
+
+  const toggleRowExpansion = (id: number) => {
+    setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const [editContentModal, setEditContentModal] = useState<{
     isOpen: boolean;
@@ -122,10 +129,10 @@ const WorksheetContentPage = () => {
 
   const handleStatusChange = async (workId: number, newStatus: string) => {
     try {
-      const response = await updateCalendarWorkStatus(workId, newStatus);
+      const response = await updateDesignerStatus(workId, newStatus);
       if (response.status || response.data) {
         setWorkStatuses(prev => ({ ...prev, [workId]: newStatus }));
-        setCalendarWorks(prev => prev.map(w => w.id === workId ? { ...w, status: newStatus } : w));
+        setCalendarWorks(prev => prev.map(w => w.id === workId ? { ...w, designer_status: newStatus } : w));
       }
     } catch (err) {
       console.error('Failed to update status:', err);
@@ -196,7 +203,8 @@ const WorksheetContentPage = () => {
   };
 
   const filteredCalendarWorks = calendarWorks.filter(work => {
-    if (user?.id) {
+    const isAdmin = roleName?.toUpperCase() === 'ADMIN';
+    if (!isAdmin && user?.id) {
       const assignedContentIds = parseIds(work.content_assigned_to);
       if (!assignedContentIds.includes(Number(user.id))) {
         return false;
@@ -217,6 +225,8 @@ const WorksheetContentPage = () => {
       <style dangerouslySetInnerHTML={{ __html: `
         .rich-text-content ul { list-style-type: disc !important; margin-left: 1.25rem !important; margin-top: 0.25rem; }
         .rich-text-content ol { list-style-type: decimal !important; margin-left: 1.25rem !important; margin-top: 0.25rem; }
+        .rich-text-content { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
+        .rich-text-content.expanded { -webkit-line-clamp: unset; display: block; }
         .rich-text-content p { margin-bottom: 0.25rem; }
         .rich-text-content b, .rich-text-content strong { font-weight: 700; }
       `}} />
@@ -330,9 +340,18 @@ const WorksheetContentPage = () => {
                       </td>
                       <td className="px-4 py-3 align-top border border-slate-200">
                         <div 
-                          className="text-[11px] text-slate-700 rich-text-content"
+                          className={`text-[11px] text-slate-700 rich-text-content ${expandedRows[work.id] ? 'expanded' : ''}`}
+                          title={work.content_description?.replace(/<[^>]*>/g, '')}
                           dangerouslySetInnerHTML={{ __html: work.content_description || 'No description' }}
                         />
+                        {work.content_description && work.content_description.length > 60 && (
+                          <button 
+                            onClick={() => toggleRowExpansion(work.id)}
+                            className="text-[9px] text-blue-600 hover:text-blue-800 font-bold mt-1 uppercase tracking-tighter"
+                          >
+                            {expandedRows[work.id] ? 'Show Less' : 'Read More'}
+                          </button>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-left align-top border border-slate-200">
                         <span className={`inline-flex items-center px-2 py-1 rounded-none text-[9px] font-bold uppercase tracking-wider text-white ${
@@ -347,12 +366,12 @@ const WorksheetContentPage = () => {
                       </td>
                       <td className="px-4 py-3 text-left align-top border border-slate-200">
                         <select
-                          value={workStatuses[work.id] || work.status || 'pending'}
+                          value={workStatuses[work.id] || work.designer_status || 'pending'}
                           onChange={(e) => handleStatusChange(work.id, e.target.value)}
                           className={`text-[9px] font-bold px-2 py-1 rounded-none border-none outline-none cursor-pointer transition-all w-full min-w-[100px] text-white ${
-                            (workStatuses[work.id] || work.status) === 'completed' ? 'bg-green-600' :
-                            (workStatuses[work.id] || work.status) === 'working_progress' ? 'bg-blue-600' :
-                            (workStatuses[work.id] || work.status) === 'approval_pending' ? 'bg-purple-600' :
+                            (workStatuses[work.id] || work.designer_status) === 'completed' ? 'bg-green-600' :
+                            (workStatuses[work.id] || work.designer_status) === 'working_progress' ? 'bg-blue-600' :
+                            (workStatuses[work.id] || work.designer_status) === 'approval_pending' ? 'bg-purple-600' :
                             'bg-slate-500'
                           }`}
                         >

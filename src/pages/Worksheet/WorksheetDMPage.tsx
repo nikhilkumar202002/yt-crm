@@ -86,6 +86,12 @@ const WorksheetDMPage = () => {
   const [clientApprovedStatuses, setClientApprovedStatuses] = useState<{ [key: number]: string }>({});
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
+  const [expandedRows, setExpandedRows] = useState<{ [key: number]: boolean }>({});
+
+  const toggleRowExpansion = (id: number) => {
+    setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
   // Modal state
   const [assignmentModal, setAssignmentModal] = useState<{ isOpen: boolean; workId: number | null; initialIds: number[]; type: 'designer' | 'content' }>({
     isOpen: false,
@@ -271,6 +277,8 @@ const WorksheetDMPage = () => {
       <style dangerouslySetInnerHTML={{ __html: `
         .rich-text-content ul { list-style-type: disc !important; margin-left: 1.25rem !important; margin-top: 0.25rem; }
         .rich-text-content ol { list-style-type: decimal !important; margin-left: 1.25rem !important; margin-top: 0.25rem; }
+        .rich-text-content { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
+        .rich-text-content.expanded { -webkit-line-clamp: unset; display: block; }
         .rich-text-content p { margin-bottom: 0.25rem; }
         .rich-text-content b, .rich-text-content strong { font-weight: 700; }
       `}} />
@@ -377,9 +385,18 @@ const WorksheetDMPage = () => {
                       </td>
                       <td className="px-4 py-3 align-top border border-slate-200">
                         <div 
-                          className="text-[11px] text-slate-700 rich-text-content"
+                          className={`text-[11px] text-slate-700 rich-text-content ${expandedRows[work.id] ? 'expanded' : ''}`}
+                          title={work.content_description?.replace(/<[^>]*>/g, '')}
                           dangerouslySetInnerHTML={{ __html: work.content_description || 'No description' }}
                         />
+                        {work.content_description && work.content_description.length > 60 && (
+                          <button 
+                            onClick={() => toggleRowExpansion(work.id)}
+                            className="text-[9px] text-blue-600 hover:text-blue-800 font-bold mt-1 uppercase tracking-tighter"
+                          >
+                            {expandedRows[work.id] ? 'Show Less' : 'Read More'}
+                          </button>
+                        )}
                       </td>
                       <td className="px-4 py-3 align-top border border-slate-200">
                         <div className="space-y-1">
