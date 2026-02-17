@@ -509,8 +509,7 @@ const WorksheetCreativePage = () => {
                         <td className="px-4 py-3 align-top border border-slate-200">
                           <div className="flex items-start gap-2">
                             {work.is_special_day ? (
-                              <span className="inline-flex items-center px-2 py-1 rounded-none text-[10px] font-medium bg-purple-100 text-purple-800 border border-purple-200">
-                                <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mr-1.5"></span>
+                              <span className="inline-flex items-center px-2 py-1 rounded-none text-[9px] font-bold bg-purple-600 text-white uppercase tracking-wider">
                                 Special Day
                               </span>
                             ) : (
@@ -599,7 +598,7 @@ const WorksheetCreativePage = () => {
                               <Button 
                                 variant="secondary" 
                                 size="sm" 
-                                className={`text-[10px] w-full justify-between transition-all ${isAssigned ? '!bg-orange-500 !text-white !border-orange-600 hover:!bg-orange-600' : ''}`}
+                                className={`text-[10px] w-full justify-between transition-all ${isAssigned ? '!bg-blue-500 !text-white !border-blue-600 hover:!bg-blue-600' : ''}`}
                                 title={getFullAssignedNames(work.content_assigned_to)}
                                 onClick={() => {
                                 if (!isHead) return;
@@ -664,12 +663,12 @@ const WorksheetCreativePage = () => {
                       )}
                       {shouldShowClientApproval && (
                         <td className="px-4 py-3 align-top border border-slate-200">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-none text-[9px] font-bold uppercase tracking-wider ${
-                            work.client_approved_status === 'approved' ? 'bg-green-100 text-green-700' :
-                            work.client_approved_status === 'not_approved' ? 'bg-red-100 text-red-700' :
-                            work.client_approved_status === 'needed_edit' ? 'bg-orange-100 text-orange-700' :
-                            work.client_approved_status === 'images_changed' ? 'bg-blue-100 text-blue-700' :
-                            'bg-slate-100 text-slate-600'
+                          <span className={`inline-flex items-center px-2 py-1 rounded-none text-[9px] font-bold uppercase tracking-wider text-white ${
+                            work.client_approved_status === 'approved' ? 'bg-green-600' :
+                            work.client_approved_status === 'not_approved' ? 'bg-red-600' :
+                            work.client_approved_status === 'needed_edit' ? 'bg-orange-600' :
+                            work.client_approved_status === 'images_changed' ? 'bg-blue-600' :
+                            'bg-slate-500'
                           }`}>
                             {work.client_approved_status?.replace('_', ' ') || 'Pending'}
                           </span>
@@ -680,11 +679,11 @@ const WorksheetCreativePage = () => {
                           <select
                             value={workStatuses[work.id] || work.designer_status || 'pending'}
                             onChange={(e) => handleStatusChange(work.id, e.target.value)}
-                            className={`text-[9px] font-bold px-2 py-1 rounded-none border-none outline-none cursor-pointer transition-all w-full min-w-[100px] ${
-                              (workStatuses[work.id] || work.designer_status) === 'completed' ? 'bg-green-100 text-green-700' :
-                              (workStatuses[work.id] || work.designer_status) === 'working_progress' ? 'bg-blue-100 text-blue-700' :
-                              (workStatuses[work.id] || work.designer_status) === 'approval_pending' ? 'bg-purple-100 text-purple-700' :
-                              'bg-slate-100 text-slate-600'
+                            className={`text-[9px] font-bold px-2 py-1 rounded-none border-none outline-none cursor-pointer transition-all w-full min-w-[100px] text-white ${
+                              (workStatuses[work.id] || work.designer_status) === 'completed' ? 'bg-green-600' :
+                              (workStatuses[work.id] || work.designer_status) === 'working_progress' ? 'bg-blue-600' :
+                              (workStatuses[work.id] || work.designer_status) === 'approval_pending' ? 'bg-purple-600' :
+                              'bg-slate-500'
                             }`}
                           >
                             <option value="pending">Pending</option>

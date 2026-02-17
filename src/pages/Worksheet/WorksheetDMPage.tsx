@@ -4,9 +4,8 @@ import {
   Clipboard, Plus, Search,
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
-import { getCalendarWorks, assignCalendarWorkContent, assignDesignersToWork, updateClientApprovedStatus } from '../../api/services/microService';
+import { getCalendarWorks, updateClientApprovedStatus } from '../../api/services/microService';
 import { getUsersList } from '../../api/services/authService';
-import AssignmentModal from './components/AssignmentModal';
 import ImageLightbox from '../../components/common/ImageLightbox';
 
 interface Creative {
@@ -86,14 +85,6 @@ const WorksheetDMPage = () => {
   const [clientApprovedStatuses, setClientApprovedStatuses] = useState<{ [key: number]: string }>({});
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
-  // Modal state
-  const [assignmentModal, setAssignmentModal] = useState<{ isOpen: boolean; workId: number | null; initialIds: number[]; type: 'designer' | 'content' }>({
-    isOpen: false,
-    workId: null,
-    initialIds: [],
-    type: 'designer'
-  });
-
   // For DM roles, show all columns including content assign
   useEffect(() => {
     const fetchCalendarWorks = async () => {
@@ -128,19 +119,6 @@ const WorksheetDMPage = () => {
     fetchUsers();
   }, [user?.id]);
 
-  const handleAssignDesigner = async (workId: number, userIds: number[]) => {
-    try {
-      const response = await assignDesignersToWork(workId, userIds);
-      const updatedWork = response.data || response;
-      if (updatedWork) {
-        setCalendarWorks(prev => prev.map(w => w.id === workId ? updatedWork : w));
-      }
-      setAssignmentModal(prev => ({ ...prev, isOpen: false }));
-    } catch (err) {
-      console.error('Failed to assign designer:', err);
-    }
-  };
-
   const handleClientApprovedStatusChange = async (workId: number, newStatus: string) => {
     try {
       const response = await updateClientApprovedStatus(workId, newStatus);
@@ -150,22 +128,6 @@ const WorksheetDMPage = () => {
       }
     } catch (err) {
       console.error('Failed to update client approval status:', err);
-    }
-  };
-
-  const handleAssignContent = async (workId: number, userIds: number[]) => {
-    try {
-      // Ensure we send the exact format expected: a stringified array of IDs
-      const payload = { content_assigned_to: JSON.stringify(userIds) };
-      
-      const response = await assignCalendarWorkContent(workId, payload);
-      const updatedWork = response.data || response;
-      if (updatedWork) {
-        setCalendarWorks(prev => prev.map(w => w.id === workId ? updatedWork : w));
-      }
-      setAssignmentModal(prev => ({ ...prev, isOpen: false }));
-    } catch (err) {
-      console.error('Failed to assign content:', err);
     }
   };
 
@@ -233,7 +195,7 @@ const WorksheetDMPage = () => {
     const assignedTo = type === 'designer' ? work.assigned_to : work.content_assigned_to;
     const assignedNames = type === 'designer' ? work.assigned_to_names : work.content_assigned_to_names;
     const ids = parseIds(assignedTo);
-    if (ids.length === 0) return type === 'designer' ? 'Assign Designer' : 'Assign Content';
+    if (ids.length === 0) return 'Not Assigned';
     
     if (assignedNames) {
       const names = ids.map(id => assignedNames[id.toString()]).filter(Boolean);
@@ -244,7 +206,7 @@ const WorksheetDMPage = () => {
     }
 
     const names = ids.map(id => users.find(u => u.id === Number(id))?.name).filter(Boolean);
-    if (names.length === 0) return type === 'designer' ? 'Assign Designer' : 'Assign Content';
+    if (names.length === 0) return 'Not Assigned';
     if (names.length > 2) return `${names[0]}, ${names[1]} +${names.length - 2}`;
     return names.join(', ');
   };
@@ -322,8 +284,8 @@ const WorksheetDMPage = () => {
                   <th className="px-4 py-3 min-w-[250px] border border-slate-200">Content Description</th>
                   <th className="px-4 py-3 w-32 border border-slate-200">Creatives</th>
                   <th className="px-4 py-3 min-w-[200px] border border-slate-200">Notes</th>
-                  <th className="px-4 py-3 w-40 border border-slate-200">Assign Designer</th>
-                  <th className="px-4 py-3 w-40 border border-slate-200">Assign Content</th>
+                  <th className="px-4 py-3 w-40 border border-slate-200">Designer</th>
+                  <th className="px-4 py-3 w-40 border border-slate-200">Content Writer</th>
                   <th className="px-4 py-3 w-32 border border-slate-200">Designs</th>
                   <th className="px-4 py-3 w-32 text-left border border-slate-200">Work Status</th>
                   <th className="px-4 py-3 w-32 border border-slate-200">Client Approval</th>
@@ -350,8 +312,7 @@ const WorksheetDMPage = () => {
                       <td className="px-4 py-3 align-top border border-slate-200">
                         <div className="flex items-start gap-2">
                           {work.is_special_day ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-none text-[10px] font-medium bg-purple-100 text-purple-800 border border-purple-200">
-                              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mr-1.5"></span>
+                            <span className="inline-flex items-center px-2 py-1 rounded-none text-[9px] font-bold bg-purple-600 text-white uppercase tracking-wider">
                               Special Day
                             </span>
                           ) : (
@@ -397,49 +358,37 @@ const WorksheetDMPage = () => {
                       </td>
                       <td className="px-4 py-3 align-top border border-slate-200">
                         {(() => {
-                          const designerIds = parseIds(work.assigned_to);
-                          const isAssigned = designerIds.length > 0;
+                          const names = getAssignedNames(work, 'designer');
+                          const isAssigned = parseIds(work.assigned_to).length > 0;
                           return (
-                            <Button 
-                              variant="secondary" 
-                              size="sm" 
-                              className={`text-[10px] w-full justify-between transition-all ${isAssigned ? '!bg-orange-500 !text-white !border-orange-600 hover:!bg-orange-600' : ''}`}
+                            <div 
+                              className={`text-[10px] px-3 py-1.5 border font-bold truncate uppercase tracking-wider ${
+                                isAssigned 
+                                  ? 'bg-orange-500 text-white border-orange-600' 
+                                  : 'bg-slate-50 text-slate-400 border-slate-200'
+                              }`}
                               title={getFullAssignedNames(work.assigned_to)}
-                              onClick={() => {
-                                setAssignmentModal({
-                                  isOpen: true,
-                                  workId: work.id,
-                                  initialIds: designerIds,
-                                  type: 'designer'
-                                });
-                              }}
                             >
-                              {getAssignedNames(work, 'designer')}
-                            </Button>
+                              {names}
+                            </div>
                           );
                         })()}
                       </td>
                       <td className="px-4 py-3 align-top border border-slate-200">
                         {(() => {
-                          const contentIds = parseIds(work.content_assigned_to);
-                          const isAssigned = contentIds.length > 0;
+                          const names = getAssignedNames(work, 'content');
+                          const isAssigned = parseIds(work.content_assigned_to).length > 0;
                           return (
-                            <Button 
-                              variant="secondary" 
-                              size="sm" 
-                              className={`text-[10px] w-full justify-between transition-all ${isAssigned ? '!bg-orange-500 !text-white !border-orange-600 hover:!bg-orange-600' : ''}`}
+                            <div 
+                              className={`text-[10px] px-3 py-1.5 border font-bold truncate uppercase tracking-wider ${
+                                isAssigned 
+                                  ? 'bg-blue-500 text-white border-blue-600' 
+                                  : 'bg-slate-50 text-slate-400 border-slate-200'
+                              }`}
                               title={getFullAssignedNames(work.content_assigned_to)}
-                              onClick={() => {
-                                setAssignmentModal({
-                                  isOpen: true,
-                                  workId: work.id,
-                                  initialIds: contentIds,
-                                  type: 'content'
-                                });
-                              }}
                             >
-                              {getAssignedNames(work, 'content')}
-                            </Button>
+                              {names}
+                            </div>
                           );
                         })()}
                       </td>
@@ -480,22 +429,22 @@ const WorksheetDMPage = () => {
                         <div className="flex flex-col gap-2">
                           <div className="flex flex-col gap-0.5">
                             <span className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">Content</span>
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-none text-[9px] font-bold uppercase tracking-wider w-fit ${
-                              work.status === 'completed' ? 'bg-green-100 text-green-700' :
-                              work.status === 'working_progress' ? 'bg-blue-100 text-blue-700' :
-                              work.status === 'approval_pending' ? 'bg-purple-100 text-purple-700' :
-                              'bg-slate-100 text-slate-600'
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-none text-[9px] font-bold uppercase tracking-wider w-fit text-white ${
+                              work.status === 'completed' ? 'bg-green-600' :
+                              work.status === 'working_progress' ? 'bg-blue-600' :
+                              work.status === 'approval_pending' ? 'bg-purple-600' :
+                              'bg-slate-500'
                             }`}>
                               {(work.status || 'pending').replace('_', ' ')}
                             </span>
                           </div>
                           <div className="flex flex-col gap-0.5">
                             <span className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">Designer</span>
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-none text-[9px] font-bold uppercase tracking-wider w-fit ${
-                              work.designer_status === 'completed' ? 'bg-green-100 text-green-700' :
-                              work.designer_status === 'working_progress' ? 'bg-blue-100 text-blue-700' :
-                              work.designer_status === 'approval_pending' ? 'bg-purple-100 text-purple-700' :
-                              'bg-slate-100 text-slate-600'
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-none text-[9px] font-bold uppercase tracking-wider w-fit text-white ${
+                              work.designer_status === 'completed' ? 'bg-green-600' :
+                              work.designer_status === 'working_progress' ? 'bg-blue-600' :
+                              work.designer_status === 'approval_pending' ? 'bg-purple-600' :
+                              'bg-slate-500'
                             }`}>
                               {(work.designer_status || 'pending').replace('_', ' ')}
                             </span>
@@ -506,12 +455,12 @@ const WorksheetDMPage = () => {
                         <select
                           value={clientApprovedStatuses[work.id] || work.client_approved_status || 'pending'}
                           onChange={(e) => handleClientApprovedStatusChange(work.id, e.target.value)}
-                          className={`text-[9px] font-bold px-2 py-1 rounded-none border-none outline-none cursor-pointer transition-all w-full min-w-[100px] ${
-                            (clientApprovedStatuses[work.id] || work.client_approved_status) === 'approved' ? 'bg-green-100 text-green-700' :
-                            (clientApprovedStatuses[work.id] || work.client_approved_status) === 'not_approved' ? 'bg-red-100 text-red-700' :
-                            (clientApprovedStatuses[work.id] || work.client_approved_status) === 'needed_edit' ? 'bg-orange-100 text-orange-700' :
-                            (clientApprovedStatuses[work.id] || work.client_approved_status) === 'images_changed' ? 'bg-blue-100 text-blue-700' :
-                            'bg-slate-100 text-slate-600'
+                          className={`text-[9px] font-bold px-2 py-1 rounded-none border-none outline-none cursor-pointer transition-all w-full min-w-[100px] text-white ${
+                            (clientApprovedStatuses[work.id] || work.client_approved_status) === 'approved' ? 'bg-green-600' :
+                            (clientApprovedStatuses[work.id] || work.client_approved_status) === 'not_approved' ? 'bg-red-600' :
+                            (clientApprovedStatuses[work.id] || work.client_approved_status) === 'needed_edit' ? 'bg-orange-600' :
+                            (clientApprovedStatuses[work.id] || work.client_approved_status) === 'images_changed' ? 'bg-blue-600' :
+                            'bg-slate-500'
                           }`}
                         >
                           <option value="pending">Pending</option>
@@ -545,23 +494,6 @@ const WorksheetDMPage = () => {
           </div>
         )}
       </div>
-
-      <AssignmentModal
-        isOpen={assignmentModal.isOpen}
-        onClose={() => setAssignmentModal(prev => ({ ...prev, isOpen: false }))}
-        onAssign={(userIds) => {
-          if (assignmentModal.workId) {
-            if (assignmentModal.type === 'designer') {
-              handleAssignDesigner(assignmentModal.workId, userIds);
-            } else {
-              handleAssignContent(assignmentModal.workId, userIds);
-            }
-          }
-        }}
-        users={assignmentModal.type === 'designer' ? designerUsers : contentUsers}
-        initialSelectedIds={assignmentModal.initialIds}
-        title={assignmentModal.type === 'designer' ? "Assign Designers" : "Assign Content Writers"}
-      />
 
       {lightboxImage && (
         <ImageLightbox 

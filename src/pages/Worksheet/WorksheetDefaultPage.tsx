@@ -287,8 +287,7 @@ const WorksheetDefaultPage = () => {
                       <td className="px-4 py-3 align-top border border-slate-200">
                         <div className="flex items-start gap-2">
                           {work.is_special_day ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-none text-[10px] font-medium bg-purple-100 text-purple-800 border border-purple-200">
-                              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mr-1.5"></span>
+                            <span className="inline-flex items-center px-2 py-1 rounded-none text-[9px] font-bold bg-purple-600 text-white uppercase tracking-wider">
                               Special Day
                             </span>
                           ) : (
@@ -361,10 +360,10 @@ const WorksheetDefaultPage = () => {
                         </Button>
                       </td>
                       <td className="px-4 py-3 text-left align-top border border-slate-200">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-none text-[9px] font-medium ${
-                          workStatuses[work.id] === 'completed' ? 'bg-green-100 text-green-800' :
-                          workStatuses[work.id] === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800'
+                        <span className={`inline-flex items-center px-2 py-1 rounded-none text-[9px] font-bold uppercase tracking-wider text-white ${
+                          workStatuses[work.id] === 'completed' ? 'bg-green-600' :
+                          workStatuses[work.id] === 'in_progress' ? 'bg-yellow-500' :
+                          'bg-slate-500'
                         }`}>
                           {workStatuses[work.id] || 'pending'}
                         </span>

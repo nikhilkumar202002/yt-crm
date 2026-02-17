@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAppSelector } from '../../store/store';
 import {
   Clipboard, Search,
@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
 import { getCalendarWorks, updateCalendarWorkContentDetails, updateCalendarWorkStatus } from '../../api/services/microService';
+import { getUsersList } from '../../api/services/authService';
 import EditContentModal from './components/EditContentModal';
 
 interface Creative {
@@ -28,6 +29,18 @@ interface Client {
   update_history: null;
   is_in_leads: boolean;
   proposal_id: null;
+}
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  role_id: number;
+  group_id: string;
+  position_id: string;
+  role_name: string;
+  group_name: string;
+  position_name: string;
 }
 
 interface CalendarWork {
@@ -65,6 +78,7 @@ const WorksheetContentPage = () => {
   const [calendarWorks, setCalendarWorks] = useState<CalendarWork[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
   const [workStatuses, setWorkStatuses] = useState<{ [key: number]: string }>({});
 
   const [editContentModal, setEditContentModal] = useState<{
@@ -92,7 +106,18 @@ const WorksheetContentPage = () => {
       }
     };
 
+    const fetchUsers = async () => {
+      try {
+        const response = await getUsersList();
+        const usersData = response.data?.data || response.data || [];
+        setUsers(usersData);
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+      }
+    };
+
     fetchCalendarWorks();
+    fetchUsers();
   }, []);
 
   const handleStatusChange = async (workId: number, newStatus: string) => {
@@ -142,6 +167,32 @@ const WorksheetContentPage = () => {
     } catch (e) {
       return [];
     }
+  };
+
+  const getAssignedNames = (work: CalendarWork) => {
+    const assignedTo = work.assigned_to;
+    const assignedNames = work.assigned_to_names;
+    const ids = parseIds(assignedTo);
+    if (ids.length === 0) return 'Not Assigned';
+    
+    if (assignedNames) {
+      const names = ids.map(id => assignedNames[id.toString()]).filter(Boolean);
+      if (names.length > 0) {
+        if (names.length > 2) return `${names[0]}, ${names[1]} +${names.length - 2}`;
+        return names.join(', ');
+      }
+    }
+
+    const names = ids.map(id => users.find(u => u.id === Number(id))?.name).filter(Boolean);
+    if (names.length === 0) return 'Not Assigned';
+    if (names.length > 2) return `${names[0]}, ${names[1]} +${names.length - 2}`;
+    return names.join(', ');
+  };
+
+  const getFullAssignedNames = (assignedTo: string | null) => {
+    const ids = parseIds(assignedTo);
+    const names = ids.map(id => users.find(u => u.id === Number(id))?.name).filter(Boolean);
+    return names.length > 0 ? names.join(', ') : undefined;
   };
 
   const filteredCalendarWorks = calendarWorks.filter(work => {
@@ -203,6 +254,7 @@ const WorksheetContentPage = () => {
                   <th className="px-4 py-3 w-24 border border-slate-200">Special Day</th>
                   <th className="px-4 py-3 w-48 border border-slate-200">Client</th>
                   <th className="px-4 py-3 w-32 border border-slate-200">Creatives</th>
+                  <th className="px-4 py-3 w-40 border border-slate-200">Designer</th>
                   <th className="px-4 py-3 min-w-[250px] border border-slate-200">Content Description</th>
                   <th className="px-4 py-3 w-32 border border-slate-200">Client Approval</th>
                   <th className="px-4 py-3 w-24 text-left border border-slate-200">Status</th>
@@ -217,8 +269,7 @@ const WorksheetContentPage = () => {
                       <td className="px-4 py-3 align-top border border-slate-200">
                         <div className="flex items-start gap-2">
                           {work.is_special_day ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-none text-[10px] font-medium bg-purple-100 text-purple-800 border border-purple-200">
-                              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mr-1.5"></span>
+                            <span className="inline-flex items-center px-2 py-1 rounded-none text-[9px] font-bold bg-purple-600 text-white uppercase tracking-wider">
                               Special Day
                             </span>
                           ) : (
@@ -253,17 +304,35 @@ const WorksheetContentPage = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3 align-top border border-slate-200">
+                        {(() => {
+                          const names = getAssignedNames(work);
+                          const isAssigned = parseIds(work.assigned_to).length > 0;
+                          return (
+                            <div 
+                              className={`text-[10px] px-3 py-1.5 border font-bold truncate uppercase tracking-wider ${
+                                isAssigned 
+                                  ? 'bg-orange-500 text-white border-orange-600' 
+                                  : 'bg-slate-50 text-slate-400 border-slate-200'
+                              }`}
+                              title={getFullAssignedNames(work.assigned_to)}
+                            >
+                              {names}
+                            </div>
+                          );
+                        })()}
+                      </td>
+                      <td className="px-4 py-3 align-top border border-slate-200">
                         <div className="text-[11px] text-slate-700">
                           {work.content_description || 'No description'}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-left align-top border border-slate-200">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-none text-[9px] font-bold uppercase tracking-wider ${
-                          work.client_approved_status === 'approved' ? 'bg-green-100 text-green-700' :
-                          work.client_approved_status === 'not_approved' ? 'bg-red-100 text-red-700' :
-                          work.client_approved_status === 'needed_edit' ? 'bg-orange-100 text-orange-700' :
-                          work.client_approved_status === 'images_changed' ? 'bg-blue-100 text-blue-700' :
-                          'bg-slate-100 text-slate-600'
+                        <span className={`inline-flex items-center px-2 py-1 rounded-none text-[9px] font-bold uppercase tracking-wider text-white ${
+                          work.client_approved_status === 'approved' ? 'bg-green-600' :
+                          work.client_approved_status === 'not_approved' ? 'bg-red-600' :
+                          work.client_approved_status === 'needed_edit' ? 'bg-orange-600' :
+                          work.client_approved_status === 'images_changed' ? 'bg-blue-600' :
+                          'bg-slate-500'
                         }`}>
                           {work.client_approved_status?.replace('_', ' ') || 'Pending'}
                         </span>
@@ -272,11 +341,11 @@ const WorksheetContentPage = () => {
                         <select
                           value={workStatuses[work.id] || work.status || 'pending'}
                           onChange={(e) => handleStatusChange(work.id, e.target.value)}
-                          className={`text-[9px] font-bold px-2 py-1 rounded-none border-none outline-none cursor-pointer transition-all w-full min-w-[100px] ${
-                            (workStatuses[work.id] || work.status) === 'completed' ? 'bg-green-100 text-green-700' :
-                            (workStatuses[work.id] || work.status) === 'working_progress' ? 'bg-blue-100 text-blue-700' :
-                            (workStatuses[work.id] || work.status) === 'approval_pending' ? 'bg-purple-100 text-purple-700' :
-                            'bg-slate-100 text-slate-600'
+                          className={`text-[9px] font-bold px-2 py-1 rounded-none border-none outline-none cursor-pointer transition-all w-full min-w-[100px] text-white ${
+                            (workStatuses[work.id] || work.status) === 'completed' ? 'bg-green-600' :
+                            (workStatuses[work.id] || work.status) === 'working_progress' ? 'bg-blue-600' :
+                            (workStatuses[work.id] || work.status) === 'approval_pending' ? 'bg-purple-600' :
+                            'bg-slate-500'
                           }`}
                         >
                           <option value="pending">Pending</option>
@@ -302,7 +371,7 @@ const WorksheetContentPage = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={8} className="px-6 py-20 text-center align-top border border-slate-200">
+                    <td colSpan={9} className="px-6 py-20 text-center align-top border border-slate-200">
                       <div className="flex flex-col items-center gap-2">
                         <div className="p-3 bg-slate-50 rounded-none text-slate-300">
                           <Clipboard size={24} />
