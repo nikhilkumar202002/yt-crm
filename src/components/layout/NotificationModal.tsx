@@ -96,13 +96,13 @@ const NotificationModal = ({ isOpen, onOpenChange }: NotificationModalProps) => 
     <Dialog.Root open={isOpen} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-2xl z-[110] font-sans max-h-[80vh] overflow-hidden">
+        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-none shadow-2xl z-[110] font-sans max-h-[80vh] overflow-hidden items-start">
           <div className="flex justify-between items-center p-6 border-b border-slate-100">
             <Dialog.Title className="text-lg font-bold text-slate-900 flex items-center gap-2">
               <Bell size={20} className="text-blue-600" />
               Notifications
               {unreadCount > 0 && (
-                <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
+                <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-none">
                   {unreadCount}
                 </span>
               )}
@@ -136,7 +136,7 @@ const NotificationModal = ({ isOpen, onOpenChange }: NotificationModalProps) => 
                             {notification.title}
                           </h4>
                           {!notification.read && (
-                            <div className="h-2 w-2 bg-blue-600 rounded-full flex-shrink-0"></div>
+                            <div className="h-2 w-2 bg-blue-600 rounded-none flex-shrink-0"></div>
                           )}
                         </div>
                         <p className={`text-xs leading-relaxed mb-2 ${notification.read ? 'text-slate-500' : 'text-slate-700'}`}>

@@ -11,9 +11,9 @@ const DashboardLayout = () => {
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
       
       {/* Content Area - Adjusted ml-72 to match new sidebar width */}
-      <div className="flex-1 lg:ml-72 flex flex-col min-w-0 transition-all duration-300">
+      <div className="flex-1 lg:ml-64 flex flex-col min-w-0 transition-all duration-300">
         <Header onMenuClick={() => setSidebarOpen(true)} />
-        <main className="p-4 lg:p-6 max-w-[1600px]">
+        <main className="p-4 lg:p-6 w-full">
           <Outlet />
         </main>
       </div>

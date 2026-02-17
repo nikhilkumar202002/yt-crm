@@ -67,13 +67,13 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
         onClick={() => setIsOpen(false)}
       />
 
-      <aside className={`fixed left-0 top-0 h-screen bg-white z-[70] font-sans border-r border-slate-200 transition-transform duration-300 ease-in-out w-72 flex flex-col 
+      <aside className={`fixed left-0 top-0 h-screen bg-white z-[70] font-sans border-r border-slate-200 transition-transform duration-300 ease-in-out w-64 flex flex-col 
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
         {/* Brand Header */}
-        <div className="h-16 px-6 flex items-center justify-between border-b border-slate-50">
-          <div className="flex items-center gap-2.5">
-            <div className="h-7 w-7 bg-blue-600 rounded flex items-center justify-center text-white shadow-sm">
+        <div className="h-16 px-6 flex items-start justify-between border-b border-slate-50 pt-4">
+          <div className="flex items-start gap-2.5">
+            <div className="h-7 w-7 bg-blue-600 rounded-none flex items-center justify-center text-white shadow-sm">
               <span className="font-black text-xs italic">YT</span>
             </div>
             <h1 className="text-slate-900 text-sm font-bold tracking-tight uppercase">CRM</h1>
@@ -84,9 +84,9 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
         </div>
         
         {/* Main Navigation */}
-        <nav className="flex-1 overflow-y-auto px-3 py-5 space-y-5">
+        <nav className="flex-1 overflow-y-auto px-0 py-5 space-y-5">
           <div>
-            <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Workflow</p>
+            <p className="px-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Workflow</p>
             <div className="space-y-2">
               {filteredMenu.map((item) => {
                 const hasSubmenu = item.submenu && item.submenu.length > 0;
@@ -98,23 +98,23 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
                     <div key={item.title}>
                       <button
                         onClick={() => toggleExpand(item.title)}
-                        className={`w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-md transition-all ${
+                        className={`w-full flex items-start justify-between gap-2.5 px-6 py-2.5 rounded-none transition-all ${
                           isActive ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                         }`}
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-start gap-3">
                           <span className={isActive ? 'text-blue-600' : 'text-slate-400'}>{iconMap[item.title]}</span>
                           <span className="text-xs font-semibold tracking-tight">{item.title}</span>
                         </div>
                         {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                       </button>
                       {isExpanded && (
-                        <div className="ml-6 mt-1 border-l border-slate-100 space-y-1">
+                        <div className="mt-1 space-y-1">
                           {item.submenu?.map((sub: any) => (
                             <Link
                               key={sub.path}
                               to={sub.path}
-                              className={`flex items-center px-4 py-2 text-[11px] font-medium transition-colors ${
+                              className={`flex items-start pl-14 pr-6 py-2 text-[11px] font-medium transition-colors ${
                                 location.pathname === sub.path ? 'text-blue-600 bg-blue-50/50 font-bold' : 'text-slate-400 hover:text-slate-900'
                               }`}
                             >
@@ -131,9 +131,9 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-all ${
+                    className={`flex items-start gap-3 px-6 py-2.5 rounded-none transition-all ${
                       location.pathname === item.path 
-                        ? 'bg-blue-600 text-white shadow-sm' 
+                        ? 'bg-blue-600 text-white' 
                         : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                     }`}
                   >
@@ -148,8 +148,8 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
 
         {/* Security Status - Bottom */}
         <div className="p-4 border-t border-slate-50">
-          <div className="bg-slate-50/80 rounded-lg p-2.5 flex items-center gap-3">
-            <div className="h-6 w-6 rounded bg-blue-100 flex items-center justify-center text-blue-600">
+          <div className="bg-slate-50/80 rounded-none p-2.5 flex items-start gap-3">
+            <div className="h-6 w-6 rounded-none bg-blue-100 flex items-center justify-center text-blue-600">
               <ShieldCheck size={14} />
             </div>
             <div className="min-w-0">
