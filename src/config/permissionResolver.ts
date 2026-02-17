@@ -62,7 +62,7 @@ export function resolvePermissions(user: {
   }
 
   // Apply group-based restrictions for non-admin users
-  if (groupLower === 'content creator' && 
+  if ((groupLower === 'content creator' || groupLower === 'content') && 
       (user.position === '1' || user.position === 'member' || user.position === 'employee' || 
        positionKey === 'member' || positionKey === 'employee' ||
        user.designation_name?.toLowerCase() === 'member' || user.designation_name?.toLowerCase() === 'employee')) {
@@ -77,14 +77,14 @@ export function resolvePermissions(user: {
     permissions.canAssignLeads = false;
     permissions.canReceiveLeadIdsForAssignment = false;
     permissions.canViewCalendar = false;
-  } else if (groupLower === 'content creator') {
+  } else if (groupLower === 'content creator' || groupLower === 'content') {
     // Other Content Creator positions have normal access
     permissions.canViewAllLeads = false;
     permissions.canViewAssignedLeads = false;
   }
 
-  // Ensure Digital Marketing has worksheet access
-  if (groupLower === 'digital marketing' || groupLower === 'dm') {
+  // Ensure Digital Marketing and Content Creator have worksheet access
+  if (groupLower === 'digital marketing' || groupLower === 'dm' || groupLower === 'content creator' || groupLower === 'content') {
     permissions.canAssignGroup = true;
   }
 

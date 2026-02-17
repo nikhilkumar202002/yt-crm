@@ -92,15 +92,19 @@ const WorksheetCreativePage = () => {
   // Conditional visibility based on user group
   const shouldShowTrackingNo = 
     currentUserGroup !== 'Content Creator' && 
+    currentUserGroup !== 'Content' && 
     currentUserGroup !== 'Graphics Department' && 
     currentUserGroup !== 'Creative Designers';
   const shouldShowDate = 
     currentUserGroup !== 'Content Creator' && 
+    currentUserGroup !== 'Content' && 
     currentUserGroup !== 'Graphics Department' && 
     currentUserGroup !== 'Creative Designers';
   const shouldShowAssignContent = 
     currentUserGroup !== 'Graphics Department' && 
     currentUserGroup !== 'Creative Designers';
+  const shouldShowAssignDesigner = currentUserGroup !== 'Content Creator' && currentUserGroup !== 'Content';
+  const shouldShowDesignUpload = currentUserGroup !== 'Content Creator' && currentUserGroup !== 'Content';
 
   useEffect(() => {
     const fetchCalendarWorks = async () => {
@@ -299,11 +303,15 @@ const WorksheetCreativePage = () => {
                   <th className="px-5 py-3">Content Description</th>
                   <th className="px-5 py-3">Creatives</th>
                   <th className="px-5 py-3">Notes</th>
-                  <th className="px-5 py-3">Assign Designer</th>
+                  {shouldShowAssignDesigner && (
+                    <th className="px-5 py-3">Assign Designer</th>
+                  )}
                   {shouldShowAssignContent && (
                     <th className="px-5 py-3">Assign Content</th>
                   )}
-                  <th className="px-5 py-3">Design Upload</th>
+                  {shouldShowDesignUpload && (
+                    <th className="px-5 py-3">Design Upload</th>
+                  )}
                   <th className="px-5 py-3 text-center">Status</th>
                   <th className="px-5 py-3 text-right">Actions</th>
                 </tr>
@@ -378,30 +386,32 @@ const WorksheetCreativePage = () => {
                           {work.notes || 'No notes'}
                         </div>
                       </td>
-                      <td className="px-5 py-3">
-                        {(() => {
-                          const designerIds = parseIds(work.assigned_to);
-                          const isAssigned = designerIds.length > 0;
-                          return (
-                            <Button 
-                              variant="secondary" 
-                              size="sm" 
-                              className={`text-[10px] w-full justify-between transition-all ${isAssigned ? '!bg-orange-500 !text-white !border-orange-600 hover:!bg-orange-600' : ''}`}
-                              title={getFullAssignedNames(work.assigned_to)}
-                              onClick={() => {
-                                setAssignmentModal({
-                                  isOpen: true,
-                                  workId: work.id,
-                                  initialIds: designerIds,
-                                  type: 'designer'
-                                });
-                              }}
-                            >
-                            {getAssignedNames(work, 'designer')}
-                            </Button>
-                          );
-                        })()}
-                      </td>
+                      {shouldShowAssignDesigner && (
+                        <td className="px-5 py-3">
+                          {(() => {
+                            const designerIds = parseIds(work.assigned_to);
+                            const isAssigned = designerIds.length > 0;
+                            return (
+                              <Button 
+                                variant="secondary" 
+                                size="sm" 
+                                className={`text-[10px] w-full justify-between transition-all ${isAssigned ? '!bg-orange-500 !text-white !border-orange-600' : ''}`}
+                                title={getFullAssignedNames(work.assigned_to)}
+                                onClick={() => {
+                                  setAssignmentModal({
+                                    isOpen: true,
+                                    workId: work.id,
+                                    initialIds: designerIds,
+                                    type: 'designer'
+                                  });
+                                }}
+                              >
+                              {getAssignedNames(work, 'designer')}
+                              </Button>
+                            );
+                          })()}
+                        </td>
+                      )}
                       {shouldShowAssignContent && (
                         <td className="px-5 py-3">
                           {(() => {
@@ -428,11 +438,13 @@ const WorksheetCreativePage = () => {
                           })()}
                         </td>
                       )}
-                      <td className="px-5 py-3">
-                        <Button variant="secondary" size="sm" className="text-[10px]">
-                          <Upload size={12} className="mr-1" /> Upload
-                        </Button>
-                      </td>
+                      {shouldShowDesignUpload && (
+                        <td className="px-5 py-3">
+                          <Button variant="secondary" size="sm" className="text-[10px]">
+                            <Upload size={12} className="mr-1" /> Upload
+                          </Button>
+                        </td>
+                      )}
                       <td className="px-5 py-3 text-center">
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-[9px] font-medium ${
                           workStatuses[work.id] === 'completed' ? 'bg-green-100 text-green-800' :
@@ -456,7 +468,7 @@ const WorksheetCreativePage = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={10 + (shouldShowTrackingNo ? 1 : 0) + (shouldShowDate ? 1 : 0) + (shouldShowAssignContent ? 1 : 0)} className="px-6 py-20 text-center align-top">
+                    <td colSpan={8 + (shouldShowTrackingNo ? 1 : 0) + (shouldShowDate ? 1 : 0) + (shouldShowAssignDesigner ? 1 : 0) + (shouldShowAssignContent ? 1 : 0) + (shouldShowDesignUpload ? 1 : 0)} className="px-6 py-20 text-center align-top">
                       <div className="flex flex-col items-center gap-2">
                         <div className="p-3 bg-slate-50 rounded-full text-slate-300">
                           <Clipboard size={24} />
