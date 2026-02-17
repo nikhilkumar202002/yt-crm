@@ -102,26 +102,17 @@ const WorksheetCreativePage = () => {
 
   const isHead = currentUserPosition.toLowerCase().includes('head');
   const isContentWriter = currentUserGroup === 'Content Creator' || currentUserGroup === 'Content';
+  const isGraphics = currentUserGroup === 'Graphics Department' || currentUserGroup === 'Creative Designers';
+
+  const shouldShowCreatives = isHead || (!isContentWriter && !isGraphics);
+  const shouldShowNotes = isHead || (!isContentWriter && !isGraphics);
 
   // Conditional visibility based on user group
-  const shouldShowTrackingNo = 
-    isHead || (
-    currentUserGroup !== 'Content Creator' && 
-    currentUserGroup !== 'Content' && 
-    currentUserGroup !== 'Graphics Department' && 
-    currentUserGroup !== 'Creative Designers');
-  const shouldShowDate = 
-    isHead || (
-    currentUserGroup !== 'Content Creator' && 
-    currentUserGroup !== 'Content' && 
-    currentUserGroup !== 'Graphics Department' && 
-    currentUserGroup !== 'Creative Designers');
-  const shouldShowAssignContent = 
-    isHead || (
-    currentUserGroup !== 'Graphics Department' && 
-    currentUserGroup !== 'Creative Designers');
-  const shouldShowAssignDesigner = isHead || (currentUserGroup !== 'Content Creator' && currentUserGroup !== 'Content');
-  const shouldShowDesignUpload = isHead || (currentUserGroup !== 'Content Creator' && currentUserGroup !== 'Content');
+  const shouldShowTrackingNo = isHead || (!isContentWriter && !isGraphics);
+  const shouldShowDate = isHead || (!isContentWriter && !isGraphics);
+  const shouldShowAssignContent = isHead || (!isContentWriter && !isGraphics);
+  const shouldShowAssignDesigner = isHead || !isContentWriter;
+  const shouldShowDesignUpload = isHead || !isContentWriter;
   const shouldShowActions = 
     isHead || 
     isContentWriter || 
@@ -290,8 +281,7 @@ const WorksheetCreativePage = () => {
     }
 
     // Filter by assignment for Graphics team members
-    const isGraphicsGroup = currentUserGroup === 'Graphics Department' || currentUserGroup === 'Creative Designers';
-    if (isGraphicsGroup && user?.id && !isHead) {
+    if (isGraphics && user?.id && !isHead) {
       const assignedDesignerIds = parseIds(work.assigned_to);
       if (!assignedDesignerIds.includes(Number(user.id))) {
         return false;
@@ -345,33 +335,37 @@ const WorksheetCreativePage = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-left border-collapse min-w-[1500px]">
               <thead className="bg-slate-50/50 border-b border-slate-100">
                 <tr className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                  <th className="px-5 py-3 w-12 text-center">#</th>
+                  <th className="px-4 py-3 w-12 text-center">#</th>
                   {shouldShowTrackingNo && (
-                    <th className="px-5 py-3">Tracking No</th>
+                    <th className="px-4 py-3 w-28">Tracking No</th>
                   )}
                   {shouldShowDate && (
-                    <th className="px-5 py-3">Date</th>
+                    <th className="px-4 py-3 w-24">Date</th>
                   )}
-                  <th className="px-5 py-3">Special Day</th>
-                  <th className="px-5 py-3">Client</th>
-                  <th className="px-5 py-3">Content Description</th>
-                  <th className="px-5 py-3">Creatives</th>
-                  <th className="px-5 py-3">Notes</th>
+                  <th className="px-4 py-3 w-24">Special Day</th>
+                  <th className="px-4 py-3 w-48">Client</th>
+                  <th className="px-4 py-3 min-w-[250px]">Content Description</th>
+                  {shouldShowCreatives && (
+                    <th className="px-4 py-3 w-32">Creatives</th>
+                  )}
+                  {shouldShowNotes && (
+                    <th className="px-4 py-3 min-w-[200px]">Notes</th>
+                  )}
                   {shouldShowAssignDesigner && (
-                    <th className="px-5 py-3">Assign Designer</th>
+                    <th className="px-4 py-3 w-40">Assign Designer</th>
                   )}
                   {shouldShowAssignContent && (
-                    <th className="px-5 py-3">Assign Content</th>
+                    <th className="px-4 py-3 w-40">Assign Content</th>
                   )}
                   {shouldShowDesignUpload && (
-                    <th className="px-5 py-3">Design Upload</th>
+                    <th className="px-4 py-3 w-32">Design Upload</th>
                   )}
-                  <th className="px-5 py-3 text-center">Status</th>
+                  <th className="px-4 py-3 w-24 text-center">Status</th>
                   {shouldShowActions && (
-                    <th className="px-5 py-3 text-right">Actions</th>
+                    <th className="px-4 py-3 w-24 text-right">Actions</th>
                   )}
                 </tr>
               </thead>
@@ -379,16 +373,16 @@ const WorksheetCreativePage = () => {
                 {filteredCalendarWorks.length > 0 ? (
                   filteredCalendarWorks.map((work, index) => (
                     <tr key={work.id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-5 py-3 text-center text-[10px] font-medium text-slate-400">{index + 1}</td>
+                      <td className="px-4 py-3 text-center text-[10px] font-medium text-slate-400">{index + 1}</td>
                       {shouldShowTrackingNo && (
-                        <td className="px-5 py-3">
+                        <td className="px-4 py-3">
                           <div className="text-[11px] font-bold text-slate-900">
                             {work.tracking_no || 'N/A'}
                           </div>
                         </td>
                       )}
                       {shouldShowDate && (
-                        <td className="px-5 py-3">
+                        <td className="px-4 py-3">
                           <div className="text-[11px] font-medium text-slate-900">
                             {work.date ? (() => {
                               const date = new Date(work.date);
@@ -397,7 +391,7 @@ const WorksheetCreativePage = () => {
                           </div>
                         </td>
                       )}
-                      <td className="px-5 py-3">
+                      <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           {work.is_special_day ? (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium bg-purple-100 text-purple-800 border border-purple-200">
@@ -409,7 +403,7 @@ const WorksheetCreativePage = () => {
                           )}
                         </div>
                       </td>
-                      <td className="px-5 py-3">
+                      <td className="px-4 py-3">
                         <div className="min-w-0">
                           <p className="text-[11px] font-bold text-slate-900 leading-none truncate max-w-37.5">
                             {work.client?.company_name || 'N/A'}
@@ -419,34 +413,38 @@ const WorksheetCreativePage = () => {
                           </p>
                         </div>
                       </td>
-                      <td className="px-5 py-3">
-                        <div className="text-[11px] text-slate-700 max-w-50 truncate">
+                      <td className="px-4 py-3">
+                        <div className="text-[11px] text-slate-700">
                           {work.content_description || 'No description'}
                         </div>
                       </td>
-                      <td className="px-5 py-3">
-                        <div className="space-y-1">
-                          {work.creatives && work.creatives.length > 0 ? (
-                            work.creatives.slice(0, 2).map((creative, index) => (
-                              <div key={index} className="text-[10px] text-slate-600">
-                                {creative.name} ({creative.nos})
-                              </div>
-                            ))
-                          ) : (
-                            <span className="text-[10px] text-slate-400">No creatives</span>
-                          )}
-                          {work.creatives && work.creatives.length > 2 && (
-                            <span className="text-[9px] text-slate-400">+{work.creatives.length - 2} more</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-5 py-3">
-                        <div className="text-[11px] text-slate-700 max-w-37.5 truncate">
-                          {work.notes || 'No notes'}
-                        </div>
-                      </td>
+                      {shouldShowCreatives && (
+                        <td className="px-4 py-3">
+                          <div className="space-y-1">
+                            {work.creatives && work.creatives.length > 0 ? (
+                              work.creatives.slice(0, 2).map((creative, index) => (
+                                <div key={index} className="text-[10px] text-slate-600">
+                                  {creative.name} ({creative.nos})
+                                </div>
+                              ))
+                            ) : (
+                              <span className="text-[10px] text-slate-400">No creatives</span>
+                            )}
+                            {work.creatives && work.creatives.length > 2 && (
+                              <span className="text-[9px] text-slate-400">+{work.creatives.length - 2} more</span>
+                            )}
+                          </div>
+                        </td>
+                      )}
+                      {shouldShowNotes && (
+                        <td className="px-4 py-3">
+                          <div className="text-[11px] text-slate-700">
+                            {work.notes || 'No notes'}
+                          </div>
+                        </td>
+                      )}
                       {shouldShowAssignDesigner && (
-                        <td className="px-5 py-3">
+                        <td className="px-4 py-3">
                           {(() => {
                             const designerIds = parseIds(work.assigned_to);
                             const isAssigned = designerIds.length > 0;
@@ -457,6 +455,7 @@ const WorksheetCreativePage = () => {
                                 className={`text-[10px] w-full justify-between transition-all ${isAssigned ? '!bg-orange-500 !text-white !border-orange-600' : ''}`}
                                 title={getFullAssignedNames(work.assigned_to)}
                                 onClick={() => {
+                                if (!isHead) return;
                                   setAssignmentModal({
                                     isOpen: true,
                                     workId: work.id,
@@ -472,7 +471,7 @@ const WorksheetCreativePage = () => {
                         </td>
                       )}
                       {shouldShowAssignContent && (
-                        <td className="px-5 py-3">
+                        <td className="px-4 py-3">
                           {(() => {
                             const contentIds = parseIds(work.content_assigned_to);
                             const isAssigned = contentIds.length > 0;
@@ -483,6 +482,7 @@ const WorksheetCreativePage = () => {
                                 className={`text-[10px] w-full justify-between transition-all ${isAssigned ? '!bg-orange-500 !text-white !border-orange-600 hover:!bg-orange-600' : ''}`}
                                 title={getFullAssignedNames(work.content_assigned_to)}
                                 onClick={() => {
+                                if (!isHead) return;
                                   setAssignmentModal({
                                     isOpen: true,
                                     workId: work.id,
@@ -498,13 +498,13 @@ const WorksheetCreativePage = () => {
                         </td>
                       )}
                       {shouldShowDesignUpload && (
-                        <td className="px-5 py-3">
+                        <td className="px-4 py-3">
                           <Button variant="secondary" size="sm" className="text-[10px]">
                             <Upload size={12} className="mr-1" /> Upload
                           </Button>
                         </td>
                       )}
-                      <td className="px-5 py-3 text-center">
+                      <td className="px-4 py-3 text-center">
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-[9px] font-medium ${
                           workStatuses[work.id] === 'completed' ? 'bg-green-100 text-green-800' :
                           workStatuses[work.id] === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
@@ -514,7 +514,7 @@ const WorksheetCreativePage = () => {
                         </span>
                       </td>
                       {shouldShowActions && (
-                        <td className="px-5 py-3 text-right">
+                        <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
                             {isContentWriter && !isHead ? (
                               <button 
@@ -545,7 +545,7 @@ const WorksheetCreativePage = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7 + (shouldShowTrackingNo ? 1 : 0) + (shouldShowDate ? 1 : 0) + (shouldShowAssignDesigner ? 1 : 0) + (shouldShowAssignContent ? 1 : 0) + (shouldShowDesignUpload ? 1 : 0) + (shouldShowActions ? 1 : 0)} className="px-6 py-20 text-center align-top">
+                    <td colSpan={5 + (shouldShowTrackingNo ? 1 : 0) + (shouldShowDate ? 1 : 0) + (shouldShowCreatives ? 1 : 0) + (shouldShowNotes ? 1 : 0) + (shouldShowAssignDesigner ? 1 : 0) + (shouldShowAssignContent ? 1 : 0) + (shouldShowDesignUpload ? 1 : 0) + (shouldShowActions ? 1 : 0)} className="px-6 py-20 text-center align-top">
                       <div className="flex flex-col items-center gap-2">
                         <div className="p-3 bg-slate-50 rounded-full text-slate-300">
                           <Clipboard size={24} />

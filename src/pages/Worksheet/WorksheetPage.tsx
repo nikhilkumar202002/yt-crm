@@ -1,6 +1,7 @@
-﻿﻿import { useState, useEffect } from 'react';
+﻿﻿﻿﻿import { useState, useEffect } from 'react';
 import { useAppSelector } from '../../store/store';
 import WorksheetCreativePage from './WorksheetCreativePage';
+import WorksheetContentPage from './WorksheetContentPage';
 import WorksheetDMPage from './WorksheetDMPage';
 import WorksheetDefaultPage from './WorksheetDefaultPage';
 import { getUsersList } from '../../api/services/authService';
@@ -41,8 +42,14 @@ const WorksheetPage = () => {
 
   // Determine which component to render based on user group
   const renderWorksheetComponent = () => {
-    // Creative roles: Creative Designers, Content Creator, Creative Team Lead
-    const creativeGroups = ['Creative Designers', 'Content Creator', 'Creative Team Lead', 'Graphics Department', 'Content'];
+    // Content roles
+    const contentGroups = ['Content Creator', 'Content'];
+    if (contentGroups.includes(currentUserGroup)) {
+      return <WorksheetContentPage />;
+    }
+
+    // Creative roles: Creative Designers, Creative Team Lead, Graphics Department
+    const creativeGroups = ['Creative Designers', 'Creative Team Lead', 'Graphics Department'];
     if (creativeGroups.includes(currentUserGroup)) {
       return <WorksheetCreativePage />;
     }
