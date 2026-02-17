@@ -4,8 +4,9 @@ import {
   Clipboard, Plus, Search,
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
-import { getCalendarWorks, updateClientApprovedStatus } from '../../api/services/microService';
+import { getCalendarWorks, assignCalendarWorkContent, assignDesignersToWork, updateClientApprovedStatus } from '../../api/services/microService';
 import { getUsersList } from '../../api/services/authService';
+import AssignmentModal from './components/AssignmentModal';
 import ImageLightbox from '../../components/common/ImageLightbox';
 
 interface Creative {
@@ -85,6 +86,14 @@ const WorksheetDMPage = () => {
   const [clientApprovedStatuses, setClientApprovedStatuses] = useState<{ [key: number]: string }>({});
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
+  // Modal state
+  const [assignmentModal, setAssignmentModal] = useState<{ isOpen: boolean; workId: number | null; initialIds: number[]; type: 'designer' | 'content' }>({
+    isOpen: false,
+    workId: null,
+    initialIds: [],
+    type: 'designer'
+  });
+
   // For DM roles, show all columns including content assign
   useEffect(() => {
     const fetchCalendarWorks = async () => {
@@ -118,6 +127,35 @@ const WorksheetDMPage = () => {
     fetchCalendarWorks();
     fetchUsers();
   }, [user?.id]);
+
+  const positionLower = currentUserPosition.toLowerCase().trim();
+  const isHead = positionLower.includes('head');
+
+  const handleAssignDesigner = async (workId: number, userIds: number[]) => {
+    try {
+      const response = await assignDesignersToWork(workId, userIds);
+      const updatedWork = response.data || response;
+      if (updatedWork) {
+        setCalendarWorks(prev => prev.map(w => w.id === workId ? updatedWork : w));
+      }
+      setAssignmentModal(prev => ({ ...prev, isOpen: false }));
+    } catch (err) {
+      console.error('Failed to assign designer:', err);
+    }
+  };
+
+  const handleAssignContent = async (workId: number, userIds: number[]) => {
+    try {
+      const response = await assignCalendarWorkContent(workId, { content_assigned_to: JSON.stringify(userIds) });
+      const updatedWork = response.data || response;
+      if (updatedWork) {
+        setCalendarWorks(prev => prev.map(w => w.id === workId ? updatedWork : w));
+      }
+      setAssignmentModal(prev => ({ ...prev, isOpen: false }));
+    } catch (err) {
+      console.error('Failed to assign content:', err);
+    }
+  };
 
   const handleClientApprovedStatusChange = async (workId: number, newStatus: string) => {
     try {
@@ -195,7 +233,7 @@ const WorksheetDMPage = () => {
     const assignedTo = type === 'designer' ? work.assigned_to : work.content_assigned_to;
     const assignedNames = type === 'designer' ? work.assigned_to_names : work.content_assigned_to_names;
     const ids = parseIds(assignedTo);
-    if (ids.length === 0) return 'Not Assigned';
+    if (ids.length === 0) return type === 'designer' ? 'Assign Designer' : 'Assign Content';
     
     if (assignedNames) {
       const names = ids.map(id => assignedNames[id.toString()]).filter(Boolean);
@@ -206,7 +244,7 @@ const WorksheetDMPage = () => {
     }
 
     const names = ids.map(id => users.find(u => u.id === Number(id))?.name).filter(Boolean);
-    if (names.length === 0) return 'Not Assigned';
+    if (names.length === 0) return type === 'designer' ? 'Assign Designer' : 'Assign Content';
     if (names.length > 2) return `${names[0]}, ${names[1]} +${names.length - 2}`;
     return names.join(', ');
   };
@@ -230,6 +268,13 @@ const WorksheetDMPage = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 font-sans">
+      <style dangerouslySetInnerHTML={{ __html: `
+        .rich-text-content ul { list-style-type: disc !important; margin-left: 1.25rem !important; margin-top: 0.25rem; }
+        .rich-text-content ol { list-style-type: decimal !important; margin-left: 1.25rem !important; margin-top: 0.25rem; }
+        .rich-text-content p { margin-bottom: 0.25rem; }
+        .rich-text-content b, .rich-text-content strong { font-weight: 700; }
+      `}} />
+
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div>
           <h1 className="text-xl font-bold text-slate-900 tracking-tight">DM Worksheet</h1>
@@ -331,9 +376,10 @@ const WorksheetDMPage = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3 align-top border border-slate-200">
-                        <div className="text-[11px] text-slate-700">
-                          {work.content_description || 'No description'}
-                        </div>
+                        <div 
+                          className="text-[11px] text-slate-700 rich-text-content"
+                          dangerouslySetInnerHTML={{ __html: work.content_description || 'No description' }}
+                        />
                       </td>
                       <td className="px-4 py-3 align-top border border-slate-200">
                         <div className="space-y-1">
@@ -361,16 +407,23 @@ const WorksheetDMPage = () => {
                           const names = getAssignedNames(work, 'designer');
                           const isAssigned = parseIds(work.assigned_to).length > 0;
                           return (
-                            <div 
-                              className={`text-[10px] px-3 py-1.5 border font-bold truncate uppercase tracking-wider ${
-                                isAssigned 
-                                  ? 'bg-orange-500 text-white border-orange-600' 
-                                  : 'bg-slate-50 text-slate-400 border-slate-200'
-                              }`}
+                            <Button 
+                              variant="secondary" 
+                              size="sm" 
+                              className={`text-[10px] w-full justify-between transition-all ${isAssigned ? '!bg-orange-500 !text-white !border-orange-600' : ''}`}
                               title={getFullAssignedNames(work.assigned_to)}
+                              onClick={() => {
+                                if (!isHead) return;
+                                setAssignmentModal({
+                                  isOpen: true,
+                                  workId: work.id,
+                                  initialIds: parseIds(work.assigned_to),
+                                  type: 'designer'
+                                });
+                              }}
                             >
                               {names}
-                            </div>
+                            </Button>
                           );
                         })()}
                       </td>
@@ -379,16 +432,23 @@ const WorksheetDMPage = () => {
                           const names = getAssignedNames(work, 'content');
                           const isAssigned = parseIds(work.content_assigned_to).length > 0;
                           return (
-                            <div 
-                              className={`text-[10px] px-3 py-1.5 border font-bold truncate uppercase tracking-wider ${
-                                isAssigned 
-                                  ? 'bg-blue-500 text-white border-blue-600' 
-                                  : 'bg-slate-50 text-slate-400 border-slate-200'
-                              }`}
+                            <Button 
+                              variant="secondary" 
+                              size="sm" 
+                              className={`text-[10px] w-full justify-between transition-all ${isAssigned ? '!bg-blue-500 !text-white !border-blue-600 hover:!bg-blue-600' : ''}`}
                               title={getFullAssignedNames(work.content_assigned_to)}
+                              onClick={() => {
+                                if (!isHead) return;
+                                setAssignmentModal({
+                                  isOpen: true,
+                                  workId: work.id,
+                                  initialIds: parseIds(work.content_assigned_to),
+                                  type: 'content'
+                                });
+                              }}
                             >
                               {names}
-                            </div>
+                            </Button>
                           );
                         })()}
                       </td>
@@ -494,6 +554,23 @@ const WorksheetDMPage = () => {
           </div>
         )}
       </div>
+
+      <AssignmentModal
+        isOpen={assignmentModal.isOpen}
+        onClose={() => setAssignmentModal(prev => ({ ...prev, isOpen: false }))}
+        onAssign={(userIds) => {
+          if (assignmentModal.workId) {
+            if (assignmentModal.type === 'designer') {
+              handleAssignDesigner(assignmentModal.workId, userIds);
+            } else {
+              handleAssignContent(assignmentModal.workId, userIds);
+            }
+          }
+        }}
+        users={assignmentModal.type === 'designer' ? designerUsers : contentUsers}
+        initialSelectedIds={assignmentModal.initialIds}
+        title={assignmentModal.type === 'designer' ? "Assign Designers" : "Assign Content Writers"}
+      />
 
       {lightboxImage && (
         <ImageLightbox 

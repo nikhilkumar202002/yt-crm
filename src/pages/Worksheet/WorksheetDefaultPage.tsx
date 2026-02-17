@@ -213,6 +213,13 @@ const WorksheetDefaultPage = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 font-sans">
+      <style dangerouslySetInnerHTML={{ __html: `
+        .rich-text-content ul { list-style-type: disc !important; margin-left: 1.25rem !important; margin-top: 0.25rem; }
+        .rich-text-content ol { list-style-type: decimal !important; margin-left: 1.25rem !important; margin-top: 0.25rem; }
+        .rich-text-content p { margin-bottom: 0.25rem; }
+        .rich-text-content b, .rich-text-content strong { font-weight: 700; }
+      `}} />
+
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div>
           <h1 className="text-xl font-bold text-slate-900 tracking-tight">Worksheet</h1>
@@ -306,9 +313,10 @@ const WorksheetDefaultPage = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3 align-top border border-slate-200">
-                        <div className="text-[11px] text-slate-700">
-                          {work.content_description || 'No description'}
-                        </div>
+                        <div 
+                          className="text-[11px] text-slate-700 rich-text-content"
+                          dangerouslySetInnerHTML={{ __html: work.content_description || 'No description' }}
+                        />
                       </td>
                       <td className="px-4 py-3 align-top border border-slate-200">
                         <div className="space-y-1">

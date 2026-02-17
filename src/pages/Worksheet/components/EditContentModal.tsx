@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X, FileText, Upload } from 'lucide-react';
 import { Button } from '../../../components/common/Button';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 interface EditContentModalProps {
   isOpen: boolean;
@@ -46,16 +48,43 @@ const EditContentModal = ({ isOpen, onClose, onSave, initialDescription }: EditC
             </Dialog.Close>
           </div>
 
+          <style dangerouslySetInnerHTML={{ __html: `
+            .rich-text-editor .ql-container {
+              min-height: 150px;
+              font-family: inherit;
+              font-size: 14px;
+              border-bottom-left-radius: 0;
+              border-bottom-right-radius: 0;
+            }
+            .rich-text-editor .ql-toolbar {
+              background: #f8fafc;
+              border-color: #e2e8f0 !important;
+              border-top-left-radius: 0;
+              border-top-right-radius: 0;
+            }
+            .rich-text-editor .ql-container {
+              border-color: #e2e8f0 !important;
+            }
+          `}} />
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Content Description</label>
-              <textarea
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-none text-sm focus:ring-2 focus:ring-blue-500 outline-none min-h-[120px]"
-                placeholder="Enter content description..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                required
-              />
+              <div className="rich-text-editor">
+                <ReactQuill
+                  theme="snow"
+                  value={description}
+                  onChange={setDescription}
+                  modules={{
+                    toolbar: [
+                      ['bold', 'italic', 'underline'],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      ['clean']
+                    ],
+                  }}
+                  placeholder="Enter content description..."
+                />
+              </div>
             </div>
 
             <div className="space-y-1">
