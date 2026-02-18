@@ -10,7 +10,8 @@ import { FileImportModal } from './FileImportModal';
 import { LeadStatusBadge } from './LeadStatusBadge';
 import { AssignLeadsModal } from './components/AssignLeadsModal';
 import { LeadDescriptionModal } from './components/LeadDescriptionModal';
-import { getLeads, uploadLeads, deleteLead, getAssignedLeads, updateLeadStatus, updateLeadComment, getServices, getSubServices, updateLeadServices } from '../../api/services/microService';
+import { AddLeadModal } from './components/AddLeadModal';
+import { getLeads, uploadLeads, deleteLead, getAssignedLeads, updateLeadStatus, updateLeadComment, getServices, getSubServices, updateLeadServices, createLead } from '../../api/services/microService';
 import { useAppSelector } from '../../store/store';
 import { resolvePermissions } from '../../config/permissionResolver';
 import { useLocation } from 'react-router-dom';
@@ -43,6 +44,7 @@ const LeadsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedLeads, setSelectedLeads] = useState<number[]>([]);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<string>(''); 
 
   const [commentModal, setCommentModal] = useState({
@@ -175,7 +177,12 @@ const LeadsPage = () => {
             </Button>
           )}
           {isAllLeadsView && (
-            <Button variant="primary" size="sm" className="text-[10px] font-bold shadow-md px-3 py-1.5 bg-blue-600 hover:bg-blue-700">
+            <Button 
+              variant="primary" 
+              size="sm" 
+              className="text-[10px] font-bold shadow-md px-3 py-1.5 bg-blue-600 hover:bg-blue-700"
+              onClick={() => setIsAddModalOpen(true)}
+            >
               <UserPlus size={12} className="mr-1.5" /> ADD LEAD
             </Button>
           )}
@@ -184,43 +191,43 @@ const LeadsPage = () => {
 
       {/* 2. Key Metrics - Improved design */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="bg-white p-3 rounded-lg shadow-sm border border-slate-200/60 flex items-center justify-between group hover:border-blue-200 transition-all">
+        <div className="bg-white p-3 rounded-none shadow-sm border border-slate-200/60 flex items-center justify-between group hover:border-blue-200 transition-all">
           <div>
             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Status</p>
-            <p className="text-base font-bold text-slate-800">Connection Active</p>
+            <p className="text-[11px] font-bold text-slate-800">Connection Active</p>
           </div>
-          <div className="h-8 w-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-all">
+          <div className="h-8 w-8 bg-blue-50 rounded-none flex items-center justify-center text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-all">
             <Clock size={16} />
           </div>
         </div>
         
-        <div className="bg-white p-3 rounded-lg shadow-sm border border-slate-200/60 flex items-center justify-between group hover:border-emerald-200 transition-all">
+        <div className="bg-white p-3 rounded-none shadow-sm border border-slate-200/60 flex items-center justify-between group hover:border-emerald-200 transition-all">
           <div>
             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Records</p>
-            <p className="text-base font-bold text-slate-800">{pagination?.total || leads.length}</p>
+            <p className="text-[11px] font-bold text-slate-800">{pagination?.total || leads.length}</p>
           </div>
-          <div className="h-8 w-8 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-500 group-hover:bg-emerald-600 group-hover:text-white transition-all">
+          <div className="h-8 w-8 bg-emerald-50 rounded-none flex items-center justify-center text-emerald-500 group-hover:bg-emerald-600 group-hover:text-white transition-all">
             <CheckCircle2 size={16} />
           </div>
         </div>
 
-        <div className="bg-white p-3 rounded-lg shadow-sm border border-slate-200/60 flex items-center justify-between group hover:border-indigo-200 transition-all">
+        <div className="bg-white p-3 rounded-none shadow-sm border border-slate-200/60 flex items-center justify-between group hover:border-indigo-200 transition-all">
           <div>
             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Sync Health</p>
-            <p className="text-base font-bold text-slate-800">99.4%</p>
+            <p className="text-[11px] font-bold text-slate-800">99.4%</p>
           </div>
-          <div className="h-8 w-8 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-500 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+          <div className="h-8 w-8 bg-indigo-50 rounded-none flex items-center justify-center text-indigo-500 group-hover:bg-indigo-600 group-hover:text-white transition-all">
             <AlertCircle size={16} />
           </div>
         </div>
       </div>
 
       {/* 3. Filter Bar - Better UI */}
-      <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-200/60 flex flex-wrap lg:flex-nowrap gap-3 items-center">
+      <div className="bg-white p-2 rounded-none shadow-sm border border-slate-200/60 flex flex-wrap lg:flex-nowrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px] group">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={14} />
           <input 
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-lg text-[13px] font-medium outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all placeholder:text-slate-400" 
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-none text-[13px] font-medium outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all placeholder:text-slate-400" 
             placeholder="Search leads by name, email or platform..." 
           />
         </div>
@@ -230,7 +237,7 @@ const LeadsPage = () => {
             <Button 
               variant="primary" 
               size="sm" 
-              className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-[10px] font-bold rounded-lg shadow-lg shadow-indigo-200 animate-in slide-in-from-right-4"
+              className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-[10px] font-bold rounded-none shadow-lg shadow-indigo-200 animate-in slide-in-from-right-4"
               onClick={() => setIsAssignModalOpen(true)}
             >
               <UserCheck size={12} className="mr-1.5" /> ASSIGN ({selectedLeads.length})
@@ -241,7 +248,7 @@ const LeadsPage = () => {
             <select
               value={selectedService}
               onChange={(e) => setSelectedService(e.target.value)}
-              className="min-w-[140px] pl-3 pr-8 py-2 bg-slate-50 border border-slate-100 rounded-lg text-[11px] font-bold text-slate-600 outline-none focus:bg-white focus:border-blue-500 transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236B7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.1rem_1.1rem] bg-[right_0.4rem_center] bg-no-repeat"
+              className="min-w-[140px] pl-3 pr-8 py-2 bg-slate-50 border border-slate-100 rounded-none text-[11px] font-bold text-slate-600 outline-none focus:bg-white focus:border-blue-500 transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236B7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.1rem_1.1rem] bg-[right_0.4rem_center] bg-no-repeat"
             >
               <option value="">Filter by Service</option>
               {availableServices.map((service) => (
@@ -250,14 +257,14 @@ const LeadsPage = () => {
             </select>
           )}
           
-          <Button variant="secondary" size="sm" className="border-slate-200 bg-white text-[10px] font-bold px-3 py-2 rounded-lg">
+          <Button variant="secondary" size="sm" className="border-slate-200 bg-white text-[10px] font-bold px-3 py-2 rounded-none">
             <Filter size={12} className="mr-1.5" /> FILTERS
           </Button>
         </div>
       </div>
 
       {/* 4. Table Section - Improved hierarchy and spacing */}
-      <div className="bg-white rounded-2xl shadow-xl shadow-slate-100 border border-slate-200/50 overflow-hidden relative">
+      <div className="bg-white rounded-none shadow-xl shadow-slate-100 border border-slate-200/50 overflow-hidden relative">
         {loading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/70 backdrop-blur-[2px] z-20 transition-all">
             <Loader2 className="animate-spin text-blue-600" size={24} />
@@ -344,7 +351,7 @@ const LeadsPage = () => {
                         {isAdminOrHead && (
                           <td className="px-5 py-4">
                             <div className="flex items-center gap-2">
-                              <div className="h-6 w-6 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-[10px] font-bold border border-blue-100 uppercase">
+                              <div className="h-6 w-6 rounded-none bg-blue-50 text-blue-600 flex items-center justify-center text-[10px] font-bold border border-blue-100 uppercase">
                                 {item.user?.name?.charAt(0)}
                               </div>
                               <span className="text-[11px] font-bold text-slate-600">{item.user?.name}</span>
@@ -359,7 +366,7 @@ const LeadsPage = () => {
                             <select 
                               value={item.user_status?.toLowerCase() || ''}
                               onChange={(e) => handleStatusChange(item.id, e.target.value)}
-                              className={`text-[10px] font-bold py-1 px-2.5 rounded-lg border outline-none uppercase cursor-pointer transition-all ${
+                              className={`text-[10px] font-bold py-1 px-2.5 rounded-none border outline-none uppercase cursor-pointer transition-all ${
                                 item.user_status?.toLowerCase() === 'hot' 
                                   ? 'bg-rose-50 text-rose-600 border-rose-100' 
                                   : item.user_status?.toLowerCase() === 'warm'
@@ -379,11 +386,11 @@ const LeadsPage = () => {
 
                         <td className="px-5 py-4 text-center">
                           {item.is_approved ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-600 text-[9px] font-bold border border-emerald-100">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-none bg-emerald-50 text-emerald-600 text-[9px] font-bold border border-emerald-100">
                               <CheckCircle2 size={10}/> APPROVED
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-slate-50 text-slate-400 rounded-lg text-[9px] font-bold border border-slate-100">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-slate-50 text-slate-400 rounded-none text-[9px] font-bold border border-slate-100">
                               <Clock size={10}/> PENDING
                             </span>
                           )}
@@ -416,7 +423,7 @@ const LeadsPage = () => {
                               subServiceIds: item.sub_services?.map((s: any) => s.id) || [],
                               otherService: item.other_service || ''
                             })}
-                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all active:scale-95"
+                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-none transition-all active:scale-95"
                           >
                             <MessageSquare size={14} />
                           </button>
@@ -446,7 +453,7 @@ const LeadsPage = () => {
               <button
                 disabled={!pagination.prev_page_url}
                 onClick={() => setCurrentPage(prev => prev - 1)}
-                className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 transition-all"
+                className="h-8 w-8 flex items-center justify-center rounded-none border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 transition-all"
               >
                 <ChevronLeft size={14} />
               </button>
@@ -456,7 +463,7 @@ const LeadsPage = () => {
                   <button
                     key={link.label}
                     onClick={() => setCurrentPage(Number(link.label))}
-                    className={`h-8 min-w-[32px] px-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                    className={`h-8 min-w-[32px] px-1.5 rounded-none text-[10px] font-bold transition-all ${
                       link.active 
                         ? 'bg-blue-600 text-white shadow-md shadow-blue-100' 
                         : 'text-slate-500 hover:bg-slate-50'
@@ -470,7 +477,7 @@ const LeadsPage = () => {
               <button
                 disabled={!pagination.next_page_url}
                 onClick={() => setCurrentPage(prev => prev + 1)}
-                className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 transition-all"
+                className="h-8 w-8 flex items-center justify-center rounded-none border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 transition-all"
               >
                 <ChevronRight size={14} />
               </button>
@@ -486,6 +493,14 @@ const LeadsPage = () => {
         onSuccess={() => {
           setSelectedLeads([]);
           fetchData(currentPage);
+        }}
+      />
+
+      <AddLeadModal
+        isOpen={isAddModalOpen}
+        onOpenChange={setIsAddModalOpen}
+        onSuccess={() => {
+          fetchData(1); // Refresh data from first page
         }}
       />
 

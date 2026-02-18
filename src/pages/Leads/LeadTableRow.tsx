@@ -20,7 +20,7 @@ export const LeadTableRow = ({ lead, onDelete, isSelected, onSelect }: any) => (
           <p className="text-[11px] font-bold text-slate-900 tracking-tight leading-none mb-0.5 truncate max-w-[140px]">
             {lead.lead_data?.full_name || 'N/A'}
           </p>
-          <p className="text-[8px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1">
+          <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1">
             <span className="h-0.5 w-0.5 rounded-full bg-blue-400"></span>
             {lead.platform || 'General'}
           </p>
@@ -29,7 +29,7 @@ export const LeadTableRow = ({ lead, onDelete, isSelected, onSelect }: any) => (
     </td>
     <td className="px-3 py-2">
       <div className="space-y-0.5">
-        <p className="text-[10px] font-bold text-slate-600 flex items-center gap-1">
+        <p className="text-[11px] font-bold text-slate-600 flex items-center gap-1">
           <Phone size={8} className="text-blue-500/70" /> {lead.lead_data?.phone || lead.lead_data?.phone_number || 'N/A'}
         </p>
         <p className="text-[9px] font-semibold text-slate-400 flex items-center gap-1 truncate max-w-[120px]">
@@ -38,12 +38,12 @@ export const LeadTableRow = ({ lead, onDelete, isSelected, onSelect }: any) => (
       </div>
     </td>
     <td className="px-3 py-2">
-      <span className="inline-flex px-1.5 py-0.5 rounded-none bg-indigo-50 text-indigo-600 border border-indigo-100 text-[8px] font-black uppercase tracking-wider">
+      <span className="inline-flex px-1.5 py-0.5 rounded-none bg-indigo-50 text-indigo-600 border border-indigo-100 text-[9px] font-black uppercase tracking-wider">
         {(lead.lead_data?.which_services_do_you_prefer || 'General Inquiry').replace(/_/g, ' ')}
       </span>
     </td>
     <td className="px-3 py-2">
-      <div className="flex items-center gap-1 text-[10px] font-bold text-slate-500">
+      <div className="flex items-center gap-1 text-[11px] font-bold text-slate-500">
         <div className="h-4 w-4 rounded-none bg-slate-100 flex items-center justify-center shrink-0">
           <Globe size={8} className="text-slate-400" />
         </div>
@@ -52,8 +52,8 @@ export const LeadTableRow = ({ lead, onDelete, isSelected, onSelect }: any) => (
     </td>
     <td className="px-3 py-2">
       <div className="space-y-0">
-        <p className="text-[10px] font-bold text-slate-700 truncate max-w-[120px]">{lead.ad_name || 'Manual Entry'}</p>
-        <p className="text-[8px] text-slate-400 font-bold italic truncate max-w-[120px]">
+        <p className="text-[11px] font-bold text-slate-700 truncate max-w-[120px]">{lead.ad_name || 'Manual Entry'}</p>
+        <p className="text-[9px] text-slate-400 font-bold italic truncate max-w-[120px]">
           {lead.form_name ? `Form: ${lead.form_name}` : 'No form data'}
         </p>
       </div>

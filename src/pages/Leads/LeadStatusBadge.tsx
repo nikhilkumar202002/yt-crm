@@ -48,7 +48,7 @@ export const LeadStatusBadge = ({ status }: LeadStatusBadgeProps) => {
   return (
     <span className={`
       inline-flex items-center justify-center gap-1
-      px-2 py-0.5 rounded-md 
+      px-2 py-0.5 rounded-none 
       text-[9px] font-black uppercase tracking-wider
       border shadow-sm ring-1 ring-inset transition-all duration-200
       ${getStatusStyle(status)}

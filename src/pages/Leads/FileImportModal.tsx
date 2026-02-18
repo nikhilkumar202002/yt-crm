@@ -35,9 +35,9 @@ export const FileImportModal = ({ onImport, isLoading }: FileImportModalProps) =
       
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl z-[110] font-sans">
+        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-none p-6 shadow-2xl z-[110] font-sans">
           <div className="flex justify-between items-center mb-6">
-            <Dialog.Title className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+            <Dialog.Title className="text-[11px] font-bold text-slate-900 uppercase tracking-wider">
               Import Lead Data
             </Dialog.Title>
             <Dialog.Close className="text-slate-400 hover:text-slate-600">
@@ -47,7 +47,7 @@ export const FileImportModal = ({ onImport, isLoading }: FileImportModalProps) =
 
           <div 
             onClick={() => fileInputRef.current?.click()}
-            className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all ${
+            className={`border-2 border-dashed rounded-none p-8 flex flex-col items-center justify-center cursor-pointer transition-all ${
               file ? 'border-green-200 bg-green-50' : 'border-slate-200 bg-slate-50 hover:border-blue-300'
             }`}
           >
@@ -61,7 +61,7 @@ export const FileImportModal = ({ onImport, isLoading }: FileImportModalProps) =
             
             {file ? (
               <>
-                <div className="h-10 w-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-3">
+                <div className="h-10 w-10 bg-green-100 text-green-600 rounded-none flex items-center justify-center mb-3">
                   <CheckCircle2 size={20} />
                 </div>
                 <p className="text-[11px] font-bold text-slate-700">{file.name}</p>
@@ -69,7 +69,7 @@ export const FileImportModal = ({ onImport, isLoading }: FileImportModalProps) =
               </>
             ) : (
               <>
-                <div className="h-10 w-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-3">
+                <div className="h-10 w-10 bg-blue-50 text-blue-600 rounded-none flex items-center justify-center mb-3">
                   <FileSpreadsheet size={20} />
                 </div>
                 <p className="text-[11px] font-bold text-slate-700">Click to upload .xlsx file</p>

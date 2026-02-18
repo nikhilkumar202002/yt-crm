@@ -142,7 +142,7 @@ const AssignedLeadsPage = () => {
           <select
             value={selectedService}
             onChange={(e) => { setSelectedService(e.target.value); setCurrentPage(1); }}
-            className="w-full pl-9 pr-8 py-1.5 bg-white border border-slate-200 rounded-md text-[11px] font-semibold text-slate-700 outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer"
+            className="w-full pl-9 pr-8 py-1.5 bg-white border border-slate-200 rounded-none text-[11px] font-semibold text-slate-700 outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer"
           >
             <option value="">All Services</option>
             {availableServices.map((service) => (
@@ -154,7 +154,7 @@ const AssignedLeadsPage = () => {
       </div>
 
       {/* Main Table Container */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200/60 overflow-hidden relative">
+      <div className="bg-white rounded-none shadow-sm border border-slate-200/60 overflow-hidden relative">
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/60 backdrop-blur-[1px] z-10">
             <Loader2 className="animate-spin text-blue-600" size={20} />

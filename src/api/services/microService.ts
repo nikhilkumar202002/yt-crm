@@ -211,6 +211,11 @@ export const deleteLead = async (id: number) => {
   return response.data;
 };
 
+export const createLead = async (data: any) => {
+  const response = await apiClient.post(ENDPOINTS.LEADS.BASE, data);
+  return response.data;
+};
+
 export const uploadLeads = async (file: File) => {
   const formData = new FormData();
   formData.append('file', file);

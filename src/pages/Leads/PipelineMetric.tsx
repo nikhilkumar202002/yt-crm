@@ -18,7 +18,7 @@ export const PipelineMetric = ({ label, value, icon, variant = 'white', subtext 
   const labelColors = variant === 'white' ? 'text-slate-400' : 'text-slate-400';
 
   return (
-    <div className={`${themes[variant]} p-4 rounded-xl`}>
+    <div className={`${themes[variant]} p-4 rounded-none`}>
       <div className="flex justify-between items-start mb-2">
         <div className={variant === 'blue' ? 'text-blue-200' : 'text-slate-500'}>
           {icon}
