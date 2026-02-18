@@ -19,25 +19,29 @@ interface LeadDescriptionModalProps {
   onSave: () => void;
   isAdminOrHead: boolean;
   availableServices: any[];
+  allSubServices: any[];
 }
 
 export const LeadDescriptionModal = ({ 
   isOpen, onOpenChange, comment, onCommentChange, 
   requirements, onRequirementsChange, selectedServiceIds, onServiceIdsChange,
   selectedSubServiceIds, onSubServiceIdsChange,
-  otherService, onOtherServiceChange, onSave, isAdminOrHead, availableServices = [] 
+  otherService, onOtherServiceChange, onSave, isAdminOrHead, availableServices = [],
+  allSubServices = []
 }: LeadDescriptionModalProps) => {
 
   const [searchQuery, setSearchQuery] = useState('');
 
   const subServicesToDisplay = useMemo(() => {
-    const allMatching = availableServices
-      .filter(service => selectedServiceIds.includes(service.id))
-      .flatMap(service => service.sub_services || []);
+    // Filtering sub-services where service_id matches selected main services
+    const allMatching = allSubServices.filter(ss => {
+      const parentId = Number(ss.service_id);
+      return selectedServiceIds.includes(parentId);
+    });
     
     if (!searchQuery) return allMatching;
     return allMatching.filter(ss => ss.name.toLowerCase().includes(searchQuery.toLowerCase()));
-  }, [availableServices, selectedServiceIds, searchQuery]);
+  }, [allSubServices, selectedServiceIds, searchQuery]);
 
   const toggleService = (id: number, name: string) => {
     const isSelected = selectedServiceIds.includes(id);
@@ -48,11 +52,17 @@ export const LeadDescriptionModal = ({
     onServiceIdsChange(nextIds);
 
     if (isSelected) {
-      const parentService = availableServices.find(s => s.id === id);
-      const childIds = parentService?.sub_services?.map((ss: any) => ss.id) || [];
+      // Find sub-services belonging to this service and remove them from selected
+      const childIds = allSubServices
+        .filter(ss => Number(ss.service_id) === id)
+        .map(ss => ss.id);
+        
       onSubServiceIdsChange(selectedSubServiceIds.filter(ssid => !childIds.includes(ssid)));
       
-      const childNames = parentService?.sub_services?.map((ss: any) => ss.name) || [];
+      const childNames = allSubServices
+        .filter(ss => Number(ss.service_id) === id)
+        .map(ss => ss.name);
+        
       onRequirementsChange(requirements.filter(r => r !== name && !childNames.includes(r)));
     } else {
       if (!requirements.includes(name)) onRequirementsChange([...requirements, name]);

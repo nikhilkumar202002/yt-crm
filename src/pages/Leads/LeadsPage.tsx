@@ -38,6 +38,7 @@ const LeadsPage = () => {
   const [leads, setLeads] = useState<any[]>([]);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [availableServices, setAvailableServices] = useState<any[]>([]); 
+  const [allSubServices, setAllSubServices] = useState<any[]>([]); 
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [pagination, setPagination] = useState<any>(null);
@@ -75,6 +76,7 @@ const LeadsPage = () => {
         ]);
         setAssignments(leadsRes?.data?.data || []);
         setAvailableServices(servicesRes?.data?.data || []);
+        setAllSubServices(subServicesRes?.data?.data || []);
         setPagination(leadsRes?.data);
         setCurrentPage(leadsRes?.data?.current_page || 1);
       }
@@ -518,6 +520,7 @@ const LeadsPage = () => {
         otherService={commentModal.otherService}
         onOtherServiceChange={(otherService) => setCommentModal(prev => ({ ...prev, otherService }))}
         availableServices={availableServices}
+        allSubServices={allSubServices}
         onSave={handleUpdateComment}
         isAdminOrHead={isAdminOrHead}
       />
