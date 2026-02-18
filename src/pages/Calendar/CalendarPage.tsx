@@ -10,9 +10,9 @@ import {
   addMonths,
   startOfYear,
 } from 'date-fns';
-import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileText, Video } from 'lucide-react';
 import DatePopupModal from './components/DatePopupModal';
-import { createCalendarWork, getCalendarWorks, getClients, getCalendarWorkCreatives } from '../../api/services/microService';
+import { createCalendarWork, getCalendarWorks, getClients, getCalendarWorkCreatives, getProposals } from '../../api/services/microService';
 import { useAppSelector } from '../../store/store';
 
 // Type definitions
@@ -20,12 +20,30 @@ interface Client {
   id: number;
   name: string;
   company_name: string;
+  proposal_id?: number;
 }
 
 interface CreativeWork {
   id: string;
   name: string;
   nos: string;
+}
+
+interface Work {
+  date: string;
+  client_id: string;
+  content_description: string;
+  description: string;
+  notes: string;
+  creatives: Creative[];
+  is_special_day: boolean;
+}
+
+interface Creative {
+  id: number;
+  name: string;
+  type: string;
+  url?: string;
 }
 
 interface CalendarWorkCreative {
@@ -53,6 +71,27 @@ interface ModalData {
   notes?: string;
   creative_works?: CreativeWork[];
   is_special_day?: boolean;
+}
+
+interface Proposal {
+  id: number;
+  lead_assign_id: number;
+  creatives_nos: string | number;
+  videos_nos: string | number;
+  amount: number;
+  gst_percentage: number;
+  file_url?: string;
+  is_accepted?: boolean;
+  lead_assign?: {
+    lead?: {
+      client_id: number;
+      name?: string;
+      company_name?: string;
+      email?: string;
+      phone_number?: string;
+    };
+    client_id?: number;
+  };
 }
 
 const CalendarPage = () => {
@@ -95,10 +134,26 @@ const CalendarPage = () => {
   const [calendarWorkCreatives, setCalendarWorkCreatives] = useState<CalendarWorkCreative[]>([]);
   const [contentModal, setContentModal] = useState<{ isOpen: boolean; file: File | null }>({ isOpen: false, file: null });
   const [detailsModal, setDetailsModal] = useState<{ isOpen: boolean; data: ModalData | null }>({ isOpen: false, data: null });
+  const [proposals, setProposals] = useState<Proposal[]>([]);
 
   // Get user group for conditional rendering
   const { group } = useAppSelector((state) => state.auth);
   const isDMGroup = group?.toUpperCase() === 'DIGITAL MARKETING' || group?.toUpperCase() === 'DM';
+
+  // Get proposal data for selected client - memoized for performance
+  const clientProposal = useMemo(() => {
+    if (!selectedClient || proposals.length === 0) return null;
+
+    // Find the client
+    const client = clients.find(c => c.id === selectedClient);
+
+    if (!client || !client.proposal_id) return null;
+
+    // Find proposal by proposal_id
+    const proposal = proposals.find((p: Proposal) => Number(p.id) === Number(client.proposal_id));
+
+    return proposal || null;
+  }, [selectedClient, proposals, clients]);
 
   // Filtered data based on selected client - memoized for performance
   const dateData = useMemo(() => {
@@ -118,15 +173,7 @@ const CalendarPage = () => {
       
       const dataMap: Record<string, CalendarWorkData> = {};
       
-      works.forEach((work: {
-        date: string;
-        client_id: string;
-        content_description: string;
-        description: string;
-        notes: string;
-        creatives: any[];
-        is_special_day: boolean;
-      }) => {
+      works.forEach((work: Work) => {
         console.log('Processing work:', work);
         const [year, month, day] = work.date.split('-').map(Number);
         const dateObj = new Date(year, month - 1, day);
@@ -160,7 +207,7 @@ const CalendarPage = () => {
       try {
         setIsClientsLoading(true);
         
-        // Load clients and creative templates in parallel
+        // Load clients and creative templates first
         const [clientsRes, creativesResponse] = await Promise.all([
           getClients(1),
           getCalendarWorkCreatives()
@@ -176,9 +223,44 @@ const CalendarPage = () => {
         }
         
         setCalendarWorkCreatives(creativesResponse.data?.data || []);
+
+        // Fetch all proposals and leads in parallel
+        const [proposalsData] = await Promise.all([
+          // Fetch all proposals (handle pagination)
+          (async () => {
+            try {
+              const firstProposalRes = await getProposals(1);
+              const firstPageData = firstProposalRes?.data?.data || [];
+              const totalPages = firstProposalRes?.data?.last_page || 1;
+              
+              let allProposals = [...firstPageData];
+              
+              if (totalPages > 1) {
+                // Fetch remaining pages in parallel
+                const remainingPages = Array.from({ length: totalPages - 1 }, (_, i) => i + 2);
+                const remainingResponses = await Promise.all(
+                  remainingPages.map(p => getProposals(p))
+                );
+                
+                remainingResponses.forEach(res => {
+                  const pageData = res?.data?.data || [];
+                  allProposals = allProposals.concat(pageData);
+                });
+              }
+              console.log('All proposals loaded:', allProposals);
+              return allProposals;
+            } catch (error) {
+              console.warn("Could not fetch proposals:", error);
+              return [];
+            }
+          })()
+        ]);
+
+        setProposals(proposalsData);
       } catch (error) {
         console.error('Failed to load initial data:', error);
         setCalendarWorkCreatives([]);
+        setProposals([]);
       } finally {
         setIsClientsLoading(false);
       }
@@ -390,30 +472,44 @@ const CalendarPage = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 font-sans pb-10">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Calendar className="text-blue-600" size={24} />
-          <h1 className="text-xl font-semibold text-slate-900 tracking-tight">
-            Calendar - {currentYear}
-          </h1>
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <h1 className="text-2xl font-bold text-gray-900">Calendar</h1>
+          {selectedClient && (
+            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+              <span className="font-medium">Client: {clients.find(c => c.id === selectedClient)?.name || 'Unknown'}</span>
+              {clientProposal ? (
+                <>
+                  <span className="flex items-center gap-1">
+                    <FileText className="w-4 h-4" />
+                    Creatives: {Number(clientProposal.creatives_nos) || 0}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Video className="w-4 h-4" />
+                    Videos: {Number(clientProposal.videos_nos) || 0}
+                  </span>
+                </>
+              ) : (
+                <span className="text-red-500">No proposal data</span>
+              )}
+            </div>
+          )}
         </div>
-        
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-slate-700">Client:</label>
+        <div className="flex flex-col sm:flex-row gap-2">
           <select
             value={selectedClient || ''}
             onChange={handleClientChange}
             disabled={isClientLoading || isClientsLoading}
-            className="px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-slate-100 disabled:cursor-not-allowed"
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {isClientsLoading ? (
               <option>Loading clients...</option>
             ) : (
               <>
-                <option value="">All Clients</option>
+                <option value="">Select Client</option>
                 {clients.map((client) => (
                   <option key={client.id} value={client.id}>
-                    {client.name} - {client.company_name}
+                    {client.name}
                   </option>
                 ))}
               </>
