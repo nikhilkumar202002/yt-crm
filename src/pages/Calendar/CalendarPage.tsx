@@ -10,7 +10,9 @@ import {
   addMonths,
   startOfYear,
 } from 'date-fns';
-import { ChevronLeft, ChevronRight, FileText, Video } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileText, Video, Calendar as CalendarIcon, Filter, Layers, Layout, Star, MapPin, Search, Plus, ChevronDown, ChevronUp, TrendingUp } from 'lucide-react';
+
+const cn = (...classes: (string | boolean | undefined)[]) => classes.filter(Boolean).join(' ');
 import DatePopupModal from './components/DatePopupModal';
 import { createCalendarWork, getCalendarWorks, getClients, getCalendarWorkCreatives, getProposals } from '../../api/services/microService';
 import { useAppSelector } from '../../store/store';
@@ -135,10 +137,44 @@ const CalendarPage = () => {
   const [contentModal, setContentModal] = useState<{ isOpen: boolean; file: File | null }>({ isOpen: false, file: null });
   const [detailsModal, setDetailsModal] = useState<{ isOpen: boolean; data: ModalData | null }>({ isOpen: false, data: null });
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [clientCommand, setClientCommand] = useState<string>('');
 
   // Get user group for conditional rendering
   const { group } = useAppSelector((state) => state.auth);
   const isDMGroup = group?.toUpperCase() === 'DIGITAL MARKETING' || group?.toUpperCase() === 'DM';
+
+  // Filtered data based on selected client - memoized for performance
+  const dateData = useMemo(() => {
+    if (!selectedClient) return allDateData;
+    return Object.fromEntries(
+      Object.entries(allDateData).filter(([, work]) => work.client_id === selectedClient)
+    );
+  }, [allDateData, selectedClient]);
+
+  // Calculate monthly stats for progress tracking
+  const monthStats = useMemo(() => {
+    const monthStart = months[currentMonthIndex];
+    let creatives = 0;
+    let videos = 0;
+
+    Object.entries(dateData).forEach(([dateStr, data]) => {
+      const date = new Date(dateStr);
+      if (isSameMonth(date, monthStart)) {
+        data.creative_works?.forEach(work => {
+          const count = parseInt(work.nos) || 0;
+          const name = (work.name || '').toLowerCase();
+          // Heuristic to distinguish videos/reels from static creatives
+          if (name.includes('video') || name.includes('reel') || name.includes('short') || name.includes('motion')) {
+            videos += count;
+          } else {
+            creatives += count;
+          }
+        });
+      }
+    });
+
+    return { creatives, videos };
+  }, [dateData, currentMonthIndex, months]);
 
   // Get proposal data for selected client - memoized for performance
   const clientProposal = useMemo(() => {
@@ -154,14 +190,6 @@ const CalendarPage = () => {
 
     return proposal || null;
   }, [selectedClient, proposals, clients]);
-
-  // Filtered data based on selected client - memoized for performance
-  const dateData = useMemo(() => {
-    if (!selectedClient) return allDateData;
-    return Object.fromEntries(
-      Object.entries(allDateData).filter(([, work]) => work.client_id === selectedClient)
-    );
-  }, [allDateData, selectedClient]);
 
   const loadCalendarWorks = useCallback(async () => {
     try {
@@ -366,199 +394,358 @@ const CalendarPage = () => {
 
   const renderMonth = useCallback(() => {
     const { monthStart, startDate, endDate } = monthData;
-    const dateFormat = 'd';
-    const rows = [];
-    let days = [];
+    const days = [];
     let day = startDate;
 
-    while (day <= endDate) {
-      for (let i = 0; i < 7; i++) {
-        const currentDay = day;
-        const dayData = dateData[currentDay.toDateString()];
-        const hasWork = !!dayData;
-        const isToday = isSameDay(currentDay, new Date());
-        const isCurrentMonth = isSameMonth(currentDay, monthStart);
-        const isSpecialDay = dayData?.is_special_day;
+    const gridHeaderStyle = "py-2.5 text-center border-r border-slate-100 last:border-r-0 bg-slate-50/10 backdrop-blur-sm";
+    const gridHeaderTextStyle = "text-[10px] font-black text-slate-400 uppercase tracking-[1.5px]";
 
-        days.push(
-          <div
-            key={currentDay.toString()}
-            className={`p-3 text-left text-[14px] font-medium border border-slate-200 cursor-pointer hover:bg-slate-100 flex flex-col items-start relative ${
-              !isCurrentMonth
-                ? 'text-slate-300'
+    while (day <= endDate) {
+      const currentDay = day;
+      const dayData = dateData[currentDay.toDateString()];
+      const hasWork = !!dayData;
+      const isTodayDate = isSameDay(currentDay, new Date());
+      const isCurrentMonth = isSameMonth(currentDay, monthStart);
+      const isSpecialDay = dayData?.is_special_day;
+
+      days.push(
+        <div
+          key={currentDay.toString()}
+          className={cn(
+            "group relative p-2 transition-all hover:bg-blue-50/30 cursor-pointer overflow-hidden flex flex-col min-h-[135px] border-b border-r border-slate-50",
+            !isCurrentMonth && "bg-slate-50/40 opacity-40",
+            isTodayDate && "bg-blue-50/60 z-[1]",
+            isSpecialDay && "bg-purple-50/40"
+          )}
+          onClick={() => handleDayClick(currentDay)}
+        >
+          {isTodayDate && <div className="absolute top-0 left-0 right-0 h-0.5 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.2)]"></div>}
+          {isSpecialDay && <div className="absolute top-0 left-0 right-0 h-0.5 bg-purple-500 opacity-60"></div>}
+
+          {/* Day Header */}
+          <div className="flex justify-between items-start mb-2">
+            <span className={cn(
+              "text-[11px] font-black w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-300 transform group-hover:scale-1",
+              isTodayDate 
+                ? "bg-blue-600 text-white shadow-md shadow-blue-100 ring-1 ring-white" 
                 : isSpecialDay
-                ? 'bg-purple-100 text-purple-800 font-semibold'
-                : hasWork
-                ? 'bg-green-100 text-green-800 font-semibold'
-                : isToday
-                ? 'bg-blue-500 text-white rounded'
-                : 'text-slate-700'
-            }`}
-            onClick={() => handleDayClick(currentDay)}
-          >
-            <div className="flex items-center gap-1">
-              {format(currentDay, dateFormat)}
-              {isSpecialDay && (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-medium bg-purple-500 text-white">
-                  ★
-                </span>
-              )}
-            </div>
+                ? "bg-purple-600 text-white shadow-sm shadow-purple-50 ring-1 ring-white"
+                : isCurrentMonth
+                ? "text-slate-500 group-hover:text-slate-900 group-hover:bg-white bg-slate-50/50"
+                : "text-slate-300"
+            )}>
+              {format(currentDay, 'd')}
+            </span>
             
-            {dayData?.creative_works && dayData.creative_works.length > 0 && (
-              <div className="text-left text-[12px] mt-1 space-y-0.5">
-                {dayData.creative_works.slice(0, 3).map((creative, idx) => (
-                  <div key={idx} className="truncate max-w-full">
-                    • {creative.name}:{creative.nos}
-                  </div>
-                ))}
-                {dayData.creative_works.length > 3 && (
-                  <div className="text-[10px]">+{dayData.creative_works.length - 3} more</div>
-                )}
-              </div>
-            )}
-            
-            {hasWork && !isDMGroup && (
-              <button
-                className="mt-1 px-2 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded text-[10px] hover:bg-blue-100 hover:border-blue-300 transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleViewDetails(dayData);
-                }}
-              >
-                👁 View Details
-              </button>
-            )}
-            
-            {dayData?.content_file && !isDMGroup && (
-              <div 
-                className="text-left text-[10px] mt-1 text-blue-600 cursor-pointer hover:text-blue-800"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleViewFile(dayData.content_file!);
-                }}
-              >
-                📎 {dayData.content_file!.name}
+            {hasWork && (
+              <div className="flex gap-1 items-center mt-0.5">
+                <div className={cn(
+                  "w-1.5 h-1.5 rounded-full shadow-sm animate-pulse",
+                  isSpecialDay ? "bg-purple-400" : "bg-emerald-400"
+                )}></div>
               </div>
             )}
           </div>
-        );
-        day = addDays(day, 1);
-      }
-      
-      rows.push(
-        <div key={format(day, 'yyyy-MM-dd')} className="grid grid-cols-7 gap-2 flex-1">
-          {days}
+
+          {/* Day Body */}
+          <div className="flex-1">
+            {dayData ? (
+              <div className="bg-white/90 backdrop-blur-sm border border-slate-100 rounded-xl p-2 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all duration-500 group-hover:-translate-y-0.5">
+                <div className="flex items-center gap-1.5 mb-1.5 border-b border-slate-50 pb-1.5 overflow-hidden">
+                  <div className={cn(
+                    "p-1 rounded-md shrink-0",
+                    isSpecialDay ? "bg-purple-50" : "bg-blue-50"
+                  )}>
+                    {isSpecialDay ? <Star className="w-3 h-3 text-purple-600" /> : <Layers className="w-3 h-3 text-blue-600" />}
+                  </div>
+                  <span className="font-bold text-[10px] text-slate-700 truncate leading-tight tracking-tight">
+                    {dayData.work_description || 'Active Flow'}
+                  </span>
+                </div>
+                
+                {dayData.creative_works && dayData.creative_works.length > 0 && (
+                  <div className="space-y-1.5">
+                    {dayData.creative_works.slice(0, 2).map((creative, idx) => (
+                      <div key={idx} className="flex items-center justify-between group/item">
+                         <div className="flex items-center gap-1 text-[9px] text-slate-500 font-bold truncate max-w-[75%]">
+                            <div className="w-1 h-1 rounded-full bg-slate-200 group-hover/item:bg-blue-400 transition-colors" />
+                            {creative.name}
+                         </div>
+                         <span className="text-[9px] font-black text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-md border border-blue-50">
+                           {creative.nos}
+                         </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {!isDMGroup && (
+                  <div className="mt-2 pt-1.5 border-t border-slate-50 flex items-center justify-between">
+                    <button
+                      className="text-[8px] font-black text-blue-600 hover:text-blue-800 uppercase tracking-widest flex items-center gap-0.5 group/btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewDetails(dayData);
+                      }}
+                    >
+                       Details <ChevronRight size={8} className="group-hover/btn:translate-x-0.5 transition-transform" />
+                    </button>
+                    
+                    {dayData.content_file && (
+                      <div 
+                        className="flex items-center p-0.5 bg-slate-50 rounded text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewFile(dayData.content_file!);
+                        }}
+                      >
+                        <FileText size={8} />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : isCurrentMonth ? (
+              <div className="h-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-1 group-hover:translate-y-0 min-h-[70px]">
+                 <div className="w-8 h-8 rounded-xl bg-white border border-slate-200/60 flex items-center justify-center text-slate-300 group-hover:text-blue-600 group-hover:border-blue-200 group-hover:shadow-md group-hover:shadow-blue-50 transition-all">
+                    <Plus size={16} strokeWidth={2.5} />
+                 </div>
+                 <p className="text-[8px] font-black text-slate-400 group-hover:text-blue-500 uppercase tracking-[1.5px] mt-2 animate-in fade-in slide-in-from-bottom-1 duration-700">Schedule</p>
+              </div>
+            ) : null}
+          </div>
         </div>
       );
-      days = [];
+      day = addDays(day, 1);
     }
 
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-4 h-full flex flex-col">
-        <div className="grid grid-cols-7 gap-2 mb-1">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-            <div key={day} className="text-[10px] font-bold text-slate-400 text-center uppercase">
-              {day}
+      <div className="flex flex-col h-full bg-white rounded-2xl border border-slate-100 overflow-hidden">
+        {/* Weekday Headers */}
+        <div className="grid grid-cols-7 border-b border-slate-100 bg-slate-50/30">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((weekday) => (
+            <div key={weekday} className={gridHeaderStyle}>
+              <span className={gridHeaderTextStyle}>{weekday}</span>
             </div>
           ))}
         </div>
-        <div className="flex-1 flex flex-col gap-2">
-          {rows}
+
+        {/* Calendar Grid */}
+        <div className="grid grid-cols-7">
+          {days}
         </div>
       </div>
     );
   }, [monthData, dateData, handleDayClick, handleViewDetails, handleViewFile, isDMGroup]);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 font-sans pb-10">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <h1 className="text-2xl font-bold text-gray-900">Calendar</h1>
-          {selectedClient && (
-            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-              <span className="font-medium">Client: {clients.find(c => c.id === selectedClient)?.name || 'Unknown'}</span>
-              {clientProposal ? (
-                <>
-                  <span className="flex items-center gap-1">
-                    <FileText className="w-4 h-4" />
-                    Creatives: {Number(clientProposal.creatives_nos) || 0}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Video className="w-4 h-4" />
-                    Videos: {Number(clientProposal.videos_nos) || 0}
-                  </span>
-                </>
-              ) : (
-                <span className="text-red-500">No proposal data</span>
-              )}
+    <div className="space-y-4 animate-in fade-in duration-700 font-sans pb-8 max-w-[1600px] mx-auto">
+      {/* Header Card */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 bg-blue-50 rounded-lg">
+                <CalendarIcon className="w-5 h-5 text-blue-600" />
+              </div>
+              <h1 className="text-xl font-bold text-slate-800 tracking-tight">Interactive Calendar</h1>
             </div>
-          )}
-        </div>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <select
-            value={selectedClient || ''}
-            onChange={handleClientChange}
-            disabled={isClientLoading || isClientsLoading}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {isClientsLoading ? (
-              <option>Loading clients...</option>
-            ) : (
-              <>
-                <option value="">Select Client</option>
-                {clients.map((client) => (
-                  <option key={client.id} value={client.id}>
-                    {client.name}
-                  </option>
-                ))}
-              </>
-            )}
-          </select>
-        </div>
-      </div>
+            <p className="text-slate-500 text-[13px] ml-10 font-medium">Manage and track creative schedules efficiently</p>
+          </div>
 
-      <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={handlePreviousMonth}
-          className="p-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300"
-        >
-          <ChevronLeft size={20} />
-        </button>
-        <div className="flex items-center gap-4">
-          <select
-            value={currentMonthIndex}
-            onChange={handleMonthSelect}
-            className="px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-          >
-            {months.map((month, index) => (
-              <option key={index} value={index}>
-                {format(month, 'MMMM yyyy')}
-              </option>
-            ))}
-          </select>
-        </div>
-        <button
-          onClick={handleNextMonth}
-          className="p-2 bg-slate-200 text-slate-700 rounded hover:bg-slate-300"
-        >
-          <ChevronRight size={20} />
-        </button>
-      </div>
-
-      <div className="relative">
-        {(isClientLoading || isClientsLoading) && (
-          <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10 rounded-lg">
-            <div className="flex items-center gap-2 text-slate-600">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-              <span className="text-sm font-medium">
-                {isClientsLoading ? 'Loading clients...' : 'Loading calendar...'}
-              </span>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                <Filter className="w-3.5 h-3.5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+              </div>
+              <select
+                value={selectedClient || ''}
+                onChange={handleClientChange}
+                disabled={isClientLoading || isClientsLoading}
+                className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 text-slate-700 text-[13px] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer min-w-[200px] appearance-none font-medium"
+              >
+                {isClientsLoading ? (
+                  <option>Loading clients...</option>
+                ) : (
+                  <>
+                    <option value="">Select Project / Client</option>
+                    {clients.map((client) => (
+                      <option key={client.id} value={client.id}>
+                        {client.name}
+                      </option>
+                    ))}
+                  </>
+                )}
+              </select>
+              <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                <ChevronRight className="w-3.5 h-3.5 text-slate-400 rotate-90" />
+              </div>
             </div>
           </div>
+        </div>
+
+        {selectedClient && (
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-5 gap-3">
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex items-center gap-3 hover:border-blue-100 transition-colors">
+              <div className="p-2 bg-white shadow-sm rounded-lg border border-slate-100">
+                <Layout className="w-4 h-4 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Selected Account</p>
+                <p className="text-[13px] font-bold text-slate-900 truncate max-w-[140px]">
+                  {clients.find(c => c.id === selectedClient)?.name || 'Unknown'}
+                </p>
+              </div>
+            </div>
+
+            {clientProposal ? (
+              <>
+                <div className="bg-indigo-50/50 rounded-xl p-3 border border-indigo-100 flex items-center gap-3 hover:bg-indigo-50 transition-colors">
+                  <div className="p-2 bg-white shadow-sm rounded-lg border border-indigo-100">
+                    <FileText className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[9px] uppercase font-bold text-indigo-400 tracking-wider leading-none mb-1">Creative Target</p>
+                    <div className="flex items-baseline justify-between">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-lg font-black text-indigo-900">{Number(clientProposal.creatives_nos) || 0}</span>
+                        <span className="text-[9px] font-bold text-indigo-500 italic uppercase">Target</span>
+                      </div>
+                      <span className="text-[10px] font-bold text-indigo-600 bg-white border border-indigo-100 px-1.5 py-0.5 rounded-lg shadow-sm">
+                        {monthStats.creatives} Done
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-emerald-50/50 rounded-xl p-3 border border-emerald-100 flex items-center gap-3 hover:bg-emerald-50 transition-colors">
+                  <div className="p-2 bg-white shadow-sm rounded-lg border border-emerald-100">
+                    <Video className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[9px] uppercase font-bold text-emerald-400 tracking-wider leading-none mb-1">Video Target</p>
+                    <div className="flex items-baseline justify-between">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-lg font-black text-emerald-900">{Number(clientProposal.videos_nos) || 0}</span>
+                        <span className="text-[9px] font-bold text-emerald-500 italic uppercase">Target</span>
+                      </div>
+                      <span className="text-[10px] font-bold text-emerald-600 bg-white border border-emerald-100 px-1.5 py-0.5 rounded-lg shadow-sm">
+                        {monthStats.videos} Done
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50/50 rounded-xl p-3 border border-blue-100 flex items-center gap-3 hover:bg-blue-100 transition-colors">
+                  <div className="p-2 bg-white shadow-sm rounded-lg border border-blue-100">
+                    <TrendingUp className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[9px] uppercase font-bold text-blue-400 tracking-wider leading-none mb-1">Month Progress</p>
+                    <div className="flex items-center gap-2 mt-1">
+                       <div className="flex-1 h-1.5 bg-white rounded-full overflow-hidden border border-blue-100">
+                          <div 
+                            className="h-full bg-blue-500 rounded-full transition-all duration-1000"
+                            style={{ 
+                              width: `${Math.min(100, (((monthStats.creatives + monthStats.videos) / (Number(clientProposal.creatives_nos) + Number(clientProposal.videos_nos) || 1)) * 100))}%` 
+                            }}
+                          ></div>
+                       </div>
+                       <span className="text-[11px] font-black text-blue-900">
+                         {Math.round(((monthStats.creatives + monthStats.videos) / (Number(clientProposal.creatives_nos) + Number(clientProposal.videos_nos) || 1)) * 100)}%
+                       </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex items-center gap-3 hover:border-slate-200 transition-colors group/cmd">
+                  <div className="p-2 bg-white shadow-sm rounded-lg border border-slate-100 group-focus-within/cmd:border-blue-400 group-focus-within/cmd:ring-2 group-focus-within/cmd:ring-blue-100 transition-all">
+                    <Search className="w-4 h-4 text-slate-400 group-focus-within/cmd:text-blue-500" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider leading-none mb-1">Client Brief/Command</p>
+                    <input
+                      type="text"
+                      value={clientCommand}
+                      onChange={(e) => setClientCommand(e.target.value)}
+                      placeholder="Enter instruction..."
+                      className="w-full bg-transparent border-none p-0 text-[12px] font-bold text-slate-800 placeholder:text-slate-300 focus:ring-0"
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="col-span-1 sm:col-span-2 xl:col-span-4 bg-red-50/50 rounded-xl p-3 border border-red-100 flex items-center justify-center italic text-red-500 text-[12px] font-medium">
+                No active proposal found for this client
+              </div>
+            )}
+          </div>
         )}
-        <div className="h-screen">
-          {renderMonth()}
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+        {/* Navigation Bar */}
+        <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-1 group">
+             <button
+              onClick={handlePreviousMonth}
+              className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-white rounded-lg transition-all active:scale-95"
+            >
+              <ChevronLeft size={18} strokeWidth={2.5} />
+            </button>
+            
+            <div className="relative group/sel">
+              <select
+                value={currentMonthIndex}
+                onChange={handleMonthSelect}
+                className="appearance-none bg-transparent font-bold text-slate-800 text-base px-2 py-0.5 cursor-pointer focus:outline-none hover:text-blue-600 transition-colors"
+              >
+                {months.map((month, index) => (
+                  <option key={index} value={index}>
+                    {format(month, 'MMMM yyyy')}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              onClick={handleNextMonth}
+              className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-white rounded-lg transition-all active:scale-95"
+            >
+              <ChevronRight size={18} strokeWidth={2.5} />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+             <div className="flex items-center gap-3 mr-3 text-[9px] font-bold uppercase tracking-wider text-slate-400 border-r pr-4 border-slate-200 md:flex hidden">
+               <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-blue-500"></div> Today</div>
+               <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> Work</div>
+               <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-purple-500"></div> Special</div>
+             </div>
+             
+             <button
+               onClick={() => setCurrentMonthIndex(new Date().getMonth())}
+               className="px-3 py-1.5 bg-white border border-slate-200 text-slate-600 text-[12px] font-bold rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95 shadow-sm"
+             >
+               Current Month
+             </button>
+          </div>
+        </div>
+
+        <div className="p-4 relative">
+          {(isClientLoading || isClientsLoading) && (
+            <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center z-10">
+              <div className="flex flex-col items-center gap-3">
+                <div className="animate-spin rounded-full h-8 w-8 border-[2.5px] border-slate-100 border-t-blue-600 shadow-xl"></div>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest animate-pulse">
+                  Refining Workspace...
+                </span>
+              </div>
+            </div>
+          )}
+          <div className="min-h-[600px]">
+            {renderMonth()}
+          </div>
         </div>
       </div>
 
