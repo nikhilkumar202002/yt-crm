@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
-  FileText, Phone, Mail, User, Settings2,
+  FileText, Phone, Mail, User, Settings2, Eye,
   UploadCloud, Loader2, ChevronLeft, ChevronRight, Clock, Flame, 
   Layout, Image as ImageIcon, Video as VideoIcon, FileSpreadsheet
 } from 'lucide-react';
@@ -8,6 +8,7 @@ import { useAppSelector } from '../../store/store';
 import { getAssignedLeads, getProposals, acceptProposal } from '../../api/services/microService';
 import { ProposalUploadModal } from './components/ProposalUploadModal';
 import { ProposalDetailsModal } from './components/ProposalDetailsModal';
+import { ProposalViewModal } from './components/ProposalViewModal';
 import { Button } from '../../components/common/Button';
 import { StatCard } from '../../components/common/StatCard';
 
@@ -22,6 +23,7 @@ const ProposalPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [uploadModal, setUploadModal] = useState({ isOpen: false, leadId: null as number | null, proposalId: null as number | null });
   const [detailsModal, setDetailsModal] = useState({ isOpen: false, proposalId: null as number | null });
+  const [viewModal, setViewModal] = useState({ isOpen: false, proposalId: null as number | null });
 
   const fetchData = useCallback(async (page: number, silent = false) => {
     try {
@@ -162,7 +164,7 @@ const ProposalPage = () => {
         )}
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200/60 overflow-hidden relative">
+      <div className="bg-white rounded-none shadow-sm border border-slate-200/60 overflow-hidden relative">
         {loading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[1px] z-10 py-20">
             <Loader2 className="animate-spin text-blue-600 mb-2" size={20} />
@@ -218,7 +220,7 @@ const ProposalPage = () => {
                     </td>
 
                     <td className="px-5 py-3 text-center">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-50 text-red-600 border border-red-100 rounded-full text-[8px] font-black uppercase tracking-tighter shadow-sm animate-pulse">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-50 text-red-600 border border-red-100 rounded-none text-[8px] font-black uppercase tracking-tighter shadow-sm">
                         <Flame size={8} fill="currentColor" /> Hot
                       </span>
                     </td>
@@ -236,7 +238,7 @@ const ProposalPage = () => {
 
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="h-6 w-6 rounded bg-slate-100 flex items-center justify-center text-[10px] text-slate-600 font-bold border border-slate-200 uppercase">
+                        <div className="h-6 w-6 rounded-none bg-slate-100 flex items-center justify-center text-[10px] text-slate-600 font-bold border border-slate-200 uppercase">
                           {item.user?.name?.charAt(0)}
                         </div>
                         <span className="text-[10px] font-bold text-slate-600 truncate max-w-[80px]">{item.user?.name}</span>
@@ -247,12 +249,12 @@ const ProposalPage = () => {
                       <div className="flex flex-wrap gap-1 max-w-[180px]">
                         {/* Fixed Services fetching */}
                         {item.services?.map((s: any) => (
-                          <span key={s.id} className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100 text-[8px] font-bold uppercase tracking-tighter">
+                          <span key={s.id} className="px-1.5 py-0.5 rounded-none bg-blue-50 text-blue-600 border border-blue-100 text-[8px] font-bold uppercase tracking-tighter">
                             {s.name}
                           </span>
                         ))}
                         {item.other_service && (
-                          <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 border border-purple-100 text-[8px] font-bold uppercase tracking-tighter">
+                          <span className="px-1.5 py-0.5 rounded-none bg-purple-50 text-purple-600 border border-purple-100 text-[8px] font-bold uppercase tracking-tighter">
                             {item.other_service}
                           </span>
                         )}
@@ -266,11 +268,11 @@ const ProposalPage = () => {
                             <button
                               disabled={isAccepted}
                               onClick={() => handleAcceptTrigger(item.proposal_id)}
-                              className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none ${
+                              className={`relative inline-flex h-4 w-8 items-center rounded-none transition-colors focus:outline-none ${
                                 isAccepted ? 'bg-green-500' : 'bg-slate-200'
                               }`}
                             >
-                              <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${isAccepted ? 'translate-x-4.5' : 'translate-x-0.5'}`} />
+                              <span className={`inline-block h-3 w-3 transform rounded-none bg-white transition-transform ${isAccepted ? 'translate-x-4.5' : 'translate-x-0.5'}`} />
                             </button>
                             <span className={`text-[8px] font-black uppercase tracking-widest ${isAccepted ? 'text-green-600' : 'text-slate-400'}`}>
                               {isAccepted ? 'Approved' : 'Pending'}
@@ -290,34 +292,47 @@ const ProposalPage = () => {
                           href={item.proposal_file_url} 
                           target="_blank" 
                           rel="noreferrer"
-                          className="flex items-center gap-1.5 text-blue-600 font-bold text-[10px] bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded border border-blue-100 w-fit transition-all shadow-sm mx-auto"
+                          className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-50 text-slate-800 border border-slate-200 text-[9px] font-black uppercase tracking-widest rounded-none hover:bg-slate-100 transition-all"
                         >
-                          <FileText size={12} /> View
+                          <FileText size={10} className="text-blue-500" /> Open PDF
                         </a>
                       ) : (
-                        <span className="text-[9px] text-slate-300 font-bold uppercase tracking-tighter">Missing</span>
+                        <span className="text-[9px] text-slate-300 font-bold uppercase tracking-tighter italic">No Document</span>
                       )}
                     </td>
 
                     <td className="px-5 py-3 text-right">
                       <div className="flex justify-end gap-1.5">
+                        {/* Detail View Icon (Modal) */}
+                        {item.proposal_id && (
+                          <button 
+                            onClick={() => setViewModal({ isOpen: true, proposalId: item.proposal_id })} 
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-100 rounded-none transition-all" 
+                            title="View Scoping Detail"
+                          >
+                            <Eye size={14} />
+                          </button>
+                        )}
+
                         {/* Details Modal Trigger: Visible only if approved and privileged */}
                         {isAccepted && isFinancePrivileged && (
                           <button 
                             onClick={() => setDetailsModal({ isOpen: true, proposalId: item.proposal_id })} 
-                            className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-md transition-all" 
-                            title="Add Details"
+                            className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-none border border-transparent hover:border-emerald-100 transition-all" 
+                            title="Adjust Financials"
                           >
                             <Settings2 size={14} />
                           </button>
                         )}
+                        
                         <button 
                           onClick={() => setUploadModal({ 
                             isOpen: true, 
                             leadId: item.id, 
                             proposalId: item.proposal_id 
                           })}
-                          className="inline-flex items-center gap-1 text-slate-400 hover:text-blue-600 transition-colors p-1.5 group"
+                          className="inline-flex items-center gap-1 text-slate-400 hover:text-blue-600 transition-colors p-1.5 group border border-transparent hover:border-slate-100 rounded-none bg-transparent hover:bg-slate-50"
+                          title={item.proposal_id ? "Replace PDF" : "Upload proposal"}
                         >
                           <UploadCloud size={14} className="group-hover:scale-110 transition-transform" />
                         </button>
@@ -348,7 +363,7 @@ const ProposalPage = () => {
                 size="sm" 
                 disabled={!pagination.prev_page_url} 
                 onClick={() => setCurrentPage(prev => prev - 1)} 
-                className="h-7 w-7 p-0 border-slate-200 bg-white"
+                className="h-7 w-7 p-0 border-slate-200 bg-white rounded-none shadow-none"
               >
                 <ChevronLeft size={14} />
               </Button>
@@ -357,7 +372,7 @@ const ProposalPage = () => {
                 size="sm" 
                 disabled={!pagination.next_page_url} 
                 onClick={() => setCurrentPage(prev => prev + 1)} 
-                className="h-7 w-7 p-0 border-slate-200 bg-white"
+                className="h-7 w-7 p-0 border-slate-200 bg-white rounded-none shadow-none"
               >
                 <ChevronRight size={14} />
               </Button>
@@ -378,6 +393,12 @@ const ProposalPage = () => {
         onOpenChange={(open) => setDetailsModal({ ...detailsModal, isOpen: open })} 
         proposalId={detailsModal.proposalId} 
         onSuccess={() => fetchData(currentPage, true)} 
+      />
+
+      <ProposalViewModal
+        isOpen={viewModal.isOpen}
+        onOpenChange={(open) => setViewModal({ ...viewModal, isOpen: open })}
+        proposalId={viewModal.proposalId}
       />
     </div>
   );

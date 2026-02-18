@@ -375,6 +375,11 @@ export const getProposals = async (page: number = 1) => {
   return response.data;
 };
 
+export const getProposalDetail = async (id: number) => {
+  const response = await apiClient.get(ENDPOINTS.PROPOSALS.DETAIL(id));
+  return response.data;
+};
+
 export const createProposal = async (leadAssignId: number, file: File) => {
   const formData = new FormData();
   formData.append('lead_assign_id', leadAssignId.toString());
