@@ -98,14 +98,16 @@ export const ClientFormModal = ({
     setLoading(true);
     try {
       if (clientData) {
-        await updateClient(clientData.id, formData);
+        await updateClient(clientData.id, {
+          ...formData,
+          is_in_leads: isFromProposal
+        });
       } else {
-        // Force is_in_leads=true if a proposal is linked, otherwise use the prop
-        const finalIsInLeads = isFromProposal && formData.proposal_id ? true : isInLeads;
-        
+        // is_in_leads is true ONLY if "Fetch data from Proposal" is checked
+        // otherwise it is false (manual client entry)
         await createClient({
           ...formData,
-          is_in_leads: finalIsInLeads,
+          is_in_leads: isFromProposal,
           proposal_id: formData.proposal_id
         });
       }

@@ -32,13 +32,13 @@ export function getMenuByDepartment(role: string, group?: string): MenuItem[] {
   }
 
   // Department specific menus
-  if (groupLower === 'graphics department' || groupLower === 'creative designers' || groupLower === 'graphics') {
+  if (groupLower.includes('graphics') || groupLower.includes('creative designers')) {
     return GRAPHICS_MENU;
   }
-  if (groupLower === 'digital marketing' || groupLower === 'dm' || groupLower === 'dm executive') {
+  if (groupLower.includes('digital marketing') || groupLower === 'dm') {
     return DM_MENU;
   }
-  if (groupLower === 'content creator' || groupLower === 'content') {
+  if (groupLower.includes('content')) {
     return CONTENT_MENU;
   }
 

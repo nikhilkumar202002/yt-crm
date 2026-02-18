@@ -19,7 +19,8 @@ export const GLOBAL_ROLES = {
     canViewAssignedLeads: true,
     canAssignLeads: true,
     canReceiveLeadIdsForAssignment: true,
-    canViewCalendar: true
+    canViewCalendar: true,
+    canUploadLeads: true
   },
 
   staff: {

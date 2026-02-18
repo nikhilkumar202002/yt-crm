@@ -7,7 +7,7 @@ import {
   FileText, Briefcase, Calendar, Clipboard
 } from 'lucide-react';
 import { useAppSelector } from '../../store/store';
-import { SIDEBAR_MENU, hasMenuAccess } from '../../config/menu';
+import { SIDEBAR_MENU, hasMenuAccess, getMenuByDepartment } from '../../config/menu';
 import { resolvePermissions } from '../../config/permissionResolver';
 
 interface SidebarProps {
@@ -20,12 +20,13 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
   const location = useLocation();
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
 
-  // Use permissions from state if available, else resolve from role
-  const userPermissions = permissions || resolvePermissions({
+  // Always resolve permissions to apply department/position overrides
+  const userPermissions = resolvePermissions({
     role: roleName?.toLowerCase() || 'staff',
     position: position || 'Member',
     group: group || undefined,
-    designation_name: designation_name || undefined
+    designation_name: designation_name || undefined,
+    permissions: permissions || undefined
   });
 
   // Updated iconMap to match the new "Onboarded Clients" title
@@ -47,7 +48,10 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
     'Settings': <Settings size={16} />,
   };
 
-  const filteredMenu = SIDEBAR_MENU
+  // Dynamically resolve menu based on department
+  const activeMenu = getMenuByDepartment(roleName || 'staff', group || undefined);
+
+  const filteredMenu = activeMenu
     .filter(item => hasMenuAccess(userPermissions, item.requiredPermissions))
     .map(item => ({
       ...item,

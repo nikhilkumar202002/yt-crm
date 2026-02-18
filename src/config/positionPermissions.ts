@@ -9,7 +9,8 @@ export const POSITION_PERMISSIONS = {
     canViewAssignedLeads: true,
     canAssignLeads: true,
     canReceiveLeadIdsForAssignment: true,
-    canViewCalendar: true
+    canViewCalendar: true,
+    canUploadLeads: true
   },
 
   '1': {
@@ -48,7 +49,8 @@ export const POSITION_PERMISSIONS = {
     canViewAssignedLeads: true,
     canAssignLeads: true,
     canReceiveLeadIdsForAssignment: true,
-    canViewCalendar: true
+    canViewCalendar: true,
+    canUploadLeads: true
   },
 
   'member': {

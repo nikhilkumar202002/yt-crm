@@ -32,12 +32,6 @@ export function resolvePermissions(user: {
     uploadLeads: boolean;
   };
 }) {
-  // If permissions are provided directly from backend, use them
-  if (user.permissions) {
-    return user.permissions;
-  }
-
-  // Fallback to role-based resolution if permissions not provided
   // Map the role name to internal permission key
   const mappedRole = ROLE_MAPPING[user.role] || ROLE_MAPPING[user.role.toLowerCase()] || 'staff';
 
@@ -46,8 +40,19 @@ export function resolvePermissions(user: {
   const positionPermissions = (POSITION_PERMISSIONS as any)[positionKey] || {};
   const groupLower = (user.group || '').toLowerCase().trim();
 
-  // Start with base permissions
+  // Start with base permissions from role + position
   let permissions = { ...GLOBAL_ROLES[mappedRole], ...positionPermissions };
+
+  // If backend provided permissions, merge them into the starting point
+  if (user.permissions) {
+    permissions = {
+      ...permissions,
+      canViewAllLeads: user.permissions.viewAllLeads,
+      canViewAssignedLeads: user.permissions.viewAssignedLeads,
+      canAssignLeads: user.permissions.assignLeads,
+      canUploadLeads: user.permissions.uploadLeads,
+    };
+  }
 
   // For admin role, position permissions should NOT override role permissions
   if (mappedRole === 'admin') {
@@ -84,12 +89,25 @@ export function resolvePermissions(user: {
   }
 
   // Ensure Digital Marketing and Content Creator have worksheet access
-  if (groupLower === 'digital marketing' || groupLower === 'dm' || groupLower === 'content creator' || groupLower === 'content') {
+  if (groupLower.includes('digital marketing') || groupLower === 'dm' || groupLower.includes('content')) {
     permissions.canAssignGroup = true;
   }
 
+  // Handle Proposal menu access for Digital Marketing Department
+  // Only the "Head" position gets access to the Proposal menu
+  if (groupLower.includes('digital marketing') || groupLower === 'dm') {
+    if (positionKey === 'head' || positionKey === '6' || positionKey.includes('head')) {
+      permissions.canUploadLeads = true;
+    } else {
+      // Members/Employees do not get proposal access
+      permissions.canUploadLeads = false;
+      // Also hide "Assigned Leads" submenu for members
+      permissions.canViewAssignedLeads = false;
+    }
+  }
+
   // Restrict Graphics Department and Creative Designers from seeing Leads and Clients
-  if (groupLower === 'graphics department' || groupLower === 'creative designers' || groupLower === 'graphics') {
+  if (groupLower.includes('graphics') || groupLower.includes('creative designers')) {
     permissions.canViewAllLeads = false;
     permissions.canViewAssignedLeads = false;
     permissions.canAssignGroup = true;
