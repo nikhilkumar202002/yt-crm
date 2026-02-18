@@ -2,34 +2,24 @@ import React, { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X, FileText, Download, User, Calendar, MessageSquare, IndianRupee, Image as ImageIcon, Video as VideoIcon, CheckCircle2, MapPin, Hash, Target, History } from 'lucide-react';
 import { Button } from '../../../components/common/Button';
-import { getProposalDetail } from '../../../api/services/microService';
 
 interface ProposalViewModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   proposalId: number | null;
+  proposalData?: any;
 }
 
-export const ProposalViewModal = ({ isOpen, onOpenChange, proposalId }: ProposalViewModalProps) => {
-  const [loading, setLoading] = useState(false);
+export const ProposalViewModal = ({ isOpen, onOpenChange, proposalId, proposalData }: ProposalViewModalProps) => {
   const [proposal, setProposal] = useState<any>(null);
 
   useEffect(() => {
-    const fetchDetail = async () => {
-      if (!proposalId || !isOpen) return;
-      try {
-        setLoading(true);
-        const res = await getProposalDetail(proposalId);
-        setProposal(res?.data);
-      } catch (error) {
-        console.error("Failed to fetch proposal details", error);
-        setProposal(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDetail();
-  }, [proposalId, isOpen]);
+    if (proposalData?.proposal) {
+      setProposal(proposalData.proposal);
+    } else {
+      setProposal(null);
+    }
+  }, [proposalData]);
 
   if (!isOpen) return null;
 
@@ -48,7 +38,7 @@ export const ProposalViewModal = ({ isOpen, onOpenChange, proposalId }: Proposal
                 <Dialog.Title className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em] leading-none">
                   Proposal Extended Intelligence
                 </Dialog.Title>
-                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Global ID: {proposal?.lead?.lead_id || 'N/A'}</p>
+                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Global ID: {proposalData?.lead?.lead_id || 'N/A'}</p>
               </div>
             </div>
             <Dialog.Close className="p-2 hover:bg-slate-200 rounded-none transition-colors">
@@ -57,12 +47,7 @@ export const ProposalViewModal = ({ isOpen, onOpenChange, proposalId }: Proposal
           </div>
 
           <div className="p-6 overflow-y-auto custom-scrollbar">
-            {loading ? (
-              <div className="py-20 flex flex-col items-center justify-center space-y-3">
-                 <div className="h-8 w-8 border-2 border-blue-600 border-t-transparent animate-spin rounded-full"></div>
-                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Compiling Dataset...</p>
-              </div>
-            ) : proposal ? (
+            {proposal ? (
               <div className="space-y-6">
                 {/* Section 1: Lead & Source Intelligence */}
                 <div className="grid grid-cols-2 gap-6">
@@ -76,20 +61,20 @@ export const ProposalViewModal = ({ isOpen, onOpenChange, proposalId }: Proposal
                              <User size={14}/>
                           </div>
                           <div>
-                             <p className="text-[11px] font-black text-slate-800 uppercase tracking-tight">{proposal.lead?.lead_data?.full_name || 'N/A'}</p>
+                             <p className="text-[11px] font-black text-slate-800 uppercase tracking-tight">{proposalData?.lead?.lead_data?.full_name || 'N/A'}</p>
                              <p className="text-[9px] text-slate-500 font-bold flex items-center gap-1 uppercase">
-                                <MapPin size={10} className="text-slate-300"/> {proposal.lead?.lead_data?.city || 'Location Unknown'}
+                                <MapPin size={10} className="text-slate-300"/> {proposalData?.lead?.lead_data?.city || 'Location Unknown'}
                              </p>
                           </div>
                        </div>
                        <div className="pt-2 border-t border-slate-200 space-y-1.5 font-bold">
                           <p className="text-[9px] text-slate-500 uppercase flex items-center justify-between">
                              <span>Email:</span>
-                             <span className="text-slate-800 truncate ml-2">{proposal.lead?.lead_data?.email || 'N/A'}</span>
+                             <span className="text-slate-800 truncate ml-2">{proposalData?.lead?.lead_data?.email || 'N/A'}</span>
                           </p>
                           <p className="text-[9px] text-slate-500 uppercase flex items-center justify-between">
                              <span>Phone:</span>
-                             <span className="text-slate-800 ml-2">{proposal.lead?.lead_data?.phone || 'N/A'}</span>
+                             <span className="text-slate-800 ml-2">{proposalData?.lead?.lead_data?.phone || 'N/A'}</span>
                           </p>
                        </div>
                     </div>
@@ -104,14 +89,14 @@ export const ProposalViewModal = ({ isOpen, onOpenChange, proposalId }: Proposal
                           <Target size={12} className="text-indigo-500 mt-0.5"/>
                           <div>
                              <p className="text-[9px] text-slate-400 font-black uppercase leading-none">Campaign</p>
-                             <p className="text-[10px] font-bold text-slate-700 mt-1 leading-tight">{proposal.lead?.campaign_name || 'Manual Import'}</p>
+                             <p className="text-[10px] font-bold text-slate-700 mt-1 leading-tight">{proposalData?.lead?.campaign_name || 'Manual Import'}</p>
                           </div>
                        </div>
                        <div className="flex items-start gap-2 pt-1">
                           <Hash size={12} className="text-slate-400 mt-0.5"/>
                           <div>
                              <p className="text-[9px] text-slate-400 font-black uppercase leading-none">Ad Name</p>
-                             <p className="text-[10px] font-bold text-slate-700 mt-1 leading-tight italic">"{proposal.lead?.ad_name || 'N/A'}"</p>
+                             <p className="text-[10px] font-bold text-slate-700 mt-1 leading-tight italic">"{proposalData?.lead?.ad_name || 'N/A'}"</p>
                           </div>
                        </div>
                     </div>
@@ -126,23 +111,23 @@ export const ProposalViewModal = ({ isOpen, onOpenChange, proposalId }: Proposal
                     <div className="grid grid-cols-4 gap-4">
                        <div className="bg-white border border-slate-200 p-3 text-center">
                           <ImageIcon size={14} className="mx-auto text-blue-500 mb-1"/>
-                          <p className="text-[14px] font-black text-slate-900 leading-none">{proposal.proposal?.creatives_nos || 0}</p>
+                          <p className="text-[14px] font-black text-slate-900 leading-none">{proposalData?.creatives_nos || proposal?.creatives_nos || proposal?.proposal?.creatives_nos || 0}</p>
                           <p className="text-[8px] font-black text-slate-400 uppercase mt-1.5">Creatives</p>
                        </div>
                        <div className="bg-white border border-slate-200 p-3 text-center">
                           <VideoIcon size={14} className="mx-auto text-indigo-500 mb-1"/>
-                          <p className="text-[14px] font-black text-slate-900 leading-none">{proposal.proposal?.videos_nos || 0}</p>
+                          <p className="text-[14px] font-black text-slate-900 leading-none">{proposalData?.videos_nos || proposal?.videos_nos || proposal?.proposal?.videos_nos || 0}</p>
                           <p className="text-[8px] font-black text-slate-400 uppercase mt-1.5">Videos</p>
                        </div>
                        <div className="bg-slate-900 p-3 text-center">
                           <IndianRupee size={12} className="mx-auto text-emerald-400 mb-1"/>
-                          <p className="text-[14px] font-black text-emerald-400 leading-none">₹{Number(proposal.proposal?.amount || 0).toLocaleString()}</p>
+                          <p className="text-[14px] font-black text-emerald-400 leading-none">₹{Number(proposalData?.amount || proposal?.amount || proposal?.proposal?.amount || 0).toLocaleString()}</p>
                           <p className="text-[8px] font-black text-slate-500 uppercase mt-1.5">Base Price</p>
                        </div>
                        <div className="bg-emerald-600 p-3 text-center shadow-lg shadow-emerald-50">
                           <CheckCircle2 size={12} className="mx-auto text-white mb-1"/>
-                          <p className="text-[14px] font-black text-white leading-none">₹{((proposal.proposal?.amount || 0) + ((proposal.proposal?.amount || 0) * ((proposal.proposal?.gst_percentage || 18) / 100))).toLocaleString()}</p>
-                          <p className="text-[8px] font-black text-emerald-100 uppercase mt-1.5">Gross (+{proposal.proposal?.gst_percentage || 18}%)</p>
+                          <p className="text-[14px] font-black text-white leading-none">₹{Number(proposalData?.amount ? (proposalData.amount + (proposalData.amount * (proposalData.gst_percentage / 100))) : (proposal?.total_amount || proposal?.proposal?.total_amount || 0)).toLocaleString()}</p>
+                          <p className="text-[8px] font-black text-emerald-100 uppercase mt-1.5">Gross (+{proposalData?.gst_percentage || proposal?.gst_percentage || proposal?.proposal?.gst_percentage || 18}%)</p>
                        </div>
                     </div>
                 </div>
@@ -154,7 +139,7 @@ export const ProposalViewModal = ({ isOpen, onOpenChange, proposalId }: Proposal
                     </label>
                     <div className="bg-amber-50/30 p-4 border border-amber-100 shadow-sm min-h-[80px]">
                        <p className="text-[11px] font-bold text-slate-700 leading-relaxed italic whitespace-pre-wrap">
-                          {proposal.proposal?.description || "No strategic overview provided."}
+                          {proposalData?.other_service || proposal?.description || proposal?.proposal?.description || "No strategic overview provided."}
                        </p>
                     </div>
                 </div>
@@ -168,26 +153,26 @@ export const ProposalViewModal = ({ isOpen, onOpenChange, proposalId }: Proposal
                         <div className="space-y-2">
                            <div className="flex justify-between items-center text-[9px] border-b border-slate-100 pb-1.5 font-bold">
                               <span className="text-slate-400 uppercase">Document Owner:</span>
-                              <span className="text-slate-900">{proposal.proposal?.created_by?.name || 'System'}</span>
+                              <span className="text-slate-900">{proposal?.created_by?.name || proposal?.proposal?.created_by?.name || 'System'}</span>
                            </div>
                            <div className="flex justify-between items-center text-[9px] border-b border-slate-100 pb-1.5 font-bold">
                               <span className="text-slate-400 uppercase">Assigned Executive:</span>
-                              <span className="text-slate-900">{proposal.proposal?.lead_assign?.user?.name || 'N/A'}</span>
+                              <span className="text-slate-900">{proposalData?.user?.name || proposal?.lead_assign?.user?.name || proposal?.user?.name || 'N/A'}</span>
                            </div>
                            <div className="flex justify-between items-center text-[9px] font-bold">
                               <span className="text-slate-400 uppercase">System Status:</span>
-                              <span className="text-blue-600 uppercase tracking-tighter">{proposal.proposal?.lead_assign?.user_status || 'Cold'}</span>
+                              <span className="text-blue-600 uppercase tracking-tighter">{proposalData?.user_status || proposal?.lead_assign?.user_status || proposal?.user_status || 'Cold'}</span>
                            </div>
                         </div>
                     </div>
                     
-                    {proposal.proposal?.update_history && proposal.proposal.update_history.length > 0 && (
+                    {proposal?.update_history?.length > 0 || proposal?.proposal?.update_history?.length > 0 ? (
                       <div className="space-y-3">
                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                             <MessageSquare size={10}/> Modification Logs
                          </label>
                          <div className="bg-slate-50 p-3 max-h-[100px] overflow-y-auto border border-slate-200">
-                            {proposal.proposal?.update_history.map((log: any, idx: number) => (
+                            {(proposal?.update_history || proposal?.proposal?.update_history || []).map((log: any, idx: number) => (
                                <div key={idx} className="mb-2 last:mb-0 border-l-2 border-slate-300 pl-2">
                                   <p className="text-[8px] font-black text-slate-500 uppercase leading-none">{new Date(log.updated_at).toLocaleString()}</p>
                                   <p className="text-[9px] text-slate-600 font-bold mt-1 leading-tight">Fields: {Object.keys(log.changes || {}).join(', ')}</p>
@@ -195,13 +180,13 @@ export const ProposalViewModal = ({ isOpen, onOpenChange, proposalId }: Proposal
                             ))}
                          </div>
                       </div>
-                    )}
+                    ) : null}
                 </div>
 
                 {/* Footer Actions */}
                 <div className="pt-8 flex items-center justify-between">
                    <div className="flex items-center gap-2">
-                      {proposal.proposal?.is_accepted ? (
+                      {proposalData?.proposal_is_accepted || proposal?.is_accepted || proposal?.proposal?.is_accepted ? (
                         <div className="px-4 py-1.5 bg-emerald-500 text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-emerald-100">
                            Document Approved
                         </div>
@@ -212,16 +197,16 @@ export const ProposalViewModal = ({ isOpen, onOpenChange, proposalId }: Proposal
                       )}
                    </div>
                    
-                   {proposal.proposal?.file_url && (
+                   {(proposalData?.proposal_file_url || proposal?.file_url || proposal?.proposal?.file_url) ? (
                      <a 
-                       href={proposal.proposal?.file_url} 
+                       href={proposalData?.proposal_file_url || proposal?.file_url || proposal?.proposal?.file_url} 
                        target="_blank" 
                        rel="noreferrer"
                        className="flex items-center gap-2 px-8 py-3 bg-blue-600 text-white text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all active:scale-[0.98]"
                      >
                         <Download size={14}/> Secure Terminal Download
                      </a>
-                   )}
+                   ) : null}
                 </div>
               </div>
             ) : (

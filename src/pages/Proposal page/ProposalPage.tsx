@@ -23,7 +23,7 @@ const ProposalPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [uploadModal, setUploadModal] = useState({ isOpen: false, leadId: null as number | null, proposalId: null as number | null });
   const [detailsModal, setDetailsModal] = useState({ isOpen: false, proposalId: null as number | null });
-  const [viewModal, setViewModal] = useState({ isOpen: false, proposalId: null as number | null });
+  const [viewModal, setViewModal] = useState({ isOpen: false, proposalId: null as number | null, proposalData: null as any });
 
   const fetchData = useCallback(async (page: number, silent = false) => {
     try {
@@ -307,7 +307,7 @@ const ProposalPage = () => {
                         {/* Detail View Icon (Modal) */}
                         {item.proposal_id && (
                           <button 
-                            onClick={() => setViewModal({ isOpen: true, proposalId: item.proposal_id })} 
+                            onClick={() => setViewModal({ isOpen: true, proposalId: item.proposal_id, proposalData: item })} 
                             className="p-1.5 text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-100 rounded-none transition-all" 
                             title="View Scoping Detail"
                           >
@@ -401,6 +401,7 @@ const ProposalPage = () => {
         isOpen={viewModal.isOpen}
         onOpenChange={(open) => setViewModal({ ...viewModal, isOpen: open })}
         proposalId={viewModal.proposalId}
+        proposalData={viewModal.proposalData}
       />
     </div>
   );
