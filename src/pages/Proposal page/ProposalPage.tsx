@@ -68,6 +68,7 @@ const ProposalPage = () => {
         
         return {
           ...lead,
+          proposal: existingProposal || null, // Add full proposal object
           proposal_file_url: existingProposal?.file_url || null,
           proposal_id: existingProposal?.id || null,
           proposal_is_accepted: !!existingProposal?.is_accepted,
@@ -386,6 +387,7 @@ const ProposalPage = () => {
         onOpenChange={(open) => setUploadModal({ ...uploadModal, isOpen: open })}
         leadId={uploadModal.leadId}
         proposalId={uploadModal.proposalId}
+        onSuccess={() => fetchData(currentPage, true)}
       />
 
       <ProposalDetailsModal 

@@ -380,18 +380,19 @@ export const getProposalDetail = async (id: number) => {
   return response.data;
 };
 
-export const createProposal = async (leadAssignId: number, file: File) => {
+export const createProposal = async (leadAssignId: number, file: File, onUploadProgress?: (progressEvent: any) => void) => {
   const formData = new FormData();
   formData.append('lead_assign_id', leadAssignId.toString());
   formData.append('file', file);
   
   const response = await apiClient.post(ENDPOINTS.PROPOSALS.BASE, formData, { // cite: 13, 14
-    headers: { 'Content-Type': 'multipart/form-data' }
+    headers: { 'Content-Type': 'multipart/form-data' },
+    onUploadProgress
   });
   return response.data;
 };
 
-export const updateProposalFile = async (proposalId: number, file: File) => {
+export const updateProposalFile = async (proposalId: number, file: File, onUploadProgress?: (progressEvent: any) => void) => {
   const formData = new FormData();
   formData.append('file', file);
   
@@ -402,7 +403,8 @@ export const updateProposalFile = async (proposalId: number, file: File) => {
     },
     params: {
       _method: 'PUT' 
-    }
+    },
+    onUploadProgress
   });
   return response.data;
 };

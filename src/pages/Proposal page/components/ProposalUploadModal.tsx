@@ -22,29 +22,37 @@ export const ProposalUploadModal = ({
 }: ProposalUploadModalProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const navigate = useNavigate();
 
   const handleUpload = async () => {
     if (!file) return;
     try {
       setUploading(true);
+      setUploadProgress(0);
       
+      const onUploadProgress = (progressEvent: any) => {
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        setUploadProgress(percentCompleted);
+      };
+
       if (proposalId) {
         // Logic: Use PUT if proposalId exists
-        await updateProposalFile(Number(proposalId), file);
+        await updateProposalFile(Number(proposalId), file, onUploadProgress);
       } else {
         // Logic: Use POST for new uploads
-        await createProposal(Number(leadId), file);
+        await createProposal(Number(leadId), file, onUploadProgress);
       }
 
-      // Navigate to proposal page to refresh and show updated data
-      navigate('/proposals');
+      // Close modal and refresh data
+      onOpenChange(false);
+      if (onSuccess) onSuccess();
     } catch (error: any) {
       console.error('Upload error:', error);
       const errorMessage = error?.response?.data?.message || error?.message || 'Failed to save proposal. Please try again.';
       alert(errorMessage);
-    } finally {
       setUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -131,7 +139,7 @@ export const ProposalUploadModal = ({
               {uploading ? (
                 <div className="flex items-center gap-2">
                   <Loader2 className="animate-spin" size={14} /> 
-                  Transferring...
+                  Uploading... {uploadProgress}%
                 </div>
               ) : proposalId ? 'Confirm Update' : 'Initialize Proposal'}
             </Button>
