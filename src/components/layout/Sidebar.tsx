@@ -51,12 +51,25 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
   // Dynamically resolve menu based on department
   const activeMenu = getMenuByDepartment(roleName || 'staff', group || undefined);
 
+  // Filter menu and submenus based on permissions
   const filteredMenu = activeMenu
     .filter(item => hasMenuAccess(userPermissions, item.requiredPermissions))
     .map(item => ({
       ...item,
       submenu: item.submenu?.filter(sub => hasMenuAccess(userPermissions, sub.requiredPermissions))
-    }));
+    }))
+    // Robustness: Hide parent menu items if they should have submenus but all submenus were filtered out
+    // and they don't have a direct path to navigate to.
+    .filter(item => {
+      const hasDefinedSubmenu = item.submenu !== undefined;
+      const hasActiveSubmenu = hasDefinedSubmenu && (item.submenu?.length || 0) > 0;
+      
+      // If it should have submenus but they are all filtered out, and the parent has no path
+      if (hasDefinedSubmenu && !hasActiveSubmenu && (!item.path || item.path === '')) {
+        return false;
+      }
+      return true;
+    });
 
   const toggleExpand = (title: string) => {
     setExpandedMenu(expandedMenu === title ? null : title);

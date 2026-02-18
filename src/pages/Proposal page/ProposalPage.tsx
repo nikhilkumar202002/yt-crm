@@ -1,13 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   FileText, Phone, Mail, User, Settings2,
-  UploadCloud, Loader2, ChevronLeft, ChevronRight, Clock, Flame
+  UploadCloud, Loader2, ChevronLeft, ChevronRight, Clock, Flame, 
+  Layout, Image as ImageIcon, Video as VideoIcon, FileSpreadsheet
 } from 'lucide-react';
 import { useAppSelector } from '../../store/store';
 import { getAssignedLeads, getProposals, acceptProposal } from '../../api/services/microService';
 import { ProposalUploadModal } from './components/ProposalUploadModal';
 import { ProposalDetailsModal } from './components/ProposalDetailsModal';
 import { Button } from '../../components/common/Button';
+import { StatCard } from '../../components/common/StatCard';
 
 const ProposalPage = () => {
   const { roleName } = useAppSelector((state) => state.auth);
@@ -89,6 +91,17 @@ const ProposalPage = () => {
     fetchData(currentPage);
   }, [currentPage, fetchData]);
 
+  const stats = useMemo(() => ({
+    creatives: leads.reduce((sum, l) => sum + (Number(l.creatives_nos) || 0), 0),
+    videos: leads.reduce((sum, l) => sum + (Number(l.videos_nos) || 0), 0),
+    proposals: leads.filter(l => l.proposal_id).length,
+    value: leads.reduce((sum, l) => {
+      const amt = Number(l.amount) || 0;
+      const gst = Number(l.gst_percentage) || 18;
+      return sum + (amt + (amt * gst / 100));
+    }, 0)
+  }), [leads]);
+
   const handleAcceptTrigger = async (proposalId: number) => {
     setLeads(prevLeads => 
       prevLeads.map(lead => 
@@ -118,6 +131,35 @@ const ProposalPage = () => {
             High Priority Documentation Pipeline
           </p>
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard 
+          label="Proposed Creatives" 
+          value={stats.creatives} 
+          icon={<ImageIcon size={14} className="text-blue-600" />} 
+          colorClass="border-blue-500" 
+        />
+        <StatCard 
+          label="Proposed Videos" 
+          value={stats.videos} 
+          icon={<VideoIcon size={14} className="text-indigo-600" />} 
+          colorClass="border-indigo-500" 
+        />
+        <StatCard 
+          label="Attached Proposals" 
+          value={stats.proposals} 
+          icon={<FileSpreadsheet size={14} className="text-emerald-600" />} 
+          colorClass="border-emerald-500" 
+        />
+        {isFinancePrivileged && (
+          <StatCard 
+            label="Pipeline Value" 
+            value={`₹${stats.value.toLocaleString()}`} 
+            icon={<Clock size={14} className="text-orange-600" />} 
+            colorClass="border-orange-500" 
+          />
+        )}
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200/60 overflow-hidden relative">

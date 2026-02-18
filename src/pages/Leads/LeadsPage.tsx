@@ -7,6 +7,7 @@ import { Button } from '../../components/common/Button';
 import { LeadTableRow } from './LeadTableRow';
 import { PipelineMetric } from './PipelineMetric';
 import { FileImportModal } from './FileImportModal';
+import { LeadStatusBadge } from './LeadStatusBadge';
 import { AssignLeadsModal } from './components/AssignLeadsModal';
 import { LeadDescriptionModal } from './components/LeadDescriptionModal';
 import { getLeads, uploadLeads, deleteLead, getAssignedLeads, updateLeadStatus, updateLeadComment, getServices, getSubServices, updateLeadServices } from '../../api/services/microService';
@@ -85,7 +86,7 @@ const LeadsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [isAllLeadsView, user?.id]);
+  }, [isAllLeadsView, isAdmin, user?.id]);
 
   useEffect(() => {
     fetchData(currentPage, selectedService);
@@ -155,131 +156,154 @@ const LeadsPage = () => {
   };
 
   return (
-    <div className="space-y-5 animate-in fade-in duration-500 font-sans">
+    <div className="p-4 space-y-4 animate-in fade-in duration-500 font-sans bg-slate-50/50 min-h-screen">
       {/* 1. Header Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-none">
+          <h1 className="text-xl font-bold text-slate-800 tracking-tight leading-tight">
             {isAllLeadsView ? 'Leads & Pipeline' : 'Assigned Leads'}
           </h1>
-          <p className="text-[10px] text-slate-400 font-bold mt-1.5 uppercase tracking-widest leading-none">
-            {isAllLeadsView ? 'Master Lead Directory' : 'My Assigned Leads'}
+          <p className="text-[12px] text-slate-500 font-medium mt-0.5">
+            {isAllLeadsView ? 'Manage and track all incoming lead records.' : 'Tasks and enquiries currently assigned to you.'}
           </p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           {isAllLeadsView && <FileImportModal onImport={handleImport} isLoading={isUploading} />}
           {isAllLeadsView && (
-            <Button variant="secondary" size="sm" className="h-8 border-slate-200 text-[10px] font-bold px-3">
-              <Download size={12} /> EXPORT
+            <Button variant="secondary" size="sm" className="border-slate-200 text-[10px] font-bold px-3 py-1.5 hover:bg-slate-100 transition-colors">
+              <Download size={12} className="mr-1.5" /> EXPORT
             </Button>
           )}
           {isAllLeadsView && (
-            <Button variant="primary" size="sm" className="h-8 text-[10px] font-bold shadow-sm px-3">
-              <UserPlus size={12} /> ADD LEAD
+            <Button variant="primary" size="sm" className="text-[10px] font-bold shadow-md px-3 py-1.5 bg-blue-600 hover:bg-blue-700">
+              <UserPlus size={12} className="mr-1.5" /> ADD LEAD
             </Button>
           )}
         </div>
       </div>
 
-      {/* 2. Key Metrics - High Density */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <PipelineMetric label="Sync Status" value="Active" variant="blue" icon={<Clock size={14} />} />
-        <PipelineMetric 
-          label="Total Records" 
-          value={pagination?.total?.toString() || leads.length.toString()} 
-          variant="white" 
-          icon={<CheckCircle2 size={14} className="text-green-500" />} 
-        />
-        <PipelineMetric label="Health Index" value="99.4%" variant="white" icon={<AlertCircle size={14} className="text-blue-500" />} />
+      {/* 2. Key Metrics - Improved design */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="bg-white p-3 rounded-lg shadow-sm border border-slate-200/60 flex items-center justify-between group hover:border-blue-200 transition-all">
+          <div>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Status</p>
+            <p className="text-base font-bold text-slate-800">Connection Active</p>
+          </div>
+          <div className="h-8 w-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-all">
+            <Clock size={16} />
+          </div>
+        </div>
+        
+        <div className="bg-white p-3 rounded-lg shadow-sm border border-slate-200/60 flex items-center justify-between group hover:border-emerald-200 transition-all">
+          <div>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Records</p>
+            <p className="text-base font-bold text-slate-800">{pagination?.total || leads.length}</p>
+          </div>
+          <div className="h-8 w-8 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-500 group-hover:bg-emerald-600 group-hover:text-white transition-all">
+            <CheckCircle2 size={16} />
+          </div>
+        </div>
+
+        <div className="bg-white p-3 rounded-lg shadow-sm border border-slate-200/60 flex items-center justify-between group hover:border-indigo-200 transition-all">
+          <div>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Sync Health</p>
+            <p className="text-base font-bold text-slate-800">99.4%</p>
+          </div>
+          <div className="h-8 w-8 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-500 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+            <AlertCircle size={16} />
+          </div>
+        </div>
       </div>
 
-      {/* 3. Filter Bar */}
-      <div className="bg-white p-2 rounded-lg shadow-sm border border-slate-200/60 flex gap-2 items-center">
-        <div className="relative flex-1 group">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={13} />
+      {/* 3. Filter Bar - Better UI */}
+      <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-200/60 flex flex-wrap lg:flex-nowrap gap-3 items-center">
+        <div className="relative flex-1 min-w-[200px] group">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={14} />
           <input 
-            className="w-full pl-9 pr-4 py-1.5 bg-slate-50 border border-transparent rounded-md text-[11px] font-medium outline-none focus:bg-white focus:border-blue-500 transition-all placeholder:text-slate-400" 
-            placeholder="Search leads..." 
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-lg text-[13px] font-medium outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all placeholder:text-slate-400" 
+            placeholder="Search leads by name, email or platform..." 
           />
         </div>
         
-        {isAllLeadsView && selectedLeads.length > 0 && canAssignLeads && (
-          <Button 
-            variant="primary" 
-            size="sm" 
-            className="h-8 text-[10px] bg-indigo-600 hover:bg-indigo-700 animate-in zoom-in-95 font-bold"
-            onClick={() => setIsAssignModalOpen(true)}
-          >
-            <UserCheck size={12} /> ASSIGN ({selectedLeads.length})
+        <div className="flex items-center gap-2 w-full lg:w-auto">
+          {isAllLeadsView && selectedLeads.length > 0 && canAssignLeads && (
+            <Button 
+              variant="primary" 
+              size="sm" 
+              className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-[10px] font-bold rounded-lg shadow-lg shadow-indigo-200 animate-in slide-in-from-right-4"
+              onClick={() => setIsAssignModalOpen(true)}
+            >
+              <UserCheck size={12} className="mr-1.5" /> ASSIGN ({selectedLeads.length})
+            </Button>
+          )}
+          
+          {!isAllLeadsView && (
+            <select
+              value={selectedService}
+              onChange={(e) => setSelectedService(e.target.value)}
+              className="min-w-[140px] pl-3 pr-8 py-2 bg-slate-50 border border-slate-100 rounded-lg text-[11px] font-bold text-slate-600 outline-none focus:bg-white focus:border-blue-500 transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236B7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.1rem_1.1rem] bg-[right_0.4rem_center] bg-no-repeat"
+            >
+              <option value="">Filter by Service</option>
+              {availableServices.map((service) => (
+                <option key={service.id} value={service.id}>{service.name}</option>
+              ))}
+            </select>
+          )}
+          
+          <Button variant="secondary" size="sm" className="border-slate-200 bg-white text-[10px] font-bold px-3 py-2 rounded-lg">
+            <Filter size={12} className="mr-1.5" /> FILTERS
           </Button>
-        )}
-        
-        {!isAllLeadsView && (
-          <select
-            value={selectedService}
-            onChange={(e) => setSelectedService(e.target.value)}
-            className="px-3 py-1.5 bg-slate-50 border border-transparent rounded-md text-[11px] font-medium outline-none focus:bg-white focus:border-blue-500 transition-all"
-          >
-            <option value="">All Services</option>
-            {availableServices.map((service) => (
-              <option key={service.id} value={service.id}>{service.name}</option>
-            ))}
-          </select>
-        )}
-        
-        <Button variant="secondary" size="sm" className="h-8 border-slate-200 text-[10px] font-bold px-3">
-          <Filter size={12} /> FILTERS
-        </Button>
+        </div>
       </div>
 
-      {/* 4. Table Section - Removed min-h-[400px] to allow growth */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200/60 overflow-hidden relative">
+      {/* 4. Table Section - Improved hierarchy and spacing */}
+      <div className="bg-white rounded-2xl shadow-xl shadow-slate-100 border border-slate-200/50 overflow-hidden relative">
         {loading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[1px] z-10 py-20">
-            <Loader2 className="animate-spin text-blue-600 mb-2" size={20} />
-            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em]">Updating Registry...</p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/70 backdrop-blur-[2px] z-20 transition-all">
+            <Loader2 className="animate-spin text-blue-600" size={24} />
+            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-[0.2em] mt-4">Refreshing</p>
           </div>
         )}
 
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-slate-50/50 border-b border-slate-100">
-              <tr className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+            <thead>
+              <tr className="bg-slate-50/80 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
                 {isAllLeadsView ? (
                   <>
-                    <th className="px-5 py-3 w-10 text-center">
+                    <th className="px-5 py-4 w-12 text-center">
                       <input 
                         type="checkbox" 
-                        className="rounded border-slate-300 text-blue-600 focus:ring-0 focus:ring-offset-0 transition-all cursor-pointer" 
+                        className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500/20 transition-all cursor-pointer" 
                         checked={selectedLeads.length === leads.length && leads.length > 0}
                         onChange={toggleSelectAll}
                       />
                     </th>
-                    <th className="px-5 py-3">Lead Identity</th>
-                    <th className="px-5 py-3">Engagement</th>
-                    <th className="px-5 py-3">Preferences</th>
-                    <th className="px-5 py-3">Origin</th>
-                    <th className="px-5 py-3">Campaign Data</th>
-                    <th className="px-5 py-3 text-right">Actions</th>
+                    <th className="px-5 py-4">Lead Profile</th>
+                    <th className="px-5 py-4">Contact</th>
+                    <th className="px-5 py-4">Category</th>
+                    <th className="px-5 py-4">Platform</th>
+                    <th className="px-5 py-4">Campaign</th>
+                    <th className="px-5 py-4 text-right">Actions</th>
                   </>
                 ) : (
                   <>
-                    <th className="px-5 py-3 w-12 text-center">#</th>
-                    <th className="px-5 py-3">Lead Identity</th>
-                    {isAdminOrHead && <th className="px-5 py-3">Assignee</th>}
-                    <th className="px-5 py-3 text-center">Status</th>
-                    <th className="px-5 py-3 text-center">Approval</th>
-                    <th className="px-5 py-3">Services</th>
-                    <th className="px-5 py-3">Notes</th>
-                    <th className="px-5 py-3 text-right">Actions</th>
+                    <th className="px-5 py-4 w-14 text-center">#</th>
+                    <th className="px-5 py-4">Enquiry Detail</th>
+                    {isAdminOrHead && <th className="px-5 py-4">Assignee</th>}
+                    <th className="px-5 py-4 text-center">Priority</th>
+                    <th className="px-5 py-4 text-center">Work Status</th>
+                    <th className="px-5 py-4">Required Services</th>
+                    <th className="px-5 py-4">Notes</th>
+                    <th className="px-5 py-4 text-right">Actions</th>
                   </>
                 )}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-slate-50/50">
               {isAllLeadsView ? (
                 leads.length > 0 ? (
-                  leads.map(lead => (
+                  leads.map((lead, idx) => (
                     <LeadTableRow 
                       key={lead.id} 
                       lead={lead} 
@@ -290,8 +314,8 @@ const LeadsPage = () => {
                   ))
                 ) : !loading && (
                   <tr>
-                    <td colSpan={7} className="px-5 py-12 text-center text-[11px] text-slate-400 italic font-medium">
-                      No lead records found in current synchronization.
+                    <td colSpan={7} className="px-5 py-20 text-center">
+                      <p className="text-[13px] font-semibold text-slate-400">No lead records found.</p>
                     </td>
                   </tr>
                 )
@@ -304,99 +328,84 @@ const LeadsPage = () => {
                     const isLocked = !!item.is_approved;
 
                     return (
-                      <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
-                        <td className="px-5 py-3 text-center text-[10px] font-medium text-slate-400">{slNo}</td>
-                        <td className="px-5 py-3">
-                          <p className="text-[11px] font-bold text-slate-900 leading-none truncate max-w-[150px]">
+                      <tr key={item.id} className="hover:bg-slate-50/30 transition-all group">
+                        <td className="px-5 py-4 text-center text-[10px] font-bold text-slate-400">{slNo}</td>
+                        <td className="px-5 py-4">
+                          <p className="text-[13px] font-bold text-slate-800 tracking-tight leading-none mb-1.5">
                             {leadData?.full_name || 'N/A'}
                           </p>
-                          <div className="flex flex-col gap-0.5 mt-1.5 text-[9px] text-slate-400 font-medium">
-                            <span className="flex items-center gap-1">
-                              <Mail size={10} className="text-slate-300"/> 
-                              {leadData?.email || 'N/A'}
-                            </span>
-                            <span className="flex items-center gap-1 font-bold text-slate-500">
-                              <Phone size={10} className="text-blue-400/60"/> 
-                              {phoneNumber}
-                            </span>
+                          <div className="flex items-center gap-2 text-[10px] text-slate-500 font-semibold">
+                            <span className="flex items-center gap-1"><Mail size={10} className="text-slate-300"/> {leadData?.email || 'N/A'}</span>
+                            <span className="h-0.5 w-0.5 bg-slate-200 rounded-full"></span>
+                            <span className="flex items-center gap-1 text-blue-600/70"><Phone size={10} className="text-blue-300"/> {phoneNumber}</span>
                           </div>
                         </td>
 
                         {isAdminOrHead && (
-                          <td className="px-5 py-3">
+                          <td className="px-5 py-4">
                             <div className="flex items-center gap-2">
-                              <div className="h-6 w-6 rounded bg-slate-100 flex items-center justify-center text-[10px] text-slate-600 font-bold border border-slate-200 uppercase">
+                              <div className="h-6 w-6 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-[10px] font-bold border border-blue-100 uppercase">
                                 {item.user?.name?.charAt(0)}
                               </div>
-                              <span className="text-[10px] font-bold text-slate-600">{item.user?.name}</span>
+                              <span className="text-[11px] font-bold text-slate-600">{item.user?.name}</span>
                             </div>
                           </td>
                         )}
 
-                        <td className="px-5 py-3 text-center">
+                        <td className="px-5 py-4 text-center">
                           {isAdminOrHead || isLocked ? (
-                            <span className={`px-2 py-0.5 rounded text-[9px] font-bold border uppercase tracking-tighter ${
-                              item.user_status?.toLowerCase() === 'hot' 
-                                ? 'bg-red-50 text-red-600 border-red-100' 
-                                : item.user_status?.toLowerCase() === 'warm'
-                                ? 'bg-orange-50 text-orange-600 border-orange-100'
-                                : item.user_status?.toLowerCase() === 'cold'
-                                ? 'bg-blue-50 text-blue-600 border-blue-100'
-                                : 'bg-slate-50 text-slate-500 border-slate-200'
-                            }`}>
-                              {item.user_status || 'New'}
-                            </span>
+                            <LeadStatusBadge status={item.user_status} />
                           ) : (
                             <select 
                               value={item.user_status?.toLowerCase() || ''}
                               onChange={(e) => handleStatusChange(item.id, e.target.value)}
-                              className={`text-[10px] font-bold py-0.5 px-1 rounded border outline-none uppercase cursor-pointer ${
+                              className={`text-[10px] font-bold py-1 px-2.5 rounded-lg border outline-none uppercase cursor-pointer transition-all ${
                                 item.user_status?.toLowerCase() === 'hot' 
-                                  ? 'bg-red-50 text-red-600 border-red-100' 
+                                  ? 'bg-rose-50 text-rose-600 border-rose-100' 
                                   : item.user_status?.toLowerCase() === 'warm'
-                                  ? 'bg-orange-50 text-orange-600 border-orange-100'
+                                  ? 'bg-amber-50 text-amber-600 border-amber-100'
                                   : item.user_status?.toLowerCase() === 'cold'
                                   ? 'bg-blue-50 text-blue-600 border-blue-100'
-                                  : 'bg-white text-slate-700 border-slate-200 focus:border-blue-500'
+                                  : 'bg-white text-slate-600 border-slate-200 hover:border-blue-400'
                               }`}
                             >
-                              <option value="">Set</option>
-                              <option value="hot">Hot</option>
-                              <option value="warm">Warm</option>
-                              <option value="cold">Cold</option>
+                              <option value="">Status</option>
+                              <option value="hot">🔥 Hot</option>
+                              <option value="warm">⚡ Warm</option>
+                              <option value="cold">❄️ Cold</option>
                             </select>
                           )}
                         </td>
 
-                        <td className="px-5 py-3 text-center">
+                        <td className="px-5 py-4 text-center">
                           {item.is_approved ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 text-green-600 text-[9px] font-bold border border-green-100">
-                              <CheckCircle2 size={10}/> Approved
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-600 text-[9px] font-bold border border-emerald-100">
+                              <CheckCircle2 size={10}/> APPROVED
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-50 text-slate-400 rounded-full text-[9px] font-bold border border-slate-100">
-                              <Clock size={10}/> Pending
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-slate-50 text-slate-400 rounded-lg text-[9px] font-bold border border-slate-100">
+                              <Clock size={10}/> PENDING
                             </span>
                           )}
                         </td>
 
-                        <td className="px-5 py-3">
-                          <div className="flex flex-wrap gap-1 max-w-[160px]">
+                        <td className="px-5 py-4">
+                          <div className="flex flex-wrap gap-1 max-w-[180px]">
                             {item.services?.map((s: any) => (
-                              <span key={s.id} className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100 text-[8px] font-bold uppercase tracking-tighter">
+                              <span key={s.id} className="px-2 py-0.5 rounded-md bg-indigo-50/50 text-indigo-600 border border-indigo-100/50 text-[9px] font-bold uppercase">
                                 {s.name}
                               </span>
                             ))}
                           </div>
                         </td>
 
-                        <td className="px-5 py-3">
-                          <p className="text-[10px] text-slate-500 line-clamp-1 italic max-w-[140px] font-medium">
+                        <td className="px-5 py-4">
+                          <p className="text-[11px] text-slate-500 line-clamp-1 italic max-w-[150px] font-medium leading-tight">
                             {item.user_comment ? `"${item.user_comment}"` : '—'}
                           </p>
                         </td>
 
-                        <td className="px-5 py-3 text-right">
+                        <td className="px-5 py-4 text-right">
                           <button 
                             onClick={() => setCommentModal({ 
                               isOpen: true, 
@@ -407,46 +416,50 @@ const LeadsPage = () => {
                               subServiceIds: item.sub_services?.map((s: any) => s.id) || [],
                               otherService: item.other_service || ''
                             })}
-                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all active:scale-90"
+                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all active:scale-95"
                           >
-                            <MessageSquare size={15} />
+                            <MessageSquare size={14} />
                           </button>
                         </td>
                       </tr>
                     );
                   })
                 ) : !loading && (
-                  <tr><td colSpan={isAdminOrHead ? 8 : 7} className="px-5 py-12 text-center text-[11px] text-slate-400 italic font-medium">No leads assigned yet.</td></tr>
+                  <tr><td colSpan={isAdminOrHead ? 8 : 7} className="px-5 py-20 text-center text-[12px] text-slate-400 font-semibold">No assigned leads.</td></tr>
                 )
               )}
             </tbody>
           </table>
         </div>
 
-        {/* Pagination UI - High Density */}
+        {/* 5. Pagination - Redesigned */}
         {!loading && pagination && pagination.last_page > 1 && (
-          <div className="px-5 py-2.5 border-t border-slate-50 flex items-center justify-between bg-slate-50/30">
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-              Showing {pagination.from}-{pagination.to} of {pagination.total}
-            </p>
-            <div className="flex gap-1.5">
+          <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-white">
+            <div className="flex flex-col">
+              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none mb-1">Navigation</p>
+              <p className="text-[11px] font-bold text-slate-600">
+                <span className="text-blue-600">{pagination.from}-{pagination.to}</span> / {pagination.total}
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-1.5">
               <button
                 disabled={!pagination.prev_page_url}
                 onClick={() => setCurrentPage(prev => prev - 1)}
-                className="h-7 w-7 flex items-center justify-center rounded border border-slate-200 text-slate-400 hover:bg-white disabled:opacity-30 transition-all active:scale-95"
+                className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 transition-all"
               >
                 <ChevronLeft size={14} />
               </button>
               
-              <div className="flex gap-1">
+              <div className="flex items-center gap-1 px-1">
                 {pagination.links.filter((l: any) => !isNaN(Number(l.label))).map((link: any) => (
                   <button
                     key={link.label}
                     onClick={() => setCurrentPage(Number(link.label))}
-                    className={`h-7 px-2.5 rounded text-[10px] font-bold transition-all ${
+                    className={`h-8 min-w-[32px] px-1.5 rounded-lg text-[10px] font-bold transition-all ${
                       link.active 
-                        ? 'bg-blue-600 text-white shadow-sm' 
-                        : 'text-slate-500 hover:bg-white border border-transparent hover:border-slate-200'
+                        ? 'bg-blue-600 text-white shadow-md shadow-blue-100' 
+                        : 'text-slate-500 hover:bg-slate-50'
                     }`}
                   >
                     {link.label}
@@ -457,7 +470,7 @@ const LeadsPage = () => {
               <button
                 disabled={!pagination.next_page_url}
                 onClick={() => setCurrentPage(prev => prev + 1)}
-                className="h-7 w-7 flex items-center justify-center rounded border border-slate-200 text-slate-400 hover:bg-white disabled:opacity-30 transition-all active:scale-95"
+                className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 transition-all"
               >
                 <ChevronRight size={14} />
               </button>

@@ -14,7 +14,7 @@ export const ADMIN_MENU: MenuItem[] = [
       {
         title: 'All Leads',
         path: '/leads',
-        requiredPermissions: ['assignLeads']
+        requiredPermissions: ['viewAllLeads']
       },
       {
         title: 'Assigned Leads',
@@ -31,12 +31,12 @@ export const ADMIN_MENU: MenuItem[] = [
   {
     title: 'Onboarded Clients',
     path: '/clients',
-    requiredPermissions: ['viewAllLeads']
+    requiredPermissions: ['viewAllLeads', 'viewAssignedLeads']
   },
   {
     title: 'Calendar',
     path: '/calendar',
-    requiredPermissions: ['viewAllLeads']
+    requiredPermissions: ['viewCalendar']
   },
   {
     title: 'Worksheet',

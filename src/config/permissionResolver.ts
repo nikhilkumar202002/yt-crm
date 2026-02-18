@@ -21,10 +21,10 @@ const ROLE_MAPPING: Record<string, keyof typeof GLOBAL_ROLES> = {
 };
 
 export function resolvePermissions(user: {
-  role: string;
-  position: string;
-  group?: string;
-  designation_name?: string;
+  role: string | null | undefined;
+  position: string | null | undefined;
+  group?: string | null | undefined;
+  designation_name?: string | null | undefined;
   permissions?: {
     viewAllLeads: boolean;
     viewAssignedLeads: boolean;
@@ -32,95 +32,105 @@ export function resolvePermissions(user: {
     uploadLeads: boolean;
   };
 }) {
-  // Map the role name to internal permission key
-  const mappedRole = ROLE_MAPPING[user.role] || ROLE_MAPPING[user.role.toLowerCase()] || 'staff';
+  const roleStr = (user.role || 'staff').toLowerCase();
+  const mappedRole = ROLE_MAPPING[roleStr] || 'staff';
 
-  // Get position permissions with case-insensitive matching
-  const positionKey = (user.designation_name || user.position || '').toLowerCase();
+  const positionKey = (user.designation_name || user.position || '').toLowerCase().trim();
   const positionPermissions = (POSITION_PERMISSIONS as any)[positionKey] || {};
   const groupLower = (user.group || '').toLowerCase().trim();
 
-  // Start with base permissions from role + position
-  let permissions = { ...GLOBAL_ROLES[mappedRole], ...positionPermissions };
+  // Start with merged base permissions
+  let permissions = { 
+    ...GLOBAL_ROLES[mappedRole as keyof typeof GLOBAL_ROLES], 
+    ...positionPermissions 
+  };
 
-  // If backend provided permissions, merge them into the starting point
+  // If backend provided custom permissions, merge them
   if (user.permissions) {
-    permissions = {
-      ...permissions,
-      canViewAllLeads: user.permissions.viewAllLeads,
-      canViewAssignedLeads: user.permissions.viewAssignedLeads,
-      canAssignLeads: user.permissions.assignLeads,
-      canUploadLeads: user.permissions.uploadLeads,
-    };
+    if (user.permissions.viewAllLeads !== undefined) permissions.canViewAllLeads = user.permissions.viewAllLeads;
+    if (user.permissions.viewAssignedLeads !== undefined) permissions.canViewAssignedLeads = user.permissions.viewAssignedLeads;
+    if (user.permissions.assignLeads !== undefined) permissions.canAssignLeads = user.permissions.assignLeads;
+    if (user.permissions.uploadLeads !== undefined) permissions.canUploadLeads = user.permissions.uploadLeads;
   }
 
-  // For admin role, position permissions should NOT override role permissions
+  // 1. Admin bypass - always return full control
   if (mappedRole === 'admin') {
-    const adminPerms = GLOBAL_ROLES[mappedRole];
     return {
-      ...adminPerms,
-      viewAllLeads: adminPerms.canViewAllLeads || true,
-      viewAssignedLeads: adminPerms.canViewAssignedLeads || true,
-      assignLeads: adminPerms.canAssignLeads || true,
-      uploadLeads: adminPerms.canUploadLeads || true,
+      ...GLOBAL_ROLES.admin,
+      viewAllLeads: true,
+      viewAssignedLeads: true,
+      assignLeads: true,
+      uploadLeads: true,
+      canViewAllLeads: true,
+      canViewAssignedLeads: true,
+      canAssignLeads: true,
+      canUploadLeads: true,
     };
   }
 
-  // Apply group-based restrictions for non-admin users
-  if ((groupLower === 'content creator' || groupLower === 'content') && 
-      (user.position === '1' || user.position === 'member' || user.position === 'employee' || 
-       positionKey === 'member' || positionKey === 'employee' ||
-       user.designation_name?.toLowerCase() === 'member' || user.designation_name?.toLowerCase() === 'employee')) {
-    // Content Creator group with Member/employee position should have very limited access
-    // Only Dashboard and Worksheet
-    permissions.canViewAll = false;
-    permissions.canAssignAny = false;
-    permissions.canAssignGroup = true; // Allow worksheet access
-    permissions.canManageGroups = false;
-    permissions.canViewAllLeads = false;
-    permissions.canViewAssignedLeads = false;
-    permissions.canAssignLeads = false;
-    permissions.canReceiveLeadIdsForAssignment = false;
-    permissions.canViewCalendar = false;
-  } else if (groupLower === 'content creator' || groupLower === 'content') {
-    // Other Content Creator positions have normal access
-    permissions.canViewAllLeads = false;
-    permissions.canViewAssignedLeads = false;
-  }
+  // 2. Department-specific logic (DM, Content, etc.)
+  const isDM = groupLower.includes('digital marketing') || groupLower === 'dm';
+  const isContent = groupLower.includes('content');
+  const isGraphics = groupLower.includes('graphics') || groupLower.includes('creative designers');
+  
+  // Position "Head" check (supports both IDs like '6' and name like "head")
+  const isHead = positionKey === 'head' || positionKey === '6' || positionKey.includes('head');
 
-  // Ensure Digital Marketing and Content Creator have worksheet access
-  if (groupLower.includes('digital marketing') || groupLower === 'dm' || groupLower.includes('content')) {
-    permissions.canAssignGroup = true;
-  }
-
-  // Handle Proposal menu access for Digital Marketing Department
-  // Only the "Head" position gets access to the Proposal menu
-  if (groupLower.includes('digital marketing') || groupLower === 'dm') {
-    if (positionKey === 'head' || positionKey === '6' || positionKey.includes('head')) {
+  if (isDM || isContent) {
+    if (isHead) {
+      // DM Head: Only Lead Assignment (All Leads) - Per user requirement
+      permissions.canViewAllLeads = true;
+      permissions.canAssignLeads = true;
       permissions.canUploadLeads = true;
+      permissions.canViewAssignedLeads = false; // Hide "My Assigned Leads"
+      permissions.canAssignGroup = true; // Worksheet access
+      permissions.canViewCalendar = true; // Added for robustness
     } else {
-      // Members/Employees do not get proposal access
+      // DM Member: Dashboard, All Leads, Onboarded Client, Calendar, Worksheet
+      permissions.canViewAllLeads = true; 
+      permissions.canAssignLeads = false;  
+      permissions.canViewAssignedLeads = false; // Note: user omitted this from the list
       permissions.canUploadLeads = false;
-      // Also hide "Assigned Leads" submenu for members
-      permissions.canViewAssignedLeads = false;
+      permissions.canAssignGroup = true; // Worksheet access
+      permissions.canViewCalendar = true; // Calendar access
     }
   }
 
-  // Restrict Graphics Department and Creative Designers from seeing Leads and Clients
-  if (groupLower.includes('graphics') || groupLower.includes('creative designers')) {
+  if (isGraphics) {
+    // Graphics: Restricted to Worksheet/Calendar
     permissions.canViewAllLeads = false;
     permissions.canViewAssignedLeads = false;
+    permissions.canAssignLeads = false;
     permissions.canAssignGroup = true;
   }
 
-  // For other roles, position permissions can enhance role permissions
-  
-  // Map old permission keys to new ones
-  return {
+  // 3. Fallback for generic positions (ensuring Head vs Member separation)
+  if (isHead) {
+     permissions.canViewAllLeads = true;
+     permissions.canAssignLeads = true;
+     permissions.canViewAssignedLeads = true;
+  }
+
+  // Map to unified permission object (handling all naming schemas used in menu/sidebar)
+  const final = {
     ...permissions,
-    viewAllLeads: permissions.canViewAllLeads || false,
-    viewAssignedLeads: permissions.canViewAssignedLeads || false,
-    assignLeads: permissions.canAssignLeads || false,
-    uploadLeads: permissions.canUploadLeads || false,
+    // Format 1: CamelCase (used in menu.ts/sidebar)
+    viewAllLeads: permissions.canViewAllLeads ?? false,
+    viewAssignedLeads: permissions.canViewAssignedLeads ?? false,
+    viewCalendar: permissions.canViewCalendar ?? false, // Add this
+    assignLeads: permissions.canAssignLeads ?? false,
+    uploadLeads: permissions.canUploadLeads ?? false,
+    
+    // Format 2: canCamelCase (used in some components)
+    canViewAllLeads: permissions.canViewAllLeads ?? false,
+    canViewAssignedLeads: permissions.canViewAssignedLeads ?? false,
+    canViewCalendar: permissions.canViewCalendar ?? false, // Add this
+    canAssignLeads: permissions.canAssignLeads ?? false,
+    canUploadLeads: permissions.canUploadLeads ?? false,
+    
+    // Worksheet specific
+    canAssignGroup: permissions.canAssignGroup ?? false,
   };
+
+  return final;
 }

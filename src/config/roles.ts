@@ -8,7 +8,8 @@ export const GLOBAL_ROLES = {
     canViewAssignedLeads: true,
     canAssignLeads: true,
     canReceiveLeadIdsForAssignment: true,
-    canViewCalendar: true
+    canViewCalendar: true,
+    canUploadLeads: true
   },
 
   manager: {
@@ -25,11 +26,12 @@ export const GLOBAL_ROLES = {
 
   staff: {
     canViewAll: false,
-    canAssignGroup: false,
-    canViewAllLeads: true,
+    canAssignGroup: true, // Staff should see their worksheet by default
+    canViewAllLeads: false, 
     canViewAssignedLeads: true,
-    canAssignLeads: true,
+    canAssignLeads: false, 
     canReceiveLeadIdsForAssignment: false,
-    canViewCalendar: true
+    canViewCalendar: true,
+    canUploadLeads: false
   }
 };
