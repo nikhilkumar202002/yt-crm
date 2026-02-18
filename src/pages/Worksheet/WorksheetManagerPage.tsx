@@ -81,7 +81,6 @@ const WorksheetManagerPage = () => {
   const { user } = useAppSelector((state) => state.auth);
   const [searchTerm, setSearchTerm] = useState('');
   const [calendarWorks, setCalendarWorks] = useState<CalendarWork[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [currentUserPosition, setCurrentUserPosition] = useState<string>('');
@@ -105,7 +104,6 @@ const WorksheetManagerPage = () => {
   useEffect(() => {
     const fetchCalendarWorks = async () => {
       try {
-        setLoading(true);
         const response = await getCalendarWorks();
         const worksData = response.data?.data || response.data || [];
         setCalendarWorks(worksData);
@@ -113,8 +111,6 @@ const WorksheetManagerPage = () => {
       } catch (err) {
         console.error('Failed to load calendar works:', err);
         setError('Failed to load calendar works data');
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -279,7 +275,7 @@ const parseIds = (data: unknown): number[] => {
     );
   });
 
-  if (!canApprove) {
+  if (currentUserPosition && !canApprove) {
     return (
       <div className="space-y-6 animate-in fade-in duration-500 font-sans">
         <div className="flex flex-col items-center justify-center p-20 gap-3">
@@ -324,12 +320,7 @@ const parseIds = (data: unknown): number[] => {
 
       {/* Calendar Works Table */}
       <div className="bg-white rounded-none shadow-sm border border-slate-200/60 overflow-hidden relative">
-        {loading ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-20 gap-3">
-            <div className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-none" />
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-widest">Loading Works...</p>
-          </div>
-        ) : error ? (
+        {error ? (
           <div className="flex-1 flex flex-col items-center justify-center p-20 gap-3">
             <p className="text-red-600 mb-2 text-sm">{error}</p>
             <Button variant="secondary" size="sm" onClick={() => window.location.reload()}>
@@ -501,7 +492,7 @@ const parseIds = (data: unknown): number[] => {
                           </select>
                           {updatingWorkId === work.id && (
                             <div className="flex items-center gap-1 text-[9px] text-blue-600">
-                              <div className="animate-spin h-3 w-3 border border-blue-600 border-t-transparent rounded-none" />
+                              <div className="animate-spin h-3 w-3 border border-blue-600 border-t-transparent rounded-full" />
                               Updating...
                             </div>
                           )}

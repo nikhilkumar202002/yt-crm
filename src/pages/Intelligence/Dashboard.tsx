@@ -38,11 +38,10 @@ const Dashboard = () => {
     fetchUserDetails();
   }, [user?.id]);
 
-  const isAdmin = roleName?.toLowerCase() === 'admin' || 
-                  currentUserPosition.toLowerCase().includes('head') ||
-                  currentUserGroup.toLowerCase().includes('management');
+  // Strict admin detection — only users with role 'ADMIN' are master admins
+  const isAdmin = roleName?.toUpperCase() === 'ADMIN';
 
-  // Determine manager by position permissions (or name hints)
+  // Determine manager by position permissions (canApprove) or name hints
   const positionKey = currentUserPosition.toLowerCase().trim();
   const perms = POSITION_PERMISSIONS[positionKey] || POSITION_PERMISSIONS[currentUserPosition] || {};
   const isManager = !isAdmin && (perms?.canApprove === true ||
