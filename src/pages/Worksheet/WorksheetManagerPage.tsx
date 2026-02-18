@@ -4,6 +4,7 @@ import {
   Clipboard, Search,
   AlertTriangle,
   Image as ImageIcon,
+  LayoutGrid, List, Calendar as CalendarIcon, FileText, Upload,
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
 import { getCalendarWorks, updateClientApprovedStatus } from '../../api/services/microService';
@@ -81,11 +82,13 @@ const WorksheetManagerPage = () => {
   const { user } = useAppSelector((state) => state.auth);
   const [searchTerm, setSearchTerm] = useState('');
   const [calendarWorks, setCalendarWorks] = useState<CalendarWork[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [currentUserPosition, setCurrentUserPosition] = useState<string>('');
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [updatingWorkId, setUpdatingWorkId] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
 
   const [expandedRows, setExpandedRows] = useState<{ [key: number]: boolean }>({});
 
@@ -104,6 +107,7 @@ const WorksheetManagerPage = () => {
   useEffect(() => {
     const fetchCalendarWorks = async () => {
       try {
+        setLoading(true);
         const response = await getCalendarWorks();
         const worksData = response.data?.data || response.data || [];
         setCalendarWorks(worksData);
@@ -111,6 +115,8 @@ const WorksheetManagerPage = () => {
       } catch (err) {
         console.error('Failed to load calendar works:', err);
         setError('Failed to load calendar works data');
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -306,28 +312,51 @@ const parseIds = (data: unknown): number[] => {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search by client, content, notes, or tracking number..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm font-normal"
-          />
+        <div className="relative flex-1 flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by client, content, or notes..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm font-normal"
+            />
+          </div>
+          <div className="flex items-center border border-slate-200 bg-white p-1 ml-1 shrink-0 h-[38px]">
+            <button 
+              onClick={() => setViewMode('table')}
+              className={`p-1.5 transition-all ${viewMode === 'table' ? 'bg-blue-600 text-white shadow-sm' : 'bg-transparent text-slate-400 hover:text-slate-600'}`}
+              title="Table View"
+            >
+              <List size={16} />
+            </button>
+            <button 
+              onClick={() => setViewMode('card')}
+              className={`p-1.5 transition-all ${viewMode === 'card' ? 'bg-blue-600 text-white shadow-sm' : 'bg-transparent text-slate-400 hover:text-slate-600'}`}
+              title="Card View"
+            >
+              <LayoutGrid size={16} />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Calendar Works Table */}
-      <div className="bg-white rounded-none shadow-sm border border-slate-200/60 overflow-hidden relative">
-        {error ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-20 gap-3">
+      {/* Calendar Works Container */}
+      <div className={`relative ${viewMode === 'table' ? 'bg-white rounded-none shadow-sm border border-slate-200/60 overflow-hidden' : ''}`}>
+        {loading ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-20 gap-3 border border-slate-200 bg-white">
+            <div className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-none" />
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-widest">Loading Calendar Works...</p>
+          </div>
+        ) : error ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-20 gap-3 border border-slate-200 bg-white">
             <p className="text-red-600 mb-2 text-sm">{error}</p>
             <Button variant="secondary" size="sm" onClick={() => window.location.reload()}>
               Try Again
             </Button>
           </div>
-        ) : (
+        ) : viewMode === 'table' ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[1400px] border border-slate-200">
               <thead className="bg-slate-50 border-b border-slate-200">
@@ -519,6 +548,123 @@ const parseIds = (data: unknown): number[] => {
                 )}
               </tbody>
             </table>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCalendarWorks.length > 0 ? (
+              filteredCalendarWorks.map((work) => (
+                <div key={work.id} className="bg-white border border-slate-200 rounded-none overflow-hidden hover:shadow-lg transition-all flex flex-col group">
+                  <div className="p-4 border-b border-slate-100 bg-slate-50 group-hover:bg-blue-50/30 transition-colors">
+                    <div className="flex justify-between items-start mb-3">
+                      <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-none uppercase tracking-widest border border-blue-100">
+                        {work.tracking_no || 'UNT-000'}
+                      </span>
+                      {work.is_special_day && (
+                        <span className="text-[9px] font-bold bg-purple-600 text-white px-2 py-1 rounded-none uppercase tracking-wider">
+                          Special Day
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-900 leading-tight mb-1">{work.client?.company_name || 'N/A'}</h3>
+                    <div className="flex items-center gap-2 text-slate-500">
+                      <CalendarIcon size={12} />
+                      <span className="text-[11px] font-medium">
+                         {work.date ? new Date(work.date).toLocaleDateString() : 'No Date'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 flex-1 space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                        <FileText size={10} className="text-blue-500" /> Content Description
+                      </label>
+                      <div 
+                        className={`text-[11px] text-slate-600 rich-text-content leading-relaxed ${expandedRows[work.id] ? 'expanded' : ''}`} 
+                        dangerouslySetInnerHTML={{ __html: work.content_description || 'No description provided' }} 
+                      />
+                      {work.content_description && work.content_description.length > 100 && (
+                        <button 
+                          onClick={() => toggleRowExpansion(work.id)} 
+                          className="text-[9px] text-blue-600 font-bold uppercase hover:underline"
+                        >
+                          {expandedRows[work.id] ? 'Less' : 'More'}
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Design Files</label>
+                      <div className="flex flex-wrap gap-2">
+                        {parseFiles(work.designer_files || work.designer_file).map((file, idx) => {
+                          const imageUrl = file.startsWith('http') ? file : `${import.meta.env.VITE_API_BASE_URL || ''}/${file.replace(/^\//, '')}`;
+                          return (
+                            <img 
+                              key={idx} 
+                              src={imageUrl} 
+                              className="h-12 w-12 object-cover border border-slate-200 cursor-zoom-in hover:border-blue-500 transition-all"
+                              onClick={() => setLightboxImage(imageUrl)}
+                            />
+                          );
+                        })}
+                        {parseFiles(work.designer_files || work.designer_file).length === 0 && (
+                          <span className="text-[10px] text-slate-300">No designs uploaded</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                        <div className="space-y-1">
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Designer</p>
+                          <p className="text-[10px] font-bold text-slate-700 bg-slate-50 p-1.5 border border-slate-200 truncate">
+                            {getAssignedNames(work, 'designer')}
+                          </p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Content</p>
+                          <p className="text-[10px] font-bold text-slate-700 bg-slate-50 p-1.5 border border-slate-200 truncate">
+                            {getAssignedNames(work, 'content')}
+                          </p>
+                        </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-slate-50 border-t border-slate-100 mt-auto">
+                    <div className="flex flex-col gap-1.5">
+                      <p className="text-[8px] text-slate-400 font-bold uppercase mb-0.5">Approval Decision</p>
+                      <select
+                        value={work.client_approved_status || 'pending'}
+                        onChange={(e) => handleApprovalChange(work.id, e.target.value)}
+                        disabled={updatingWorkId === work.id}
+                        className={`text-[10px] font-black px-2 py-1.5 rounded-none border-none outline-none cursor-pointer w-full text-white shadow-sm transition-all ${
+                          work.client_approved_status === 'approved' ? 'bg-green-600 hover:bg-green-700' :
+                          work.client_approved_status === 'not_approved' ? 'bg-red-600 hover:bg-red-700' :
+                          work.client_approved_status === 'needed_edit' ? 'bg-orange-600 hover:bg-orange-700' :
+                          work.client_approved_status === 'images_changed' ? 'bg-blue-600 hover:bg-blue-700' :
+                          'bg-slate-500 hover:bg-slate-600'
+                        }`}
+                      >
+                        <option value="pending">Pending Review</option>
+                        <option value="approved">Approved</option>
+                        <option value="not_approved">Not Approved</option>
+                        <option value="needed_edit">Needed Edit</option>
+                        <option value="images_changed">Images Changed</option>
+                      </select>
+                      {updatingWorkId === work.id && (
+                        <div className="flex items-center justify-center gap-1.5 text-[9px] text-blue-600 font-bold mt-1">
+                          <div className="animate-spin h-2 w-2 border border-blue-600 border-t-transparent rounded-full" />
+                          UPDATING...
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full bg-white border border-slate-100 p-20 text-center italic text-slate-400 text-sm">
+                No works found matching your filter.
+              </div>
+            )}
           </div>
         )}
       </div>

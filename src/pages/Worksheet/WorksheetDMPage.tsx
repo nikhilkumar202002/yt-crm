@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAppSelector } from '../../store/store';
 import {
-  Clipboard, Plus, Search,
+  Clipboard, Plus, Search, LayoutGrid, List, Calendar as CalendarIcon, FileText, Upload
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
 import { getCalendarWorks, assignCalendarWorkContent, assignDesignersToWork, updateClientApprovedStatus } from '../../api/services/microService';
@@ -85,6 +85,9 @@ const WorksheetDMPage = () => {
   const [currentUserPosition, setCurrentUserPosition] = useState<string>('');
   const [clientApprovedStatuses, setClientApprovedStatuses] = useState<{ [key: number]: string }>({});
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+
+  const [workStatuses, setWorkStatuses] = useState<{ [key: number]: string }>({});
+  const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
 
   const [expandedRows, setExpandedRows] = useState<{ [key: number]: boolean }>({});
 
@@ -298,33 +301,50 @@ const WorksheetDMPage = () => {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search by client, content, or notes..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm font-normal"
-          />
+        <div className="relative flex-1 flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by client, content, or notes..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm font-normal"
+            />
+          </div>
+          <div className="flex items-center border border-slate-200 bg-white p-1 ml-1 shrink-0 h-[38px]">
+            <button 
+              onClick={() => setViewMode('table')}
+              className={`p-1.5 transition-all ${viewMode === 'table' ? 'bg-blue-600 text-white shadow-sm' : 'bg-transparent text-slate-400 hover:text-slate-600'}`}
+              title="Table View"
+            >
+              <List size={16} />
+            </button>
+            <button 
+              onClick={() => setViewMode('card')}
+              className={`p-1.5 transition-all ${viewMode === 'card' ? 'bg-blue-600 text-white shadow-sm' : 'bg-transparent text-slate-400 hover:text-slate-600'}`}
+              title="Card View"
+            >
+              <LayoutGrid size={16} />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Calendar Works Table */}
-      <div className="bg-white rounded-none shadow-sm border border-slate-200 overflow-hidden relative border border-slate-200">
+      <div className={`relative ${viewMode === 'table' ? 'bg-white rounded-none shadow-sm border border-slate-200/60 overflow-hidden' : ''}`}>
         {loading ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-20 gap-3">
+          <div className="flex-1 flex flex-col items-center justify-center p-20 gap-3 border border-slate-200 bg-white">
             <div className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-none" />
             <p className="text-xs font-medium text-slate-500 uppercase tracking-widest">Loading Calendar Works...</p>
           </div>
         ) : error ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-20 gap-3">
+          <div className="flex-1 flex flex-col items-center justify-center p-20 gap-3 border border-slate-200 bg-white">
             <p className="text-red-600 mb-2 text-sm">{error}</p>
             <Button variant="secondary" size="sm" onClick={() => window.location.reload()}>
               Try Again
             </Button>
           </div>
-        ) : (
+        ) : viewMode === 'table' ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[1600px] border border-slate-200">
               <thead className="bg-slate-50 border-b border-slate-200">
@@ -568,6 +588,133 @@ const WorksheetDMPage = () => {
                 )}
               </tbody>
             </table>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCalendarWorks.length > 0 ? (
+              filteredCalendarWorks.map((work) => (
+                <div key={work.id} className="bg-white border border-slate-200 rounded-none overflow-hidden hover:shadow-lg transition-all flex flex-col group">
+                  {/* Card Header */}
+                  <div className="p-4 border-b border-slate-100 bg-slate-50 group-hover:bg-blue-50/30 transition-colors">
+                    <div className="flex justify-between items-start mb-3">
+                      <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-none uppercase tracking-widest border border-blue-100">
+                        {work.tracking_no || 'UNT-000'}
+                      </span>
+                      {work.is_special_day && (
+                        <span className="text-[9px] font-bold bg-purple-600 text-white px-2 py-1 rounded-none uppercase tracking-wider">
+                          Special Day
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-900 leading-tight mb-1">{work.client?.company_name || 'N/A'}</h3>
+                    <div className="flex items-center gap-2 text-slate-500">
+                      <CalendarIcon size={12} />
+                      <span className="text-[11px] font-medium">
+                         {work.date ? new Date(work.date).toLocaleDateString() : 'No Date'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Card Body */}
+                  <div className="p-4 flex-1 space-y-4">
+                    {/* Content Section */}
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                        <FileText size={10} className="text-blue-500" /> Content Description
+                      </label>
+                      <div 
+                        className={`text-[11px] text-slate-600 rich-text-content leading-relaxed ${expandedRows[work.id] ? 'expanded' : ''}`} 
+                        dangerouslySetInnerHTML={{ __html: work.content_description || 'No description provided' }} 
+                      />
+                      {work.content_description && work.content_description.length > 100 && (
+                        <button 
+                          onClick={() => toggleRowExpansion(work.id)} 
+                          className="text-[9px] text-blue-600 font-bold uppercase hover:underline"
+                        >
+                          {expandedRows[work.id] ? 'Less' : 'More'}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Creatives & Files */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Creatives</label>
+                        <div className="flex flex-wrap gap-1">
+                          {work.creatives?.map((c, i) => (
+                            <span key={i} className="text-[9px] font-bold bg-slate-100 text-slate-600 px-1.5 py-0.5 border border-slate-200">
+                              {c.name} ({c.nos})
+                            </span>
+                          )) || <span className="text-[10px] text-slate-300 italic">None</span>}
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Designs</label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {parseFiles(work.designer_files || work.designer_file).map((f, i) => (
+                            <img 
+                              key={i} 
+                              src={f.startsWith('http') ? f : `${import.meta.env.VITE_API_BASE_URL || ''}/${f.replace(/^\//, '')}`} 
+                              className="h-8 w-8 object-cover border border-slate-200 cursor-zoom-in"
+                              onClick={() => setLightboxImage(f)}
+                            />
+                          )) || <span className="text-[10px] text-slate-300 underline">None</span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Team Section */}
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                        <div className="space-y-1">
+                          <p className="text-[9px] font-black text-slate-400 uppercase">Designer</p>
+                          <button 
+                            onClick={() => isHead && setAssignmentModal({ isOpen: true, workId: work.id, initialIds: parseIds(work.assigned_to), type: 'designer' })}
+                            className={`w-full text-left text-[10px] font-bold p-1.5 border transition-all truncate ${parseIds(work.assigned_to).length > 0 ? 'bg-orange-50 border-orange-200 text-orange-700' : 'bg-slate-50 border-slate-200 text-slate-500'}`}
+                          >
+                            {getAssignedNames(work, 'designer')}
+                          </button>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-[9px] font-black text-slate-400 uppercase">Content</p>
+                          <button 
+                            onClick={() => isHead && setAssignmentModal({ isOpen: true, workId: work.id, initialIds: parseIds(work.content_assigned_to), type: 'content' })}
+                            className={`w-full text-left text-[10px] font-bold p-1.5 border transition-all truncate ${parseIds(work.content_assigned_to).length > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-slate-50 border-slate-200 text-slate-500'}`}
+                          >
+                            {getAssignedNames(work, 'content')}
+                          </button>
+                        </div>
+                    </div>
+                  </div>
+
+                  {/* Status Footer */}
+                  <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col gap-2">
+                    <div className="flex justify-between items-center gap-2">
+                        <div className="flex-1">
+                           <p className="text-[8px] text-slate-400 font-bold uppercase mb-1">Approval Status</p>
+                           <select
+                              value={clientApprovedStatuses[work.id] || work.client_approved_status || 'pending'}
+                              onChange={(e) => handleClientApprovedStatusChange(work.id, e.target.value)}
+                              className={`text-[9px] font-bold px-2 py-1.5 rounded-none border-none outline-none cursor-pointer transition-all w-full text-white ${
+                                (clientApprovedStatuses[work.id] || work.client_approved_status) === 'approved' ? 'bg-green-600' :
+                                'bg-slate-500'
+                              }`}
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="approved">Approved</option>
+                              <option value="not_approved">Not Approved</option>
+                              <option value="needed_edit">Needed Edit</option>
+                              <option value="images_changed">Images Changed</option>
+                            </select>
+                        </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full bg-white border border-slate-200 p-20 text-center italic text-slate-400 text-sm">
+                No worksheets match your search.
+              </div>
+            )}
           </div>
         )}
       </div>

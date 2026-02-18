@@ -3,7 +3,7 @@ import { useAppSelector } from '../../store/store';
 import {
   Clipboard, Search,
   Edit, Trash2,
-  Upload,
+  Upload, LayoutGrid, List, Calendar as CalendarIcon, FileText
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
 import { getCalendarWorks, assignDesignersToWork } from '../../api/services/microService';
@@ -78,6 +78,7 @@ const WorksheetDefaultPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [workStatuses, setWorkStatuses] = useState<{ [key: number]: string }>({});
+  const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   
   const [expandedRows, setExpandedRows] = useState<{ [key: number]: boolean }>({});
 
@@ -246,23 +247,39 @@ const WorksheetDefaultPage = () => {
             className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm font-normal"
           />
         </div>
+        <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-none border border-slate-200">
+          <button 
+            onClick={() => setViewMode('table')}
+            className={`p-1.5 transition-all ${viewMode === 'table' ? 'bg-blue-600 text-white shadow-sm' : 'bg-transparent text-slate-400 hover:text-slate-600'}`}
+            title="Table View"
+          >
+            <List size={16} />
+          </button>
+          <button 
+            onClick={() => setViewMode('card')}
+            className={`p-1.5 transition-all ${viewMode === 'card' ? 'bg-blue-600 text-white shadow-sm' : 'bg-transparent text-slate-400 hover:text-slate-600'}`}
+            title="Card View"
+          >
+            <LayoutGrid size={16} />
+          </button>
+        </div>
       </div>
 
-      {/* Calendar Works Table */}
-      <div className="bg-white rounded-none shadow-sm border border-slate-200/60 overflow-hidden relative border border-slate-200">
+      {/* Calendar Works Container */}
+      <div className={`relative ${viewMode === 'table' ? 'bg-white rounded-none shadow-sm border border-slate-200/60 overflow-hidden' : ''}`}>
         {loading ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-20 gap-3">
+          <div className="flex-1 flex flex-col items-center justify-center p-20 gap-3 border border-slate-200 bg-white shadow-sm">
             <div className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-none" />
             <p className="text-xs font-medium text-slate-500 uppercase tracking-widest">Loading Calendar Works...</p>
           </div>
         ) : error ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-20 gap-3">
-            <p className="text-red-600 mb-2 text-sm">{error}</p>
-            <Button variant="secondary" size="sm" onClick={() => window.location.reload()}>
+          <div className="flex-1 flex flex-col items-center justify-center p-20 gap-3 border border-slate-200 bg-white shadow-sm">
+            <p className="text-red-600 mb-2 text-sm font-bold uppercase tracking-wider">{error}</p>
+            <Button variant="secondary" size="sm" onClick={() => window.location.reload()} className="rounded-none font-bold">
               Try Again
             </Button>
           </div>
-        ) : (
+        ) : viewMode === 'table' ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[1400px] border border-slate-200">
               <thead className="bg-slate-50 border-b border-slate-200">
@@ -287,7 +304,7 @@ const WorksheetDefaultPage = () => {
                     <tr key={work.id} className="hover:bg-slate-50/50 transition-colors group">
                       <td className="px-4 py-3 text-left align-top text-[10px] font-medium text-slate-400 border border-slate-200">{index + 1}</td>
                       <td className="px-4 py-3 align-top border border-slate-200">
-                        <div className="text-[11px] font-bold text-slate-900">
+                        <div className="text-[11px] font-bold text-slate-900 leading-tight">
                           {work.tracking_no || 'N/A'}
                         </div>
                       </td>
@@ -321,13 +338,13 @@ const WorksheetDefaultPage = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3 align-top border border-slate-200">
-                        <div 
+                        <div
                           className={`text-[11px] text-slate-700 rich-text-content ${expandedRows[work.id] ? 'expanded' : ''}`}
                           title={work.content_description?.replace(/<[^>]*>/g, '')}
                           dangerouslySetInnerHTML={{ __html: work.content_description || 'No description' }}
                         />
                         {work.content_description && work.content_description.length > 60 && (
-                          <button 
+                          <button
                             onClick={() => toggleRowExpansion(work.id)}
                             className="text-[9px] text-blue-600 hover:text-blue-800 font-bold mt-1 uppercase tracking-tighter"
                           >
@@ -339,7 +356,7 @@ const WorksheetDefaultPage = () => {
                         <div className="space-y-1">
                           {work.creatives && work.creatives.length > 0 ? (
                             work.creatives.slice(0, 2).map((creative, index) => (
-                              <div key={index} className="text-[10px] text-slate-600">
+                              <div key={index} className="text-[10px] text-slate-600 font-medium">
                                 {creative.name} ({creative.nos})
                               </div>
                             ))
@@ -352,7 +369,7 @@ const WorksheetDefaultPage = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3 align-top border border-slate-200">
-                        <div className="text-[11px] text-slate-700">
+                        <div className="text-[11px] text-slate-700 leading-relaxed italic pr-4">
                           {work.notes || 'No notes'}
                         </div>
                       </td>
@@ -361,10 +378,10 @@ const WorksheetDefaultPage = () => {
                           const designerIds = parseIds(work.assigned_to);
                           const isAssigned = designerIds.length > 0;
                           return (
-                            <Button 
-                              variant="secondary" 
-                              size="sm" 
-                              className={`text-[10px] w-full justify-between transition-all ${isAssigned ? '!bg-orange-500 !text-white !border-orange-600 hover:!bg-orange-600' : ''}`}
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              className={`text-[10px] w-full justify-between transition-all font-bold ${isAssigned ? '!bg-orange-500 !text-white !border-orange-600 hover:!bg-orange-600' : ''}`}
                               title={getFullAssignedNames(work.assigned_to)}
                               onClick={() => {
                                 setAssignmentModal({
@@ -380,7 +397,7 @@ const WorksheetDefaultPage = () => {
                         })()}
                       </td>
                       <td className="px-4 py-3 align-top border border-slate-200">
-                        <Button variant="secondary" size="sm" className="text-[10px]">
+                        <Button variant="secondary" size="sm" className="text-[10px] font-bold">
                           <Upload size={12} className="mr-1" /> Upload
                         </Button>
                       </td>
@@ -424,6 +441,122 @@ const WorksheetDefaultPage = () => {
                 )}
               </tbody>
             </table>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCalendarWorks.length > 0 ? (
+              filteredCalendarWorks.map((work) => (
+                <div key={work.id} className="bg-white border border-slate-200 rounded-none overflow-hidden hover:shadow-lg transition-all flex flex-col group">
+                  {/* Card Header */}
+                  <div className="p-4 border-b border-slate-100 bg-slate-50 group-hover:bg-blue-50/30 transition-colors">
+                    <div className="flex justify-between items-start mb-3">
+                      <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-none uppercase tracking-widest border border-blue-100">
+                        {work.tracking_no || 'UNT-000'}
+                      </span>
+                      {work.is_special_day && (
+                        <span className="text-[9px] font-bold bg-purple-600 text-white px-2 py-1 rounded-none uppercase tracking-wider">
+                          Special Day
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-900 leading-tight mb-1">{work.client?.company_name || 'N/A'}</h3>
+                    <div className="flex items-center gap-2 text-slate-500">
+                      <CalendarIcon size={12} />
+                      <span className="text-[11px] font-medium">
+                         {work.date ? new Date(work.date).toLocaleDateString() : 'No Date'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Card Body */}
+                  <div className="p-4 flex-1 space-y-4">
+                    {/* Content Section */}
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                        <FileText size={10} className="text-blue-500" /> Content Description
+                      </label>
+                      <div 
+                        className={`text-[11px] text-slate-600 rich-text-content leading-relaxed ${expandedRows[work.id] ? 'expanded' : ''}`} 
+                        dangerouslySetInnerHTML={{ __html: work.content_description || 'No description provided' }} 
+                      />
+                      {work.content_description && work.content_description.length > 100 && (
+                        <button 
+                          onClick={() => toggleRowExpansion(work.id)} 
+                          className="text-[9px] text-blue-600 font-bold uppercase hover:underline"
+                        >
+                          {expandedRows[work.id] ? 'Less' : 'More'}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Notes Section */}
+                    {work.notes && (
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Client Notes</label>
+                        <p className="text-[10px] text-slate-500 bg-slate-50 p-2 border border-slate-200 italic">
+                          "{work.notes}"
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Team Section */}
+                    <div className="space-y-1.5 pt-2">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Graphics Assignment</p>
+                        <div className="flex items-center gap-2">
+                            {(() => {
+                              const designerIds = parseIds(work.assigned_to);
+                              const isAssigned = designerIds.length > 0;
+                              return (
+                                <button
+                                  onClick={() => setAssignmentModal({
+                                    isOpen: true,
+                                    workId: work.id,
+                                    initialIds: designerIds
+                                  })}
+                                  className={`flex-1 text-[10px] font-bold py-2 px-3 border transition-all flex items-center justify-center gap-2 ${
+                                    isAssigned 
+                                      ? 'bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100' 
+                                      : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                                  }`}
+                                >
+                                  {getAssignedNames(work)}
+                                </button>
+                              );
+                            })()}
+                        </div>
+                    </div>
+                  </div>
+
+                  {/* Footer Actions */}
+                  <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-none text-[8px] font-black uppercase tracking-wider text-white ${
+                        workStatuses[work.id] === 'completed' ? 'bg-green-600' :
+                        workStatuses[work.id] === 'in_progress' ? 'bg-yellow-500' :
+                        'bg-slate-500'
+                      }`}>
+                        {workStatuses[work.id] || 'pending'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button 
+                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-100 transition-all"
+                        title="Upload Evidence"
+                      >
+                        <Upload size={14} />
+                      </button>
+                      <button className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 border border-transparent transition-all">
+                        <Edit size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full bg-white border border-slate-100 p-20 text-center italic text-slate-400 text-sm">
+                No works found matching your filter.
+              </div>
+            )}
           </div>
         )}
       </div>
