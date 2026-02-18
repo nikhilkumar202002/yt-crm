@@ -43,36 +43,7 @@ export const ADMIN_MENU: MenuItem[] = [
     path: '/worksheet',
     requiredPermissions: ['canAssignGroup']
   },
-  {
-    title: 'Strategy & Pitch',
-    path: '/strategy',
-    requiredPermissions: ['canViewAll', 'canAssignGroup']
-  },
-  {
-    title: 'Campaign Setup',
-    path: '/campaigns',
-    requiredPermissions: ['canViewAll', 'canAssignGroup']
-  },
-  {
-    title: 'Creative Workflow',
-    path: '/creative',
-    requiredPermissions: ['canViewAll', 'canAssignGroup']
-  },
-  {
-    title: 'Asset Hub',
-    path: '/assets',
-    requiredPermissions: ['canViewAll', 'canAssignGroup']
-  },
-  {
-    title: 'Ad Operations',
-    path: '/execution',
-    requiredPermissions: ['canViewAll', 'canAssignGroup']
-  },
-  {
-    title: 'Intelligence',
-    path: '/intelligence',
-    requiredPermissions: ['canViewAll']
-  },
+ 
   {
     title: 'Finance & Billing',
     path: '/finance',

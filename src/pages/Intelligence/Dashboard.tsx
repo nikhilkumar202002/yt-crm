@@ -3,12 +3,14 @@ import { useAppSelector } from '../../store/store';
 import { Download, Filter } from 'lucide-react';
 import { Button } from '../../components/common/Button';
 import { getUsersList } from '../../api/services/authService';
+import { POSITION_PERMISSIONS } from '../../config/positionPermissions';
 import AdminDashboard from './components/AdminDashboard';
 import GraphicsDashboard from './components/GraphicsDashboard';
 import ContentDashboard from './components/ContentDashboard';
 import DMDashboard from './components/DMDashboard';
 import SalesDashboard from './components/SalesDashboard';
 import DepartmentDashboard from './components/DepartmentDashboard';
+import ManagerDashboard from './components/ManagerDashboard';
 
 const Dashboard = () => {
   const { user, roleName } = useAppSelector((state) => state.auth);
@@ -21,9 +23,11 @@ const Dashboard = () => {
       try {
         const response = await getUsersList();
         const usersData = response.data?.data || response.data || [];
-        const currentUser = user?.id ? usersData.find((u: any) => u.id === user.id) : null;
+        type UserLike = { id?: number; group_name?: string; position_name?: string; position_id?: number | string };
+        const currentUser = user?.id ? (usersData as UserLike[]).find((u) => u.id === user.id) : null;
         setCurrentUserGroup(currentUser?.group_name || '');
-        setCurrentUserPosition(currentUser?.position_name || '');
+        // Prefer position name, fallback to position id when name isn't available
+        setCurrentUserPosition(String(currentUser?.position_name || currentUser?.position_id || ''));
       } catch (error) {
         console.error('Failed to fetch user details for dashboard:', error);
       } finally {
@@ -37,6 +41,12 @@ const Dashboard = () => {
   const isAdmin = roleName?.toLowerCase() === 'admin' || 
                   currentUserPosition.toLowerCase().includes('head') ||
                   currentUserGroup.toLowerCase().includes('management');
+
+  // Determine manager by position permissions (or name hints)
+  const positionKey = currentUserPosition.toLowerCase().trim();
+  const perms = POSITION_PERMISSIONS[positionKey] || POSITION_PERMISSIONS[currentUserPosition] || {};
+  const isManager = !isAdmin && (perms?.canApprove === true ||
+    positionKey.includes('manager') || positionKey.includes('lead') || currentUserGroup.toLowerCase().includes('management'));
 
   const groupLower = currentUserGroup.toLowerCase().trim();
   const isDM = groupLower.includes('dm') || groupLower.includes('digital marketing');
@@ -79,7 +89,11 @@ const Dashboard = () => {
         )}
       </div>
 
-      {isDM ? (
+      {isAdmin ? (
+        <AdminDashboard />
+      ) : isManager ? (
+        <ManagerDashboard />
+      ) : isDM ? (
         <DMDashboard user={user} groupName={currentUserGroup} />
       ) : isGraphics ? (
         <GraphicsDashboard user={user} groupName={currentUserGroup} />
@@ -87,8 +101,6 @@ const Dashboard = () => {
         <ContentDashboard user={user} groupName={currentUserGroup} />
       ) : isSales ? (
         <SalesDashboard user={user} groupName={currentUserGroup} />
-      ) : isAdmin ? (
-        <AdminDashboard />
       ) : (
         <DepartmentDashboard user={user} groupName={currentUserGroup} />
       )}
