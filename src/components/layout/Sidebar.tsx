@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, Rocket, Layers, 
@@ -7,7 +7,7 @@ import {
   FileText, Briefcase, Calendar, Clipboard
 } from 'lucide-react';
 import { useAppSelector } from '../../store/store';
-import { SIDEBAR_MENU, hasMenuAccess, getMenuByDepartment } from '../../config/menu';
+import { hasMenuAccess, getMenuByDepartment } from '../../config/menu';
 import { resolvePermissions } from '../../config/permissionResolver';
 
 interface SidebarProps {
@@ -30,7 +30,7 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
   });
 
   // Updated iconMap to match the new "Onboarded Clients" title
-  const iconMap: Record<string, JSX.Element> = {
+  const iconMap: Record<string, React.JSX.Element> = {
     'Dashboard': <LayoutDashboard size={16} />,
     'Calendar': <Calendar size={16} />,
     'Worksheet': <Clipboard size={16} />,

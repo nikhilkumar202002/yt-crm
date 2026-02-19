@@ -1,16 +1,13 @@
-import React from 'react';
 import { 
   Users, Target, Rocket, Activity, 
   TrendingUp, Wallet, Clock, 
-  MoreHorizontal, ArrowUpRight, Facebook, Globe, Play, Settings, AlertCircle, CheckCircle
+  MoreHorizontal, ArrowUpRight, Facebook, Globe, Play, Settings
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
   PieChart, 
   Pie, 
   Cell, 
-  BarChart, 
-  Bar, 
   XAxis, 
   YAxis, 
   CartesianGrid, 

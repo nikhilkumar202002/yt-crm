@@ -3,7 +3,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { X, Plus, Users } from 'lucide-react';
 import { Button } from '../../../components/common/Button';
 import { Input } from '../../../components/common/Input';
-import { createGroup, GroupData } from '../../../api/services/microService';
+import { createGroup, type GroupData } from '../../../api/services/microService';
 
 interface CreateGroupModalProps {
   onSuccess: () => void;

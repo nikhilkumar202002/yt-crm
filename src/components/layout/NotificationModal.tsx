@@ -1,6 +1,5 @@
-import React from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, Bell, Clock, User, AlertCircle, CheckCircle, Info } from 'lucide-react';
+import { X, Bell, Clock, AlertCircle, CheckCircle, Info } from 'lucide-react';
 
 interface Notification {
   id: string;

@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
 import { 
-  Bell, ChevronDown, LogOut, Settings, 
+  Bell, ChevronDown, LogOut, 
   Menu, Search, Plus, Calendar, Globe, 
   Command, ExternalLink, CheckCircle, AlertCircle, Info, Clock
 } from 'lucide-react';

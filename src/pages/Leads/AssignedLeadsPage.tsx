@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { MessageSquare, Loader2, ChevronLeft, ChevronRight, Mail, Phone, User, Filter, CheckCircle2, Clock, ChevronDown } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { MessageSquare, Loader2, ChevronLeft, ChevronRight, Mail, Phone, Filter, CheckCircle2, Clock, ChevronDown } from 'lucide-react';
 import { useAppSelector } from '../../store/store';
 import { 
   getAssignedLeads, 
@@ -359,7 +359,6 @@ const AssignedLeadsPage = () => {
         otherService={commentModal.otherService}
         onOtherServiceChange={(text) => setCommentModal(prev => ({ ...prev, otherService: text }))}
         onSave={handleSaveData} 
-        isAdminOrHead={isAdminOrHead} 
         availableServices={availableServices} // Pass merged data
       />
     </div>

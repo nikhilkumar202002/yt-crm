@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, Save, MessageSquare, Layers, Settings2, Check, ChevronRight, Tag, AlertCircle, Search } from 'lucide-react';
+import { X, Save, MessageSquare, Layers, Settings2, Check, AlertCircle, Search } from 'lucide-react';
 import { Button } from '../../../components/common/Button';
 
 interface LeadDescriptionModalProps {
@@ -17,16 +17,15 @@ interface LeadDescriptionModalProps {
   otherService: string;
   onOtherServiceChange: (text: string) => void;
   onSave: () => void;
-  isAdminOrHead: boolean;
   availableServices: any[];
-  allSubServices: any[];
+  allSubServices?: any[];
 }
 
 export const LeadDescriptionModal = ({ 
   isOpen, onOpenChange, comment, onCommentChange, 
   requirements, onRequirementsChange, selectedServiceIds, onServiceIdsChange,
   selectedSubServiceIds, onSubServiceIdsChange,
-  otherService, onOtherServiceChange, onSave, isAdminOrHead, availableServices = [],
+  onSave, availableServices = [],
   allSubServices = []
 }: LeadDescriptionModalProps) => {
 

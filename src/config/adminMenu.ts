@@ -1,4 +1,4 @@
-import { MenuItem } from './menu';
+import { type MenuItem } from './menu';
 
 export const ADMIN_MENU: MenuItem[] = [
   {

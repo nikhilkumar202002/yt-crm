@@ -1,17 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Search, Filter, UserPlus, Download, Clock, 
-  CheckCircle2, AlertCircle, Loader2, ChevronLeft, ChevronRight, UserCheck, ChevronDown, User, Mail, Phone, MessageSquare 
+  CheckCircle2, AlertCircle, Loader2, ChevronLeft, ChevronRight, UserCheck, Mail, Phone, MessageSquare 
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
 import { LeadTableRow } from './LeadTableRow';
-import { PipelineMetric } from './PipelineMetric';
 import { FileImportModal } from './FileImportModal';
 import { LeadStatusBadge } from './LeadStatusBadge';
 import { AssignLeadsModal } from './components/AssignLeadsModal';
 import { LeadDescriptionModal } from './components/LeadDescriptionModal';
 import { AddLeadModal } from './components/AddLeadModal';
-import { getLeads, uploadLeads, deleteLead, getAssignedLeads, updateLeadStatus, updateLeadComment, getServices, getSubServices, updateLeadServices, createLead } from '../../api/services/microService';
+import { getLeads, uploadLeads, deleteLead, getAssignedLeads, updateLeadStatus, updateLeadComment, getServices, getSubServices, updateLeadServices } from '../../api/services/microService';
 import { useAppSelector } from '../../store/store';
 import { resolvePermissions } from '../../config/permissionResolver';
 import { useLocation } from 'react-router-dom';
@@ -30,7 +29,7 @@ const LeadsPage = () => {
   });
   
   const canViewAllLeads = permissions.viewAllLeads || false;
-  const canViewAssignedLeads = permissions.viewAssignedLeads || false;
+
   const canAssignLeads = permissions.assignLeads || false;
   const isAdmin = roleName?.toUpperCase() === 'ADMIN';
   const isAdminOrHead = ['ADMIN', 'DM HEAD'].includes(roleName?.toUpperCase() || '');
@@ -312,7 +311,7 @@ const LeadsPage = () => {
             <tbody className="divide-y divide-slate-50/50">
               {isAllLeadsView ? (
                 leads.length > 0 ? (
-                  leads.map((lead, idx) => (
+                  leads.map((lead) => (
                     <LeadTableRow 
                       key={lead.id} 
                       lead={lead} 
@@ -522,7 +521,6 @@ const LeadsPage = () => {
         availableServices={availableServices}
         allSubServices={allSubServices}
         onSave={handleUpdateComment}
-        isAdminOrHead={isAdminOrHead}
       />
     </div>
   );

@@ -8,7 +8,6 @@ interface ClientFormModalProps {
   onOpenChange: (open: boolean) => void;
   clientData?: any; // Data for editing
   onSuccess: () => void; // Callback to refresh parent list
-  isInLeads?: boolean; // Default flag from parent page
 }
 
 // Renamed back to ClientFormModal to match your imports
@@ -16,8 +15,7 @@ export const ClientFormModal = ({
   isOpen, 
   onOpenChange, 
   clientData, 
-  onSuccess,
-  isInLeads = false 
+  onSuccess
 }: ClientFormModalProps) => {
   
   const [formData, setFormData] = useState({

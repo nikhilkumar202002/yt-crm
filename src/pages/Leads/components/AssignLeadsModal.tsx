@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X, UserCheck, Users } from 'lucide-react';
 import { Button } from '../../../components/common/Button';
@@ -28,14 +28,14 @@ export const AssignLeadsModal = ({ selectedLeadIds, onSuccess, isOpen, onOpenCha
         if (roleName?.toUpperCase() === 'ADMIN') {
           setStaff(allStaff);
         } else {
-          setStaff(allStaff.filter((s: any) => s.department_name === user?.department_name));
+          setStaff(allStaff.filter((s: any) => s.department_name === (user as any)?.department_name));
         }
       } catch (error) {
         console.error("Failed to fetch staff", error);
       }
     };
     if (isOpen) fetchStaff();
-  }, [isOpen, roleName, user?.department_name]);
+  }, [isOpen, roleName, (user as any)?.department_name]);
 
   const handleAssign = async () => {
     if (!selectedStaffId) return;

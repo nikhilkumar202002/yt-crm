@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X, Eye, Briefcase, Calendar, User } from 'lucide-react';
 import { Button } from '../../../components/common/Button';
-import { getPositionDetail, PositionData } from '../../../api/services/microService';
+import { getPositionDetail, type PositionData } from '../../../api/services/microService';
 
 interface PositionDetailsModalProps {
   positionId: number | null;

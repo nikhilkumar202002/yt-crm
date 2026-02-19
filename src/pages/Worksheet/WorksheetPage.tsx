@@ -52,7 +52,7 @@ const WorksheetPage = () => {
 
     // Check if user can approve (manager)
     const canApprove = (() => {
-      const permissions = POSITION_PERMISSIONS[positionLower] || POSITION_PERMISSIONS[currentUserPosition];
+      const permissions = (POSITION_PERMISSIONS as any)[positionLower] || (POSITION_PERMISSIONS as any)[currentUserPosition];
       return permissions?.canApprove || false;
     })();
 

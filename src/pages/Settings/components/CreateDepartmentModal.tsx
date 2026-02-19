@@ -3,7 +3,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { X, Plus, Layers } from 'lucide-react';
 import { Button } from '../../../components/common/Button';
 import { Input } from '../../../components/common/Input';
-import { createDepartment, OrgUnit } from '../../../api/services/microService';
+import { createDepartment, type OrgUnit } from '../../../api/services/microService';
 
 interface CreateDepartmentModalProps {
   onSuccess: () => void;

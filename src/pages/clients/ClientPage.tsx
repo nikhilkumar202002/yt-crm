@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Users, Loader2, Mail, Phone, Building2, 
-  FileText, Search, CheckCircle2, Edit3, Layers 
+  Search, CheckCircle2, Edit3
 } from 'lucide-react';
 // Added getServices to imports
-import { getClients, getServices } from '../../api/services/microService';
+import { getClients } from '../../api/services/microService';
 import { Button } from '../../components/common/Button';
 import { ClientFormModal } from './Component/ClientFormModal';
-import { useAppSelector } from '../../store/store';
+
 
 const ClientPage = () => {
   const [clients, setClients] = useState<any[]>([]);
@@ -18,8 +18,7 @@ const ClientPage = () => {
     clientData: any | null 
   }>({ isOpen: false, clientData: null });
 
-  const { roleName, position } = useAppSelector((state) => state.auth);
-  const isStaffOrIntern = roleName?.toLowerCase() === 'staff' || position === 'intern';
+
 
   const fetchData = useCallback(async () => {
     try {
@@ -175,7 +174,6 @@ const ClientPage = () => {
         onOpenChange={(open) => setFormModal({ ...formModal, isOpen: open })}
         clientData={formModal.clientData}
         onSuccess={fetchData}
-        isInLeads={true} 
       />
     </div>
   );

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Briefcase, Plus, Edit2, Trash2 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
-import { getDesignations, deleteDesignation, OrgUnit } from '../../api/services/microService';
+import { getDesignations, deleteDesignation, type OrgUnit } from '../../api/services/microService';
 
 import { CreateDesignationModal } from './components/CreateDesignationModal';
 

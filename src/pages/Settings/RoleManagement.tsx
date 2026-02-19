@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Shield, Edit2, Trash2 } from 'lucide-react';
-import { getRoles, deleteRole, RoleData } from '../../api/services/authService';
+import { getRoles, deleteRole, type RoleData } from '../../api/services/authService';
 import { CreateRoleModal } from './components/CreateRoleModal';
 
 const RoleManagement = () => {
@@ -82,11 +82,11 @@ const RoleManagement = () => {
                       <td className="px-6 py-4 text-[11px] text-slate-500">{role.description}</td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold border ${
-                          role.status === "1" || role.status === 1
+                          role.status === 1 || role.status === true
                             ? 'bg-green-50 text-green-600 border-green-100'
                             : 'bg-red-50 text-red-600 border-red-100'
                         }`}>
-                          {role.status === "1" || role.status === 1 ? 'Active' : 'Inactive'}
+                          {role.status === 1 || role.status === true ? 'Active' : 'Inactive'}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right space-x-2">

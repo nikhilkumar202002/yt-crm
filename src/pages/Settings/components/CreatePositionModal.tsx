@@ -3,7 +3,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { X, Plus, Briefcase } from 'lucide-react';
 import { Button } from '../../../components/common/Button';
 import { Input } from '../../../components/common/Input';
-import { createPosition, PositionData } from '../../../api/services/microService';
+import { createPosition, type PositionData } from '../../../api/services/microService';
 
 interface CreatePositionModalProps {
   onSuccess: () => void;

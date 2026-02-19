@@ -1,4 +1,4 @@
-import axios, { AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import axios, { type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import { getSecureCookie, clearSecureCookies } from '../utils/secureStorage';
 
 // Environment-based configuration

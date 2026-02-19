@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Loader2, ChevronLeft, ChevronRight, Plus, Edit3, Trash2 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
 import { getClients, deleteClient } from '../../api/services/microService';
@@ -131,7 +131,6 @@ const EnquiryClientsPage = () => {
           onOpenChange={(open) => setModal({ ...modal, isOpen: open })}
           onSuccess={() => fetchClients(currentPage)} 
           clientData={modal.data}
-          isInLeads={false} // Creates standard enquiry client
         />
       )}
     </div>

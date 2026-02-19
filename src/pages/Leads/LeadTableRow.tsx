@@ -1,5 +1,5 @@
-import React from 'react';
-import { ExternalLink, Trash2, Mail, Phone, MapPin, Globe } from 'lucide-react';
+
+import { ExternalLink, Trash2, Mail, Phone, Globe } from 'lucide-react';
 
 export const LeadTableRow = ({ lead, onDelete, isSelected, onSelect }: any) => (
   <tr className={`hover:bg-slate-50/50 transition-all group ${isSelected ? 'bg-blue-50/30' : ''} border-b border-slate-100/60`}>

@@ -5,7 +5,6 @@ import { format } from 'date-fns';
 import { Button } from '../../../components/common/Button';
 import { Input } from '../../../components/common/Input';
 import { useAppSelector } from '../../../store/store';
-import { getRoles } from '../../../api/services/authService';
 
 interface Client {
   id: number;

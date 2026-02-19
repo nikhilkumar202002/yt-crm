@@ -3,7 +3,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { X, Edit, Users } from 'lucide-react';
 import { Button } from '../../../components/common/Button';
 import { Input } from '../../../components/common/Input';
-import { updateGroup, GroupData } from '../../../api/services/microService';
+import { updateGroup, type GroupData } from '../../../api/services/microService';
 
 interface EditGroupModalProps {
   group: GroupData | null;

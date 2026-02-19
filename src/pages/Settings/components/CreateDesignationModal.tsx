@@ -3,7 +3,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { X, Plus, Briefcase } from 'lucide-react';
 import { Button } from '../../../components/common/Button';
 import { Input } from '../../../components/common/Input';
-import { createDesignation, OrgUnit } from '../../../api/services/microService';
+import { createDesignation, type OrgUnit } from '../../../api/services/microService';
 
 interface CreateDesignationModalProps {
   onSuccess: () => void;

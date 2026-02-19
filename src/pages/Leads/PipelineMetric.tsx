@@ -15,7 +15,7 @@ export const PipelineMetric = ({ label, value, icon, variant = 'white', subtext 
     white: 'bg-white border border-slate-200 text-slate-900',
   };
 
-  const labelColors = variant === 'white' ? 'text-slate-400' : 'text-slate-400';
+
 
   return (
     <div className={`${themes[variant]} p-4 rounded-none`}>

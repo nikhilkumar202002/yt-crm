@@ -7,6 +7,9 @@ export interface OrgUnit {
   name: string;
   description: string;
   status: boolean | number;
+  created_at?: string;
+  created_by?: string;
+  updated_at?: string;
 }
 
 export interface GroupData {
@@ -14,6 +17,9 @@ export interface GroupData {
   name: string;
   description: string;
   status: boolean | number;
+  created_at?: string;
+  created_by?: string;
+  updated_at?: string;
 }
 
 export interface PositionData {
@@ -21,6 +27,9 @@ export interface PositionData {
   name: string;
   description: string;
   status: boolean | number;
+  created_at?: string;
+  created_by?: string;
+  updated_at?: string;
 }
 
 export interface ProposalDetailsPayload {
@@ -46,6 +55,7 @@ export interface CalendarWorkPayload {
   notes: string;
   content_file?: File;
   is_special_day?: boolean;
+  creative_work_creative_id?: number;
 }
 
 export interface CalendarWorkCreativePayload {
@@ -477,6 +487,8 @@ export const updateClient = async (clientId: number, clientData: Partial<{
   contact_number_1: string;
   contact_number_2: string;
   status: boolean;
+  is_in_leads?: boolean;
+  proposal_id?: number | null;
 }>) => {
   const response = await apiClient.put(`/clients/${clientId}`, clientData);
   return response.data;

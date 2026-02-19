@@ -100,7 +100,7 @@ const WorksheetManagerPage = () => {
   const canApprove = useMemo(() => {
     if (!currentUserPosition) return false;
     const positionKey = currentUserPosition.toLowerCase().trim();
-    const permissions = POSITION_PERMISSIONS[positionKey] || POSITION_PERMISSIONS[currentUserPosition];
+    const permissions = (POSITION_PERMISSIONS as any)[positionKey] || (POSITION_PERMISSIONS as any)[currentUserPosition];
     return permissions?.canApprove || false;
   }, [currentUserPosition]);
 

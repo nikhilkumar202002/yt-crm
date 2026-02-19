@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppSelector } from '../../store/store';
 import { Download, Filter } from 'lucide-react';
 import { Button } from '../../components/common/Button';
@@ -43,7 +43,7 @@ const Dashboard = () => {
 
   // Determine manager by position permissions (canApprove) or name hints
   const positionKey = currentUserPosition.toLowerCase().trim();
-  const perms = POSITION_PERMISSIONS[positionKey] || POSITION_PERMISSIONS[currentUserPosition] || {};
+  const perms = (POSITION_PERMISSIONS as any)[positionKey] || (POSITION_PERMISSIONS as any)[currentUserPosition] || {};
   const isManager = !isAdmin && (perms?.canApprove === true ||
     positionKey.includes('manager') || positionKey.includes('lead') || currentUserGroup.toLowerCase().includes('management'));
 

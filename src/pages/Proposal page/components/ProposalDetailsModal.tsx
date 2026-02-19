@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X, Save, Calculator, Loader2 } from 'lucide-react';
 import { Button } from '../../../components/common/Button';
-import { updateProposalDetails, ProposalDetailsPayload } from '../../../api/services/microService';
+import { updateProposalDetails, type ProposalDetailsPayload } from '../../../api/services/microService';
 
 interface ProposalDetailsModalProps {
   isOpen: boolean;

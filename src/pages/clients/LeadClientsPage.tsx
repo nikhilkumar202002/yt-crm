@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Loader2, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { Button } from '../../components/common/Button';
 import { getClients } from '../../api/services/microService';

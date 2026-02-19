@@ -10,7 +10,7 @@ import {
   addMonths,
   startOfYear,
 } from 'date-fns';
-import { ChevronLeft, ChevronRight, FileText, Video, Calendar as CalendarIcon, Filter, Layers, Layout, Star, MapPin, Search, Plus, ChevronDown, ChevronUp, TrendingUp } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileText, Video, Calendar as CalendarIcon, Filter, Layers, Layout, Star, Search, Plus, TrendingUp } from 'lucide-react';
 
 const cn = (...classes: (string | boolean | undefined)[]) => classes.filter(Boolean).join(' ');
 import DatePopupModal from './components/DatePopupModal';
@@ -46,6 +46,7 @@ interface Creative {
   name: string;
   type: string;
   url?: string;
+  nos?: string;
 }
 
 interface CalendarWorkCreative {
@@ -214,7 +215,7 @@ const CalendarPage = () => {
           items: JSON.parse(work.description || '[]'),
           content_file: undefined,
           notes: work.notes || '',
-          creative_works: work.creatives || [],
+          creative_works: (work.creatives || []).map(c => ({ id: c.id.toString(), name: c.name, nos: c.nos || '1' })) as CreativeWork[],
           is_special_day: work.is_special_day || false,
         };
       });

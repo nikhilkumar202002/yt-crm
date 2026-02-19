@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X, Eye, Users, Calendar, User } from 'lucide-react';
 import { Button } from '../../../components/common/Button';
-import { getGroupDetail, GroupData } from '../../../api/services/microService';
+import { getGroupDetail, type GroupData } from '../../../api/services/microService';
 
 interface GroupDetailsModalProps {
   groupId: number | null;

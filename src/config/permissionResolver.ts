@@ -40,7 +40,7 @@ export function resolvePermissions(user: {
   const groupLower = (user.group || '').toLowerCase().trim();
 
   // Start with merged base permissions
-  let permissions = { 
+  const permissions = { 
     ...GLOBAL_ROLES[mappedRole as keyof typeof GLOBAL_ROLES], 
     ...positionPermissions 
   };

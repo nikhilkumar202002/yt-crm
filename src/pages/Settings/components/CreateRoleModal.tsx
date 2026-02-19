@@ -3,7 +3,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { X, ShieldPlus } from 'lucide-react';
 import { Button } from '../../../components/common/Button';
 import { Input } from '../../../components/common/Input';
-import { createRole, RoleData } from '../../../api/services/authService';
+import { createRole, type RoleData } from '../../../api/services/authService';
 
 interface CreateRoleModalProps {
   onSuccess: () => void;

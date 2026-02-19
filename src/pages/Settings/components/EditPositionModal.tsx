@@ -3,7 +3,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { X, Edit, Briefcase } from 'lucide-react';
 import { Button } from '../../../components/common/Button';
 import { Input } from '../../../components/common/Input';
-import { updatePosition, PositionData } from '../../../api/services/microService';
+import { updatePosition, type PositionData } from '../../../api/services/microService';
 
 interface EditPositionModalProps {
   position: PositionData | null;

@@ -70,6 +70,7 @@ interface CalendarWork {
   content_assigned_by: string | null;
   designer_files?: any;
   designer_file?: any;
+  designer_status?: string;
   status?: string;
   client_approved_status?: string;
 }
