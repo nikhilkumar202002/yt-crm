@@ -27,7 +27,6 @@ export const setSecureCookie = (key: string, value: string, options?: Cookies.Co
   Cookies.set(key, encryptedValue, {
     secure: import.meta.env.PROD, // Secure only in production (HTTPS)
     sameSite: 'strict',
-    expires: 7, // 7 days
     httpOnly: false, // Allow JavaScript access
     ...options
   });

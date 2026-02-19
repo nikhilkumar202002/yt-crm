@@ -3,19 +3,41 @@ import { useAppDispatch } from '../../store/store';
 import { setLoginData } from '../../store/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
 import { loginUser } from '../../api/services/authService';
-import { Eye, EyeOff, Lock, Mail, Loader2, ShieldCheck, ChevronRight } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, Loader2, ShieldCheck, ChevronRight, AlertCircle } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState('');
   
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
+  const validateForm = () => {
+    if (!email.trim()) {
+      setError('Email is required');
+      return false;
+    }
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      setError('Please enter a valid email address');
+      return false;
+    }
+    if (!password.trim()) {
+      setError('Password is required');
+      return false;
+    }
+    return true;
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+    
+    if (!validateForm()) return;
+    
     setLoading(true);
 
     try {
@@ -23,13 +45,19 @@ const Login = () => {
 
       dispatch(setLoginData({
         user: data.user,
-        token: data.token
+        token: data.token,
+        rememberMe
       }));
 
       navigate('/dashboard');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Login Error:", error);
-      alert(error.response?.data?.message || 'Login failed');
+      let message = 'Login failed. Please try again.';
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: { message?: string } } };
+        message = axiosError.response?.data?.message || message;
+      }
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -47,6 +75,13 @@ const Login = () => {
         </div>
 
         <form onSubmit={handleLogin} className="space-y-6">
+          {error && (
+            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-none text-red-700 text-sm">
+              <AlertCircle size={16} />
+              {error}
+            </div>
+          )}
+          
           <div className="space-y-2">
             <label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">
               Email Address
@@ -57,6 +92,7 @@ const Login = () => {
                 type="email" 
                 placeholder="name@company.com" 
                 className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-600 focus:bg-white outline-none transition-all text-slate-900 text-sm font-medium placeholder:text-slate-400"
+                value={email}
                 onChange={(e) => setEmail(e.target.value)} 
                 required 
               />
@@ -78,6 +114,7 @@ const Login = () => {
                 type={showPassword ? "text" : "password"} 
                 placeholder="••••••••" 
                 className="w-full pl-12 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-600 focus:bg-white outline-none transition-all text-slate-900 text-sm font-medium placeholder:text-slate-400"
+                value={password}
                 onChange={(e) => setPassword(e.target.value)} 
                 required 
               />
@@ -92,7 +129,13 @@ const Login = () => {
           </div>
 
           <div className="flex items-center gap-2.5 py-1">
-            <input type="checkbox" id="rem" className="w-4 h-4 rounded-none border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
+            <input 
+              type="checkbox" 
+              id="rem" 
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="w-4 h-4 rounded-none border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" 
+            />
             <label htmlFor="rem" className="text-sm font-medium text-slate-600 cursor-pointer select-none">Keep me signed in</label>
           </div>
 

@@ -58,8 +58,8 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     // Corrected to handle the nested user structure from your API
-  setLoginData: (state, action: PayloadAction<{ user: User; token: string }>) => {
-  const { user, token } = action.payload;
+  setLoginData: (state, action: PayloadAction<{ user: User; token: string; rememberMe?: boolean }>) => {
+  const { user, token, rememberMe = false } = action.payload;
   state.user = user;
   state.token = token;
   // Use the exact string 'Admin' as returned by your API response
@@ -70,12 +70,13 @@ const authSlice = createSlice({
   state.permissions = user.permissions || null;
   state.isAuthenticated = true;
 
-  setSecureCookie('token', token);
-  setSecureCookie('user', JSON.stringify(user));
-  setSecureCookie('role_name', user.role_name);
-  setSecureCookie('position', String(user.designation_id) || '1');
-  setSecureCookie('group', user.group_name || '');
-  setSecureCookie('designation_name', user.designation_name || '');
+  const expires = rememberMe ? 7 : 1; // 7 days if remember, 1 day otherwise
+  setSecureCookie('token', token, { expires });
+  setSecureCookie('user', JSON.stringify(user), { expires });
+  setSecureCookie('role_name', user.role_name, { expires });
+  setSecureCookie('position', String(user.designation_id) || '1', { expires });
+  setSecureCookie('group', user.group_name || '', { expires });
+  setSecureCookie('designation_name', user.designation_name || '', { expires });
   localStorage.setItem('user', JSON.stringify(user));
 },
     logout: (state) => {
