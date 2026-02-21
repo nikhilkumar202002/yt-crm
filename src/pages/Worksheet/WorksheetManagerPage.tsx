@@ -4,7 +4,7 @@ import {
   Clipboard, Search,
   AlertTriangle,
   Image as ImageIcon,
-  LayoutGrid, List, Calendar as CalendarIcon, FileText, Upload,
+  LayoutGrid, List, Calendar as CalendarIcon, FileText, Upload, Loader2,
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
 import { getCalendarWorks, updateClientApprovedStatus, updateHeadApproval } from '../../api/services/microService';
@@ -77,13 +77,14 @@ interface CalendarWork {
   status?: string;
   designer_status?: string;
   client_approved_status?: string;
-  is_head_approved?: boolean | null;
+  is_head_approved?: string | null;
   head_comment?: string | null;
 }
 
 const WorksheetManagerPage = () => {
   const { user } = useAppSelector((state) => state.auth);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedClient, setSelectedClient] = useState<string>('');
   const [calendarWorks, setCalendarWorks] = useState<CalendarWork[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -106,6 +107,17 @@ const WorksheetManagerPage = () => {
   const openCommentModal = (work: CalendarWork) => {
     setCommentModal({ isOpen: true, work });
   };
+
+  // Get unique clients for dropdown
+  const uniqueClients = useMemo(() => {
+    const clients = calendarWorks
+      .map(work => work.client)
+      .filter((client, index, self) => 
+        client && self.findIndex(c => c.id === client.id) === index
+      )
+      .sort((a, b) => a.company_name.localeCompare(b.company_name));
+    return clients;
+  }, [calendarWorks]);
 
   // Check if user can approve
   const canApprove = useMemo(() => {
@@ -155,8 +167,8 @@ const WorksheetManagerPage = () => {
       setUpdatingWorkId(workId);
       if (type === 'head') {
         const work = calendarWorks.find(w => w.id === workId);
-        // Map UI string to boolean/null
-        const apiStatus = newStatus === 'approved' ? true : newStatus === 'edit_needed' ? false : null;
+        // Map UI string to API string
+        const apiStatus = newStatus === 'approved' ? 'Approved' : newStatus === 'edit_needed' ? 'Re-Edit' : null;
         await updateHeadApproval(workId, apiStatus, work?.head_comment || '');
         
         // Manual merge to prevent data loss and ensure visibility
@@ -180,21 +192,27 @@ const WorksheetManagerPage = () => {
     }
   };
 
-  const handleCommentChange = async (workId: number, comments: string) => {
+  const handleCommentChange = async (workId: number, comments: string, newStatus?: string) => {
     try {
       setUpdatingWorkId(workId);
       const work = calendarWorks.find(w => w.id === workId);
-      // Keep existing bool or default to null for pending
-      const currentStatus = work?.is_head_approved === undefined ? null : work.is_head_approved;
-      await updateHeadApproval(workId, currentStatus, comments);
+      
+      // Determine final status
+      let finalStatus = work?.is_head_approved === undefined ? null : work.is_head_approved;
+      if (newStatus) {
+        finalStatus = newStatus === 'approved' ? 'Approved' : newStatus === 'edit_needed' ? 'Re-Edit' : null;
+      }
+
+      await updateHeadApproval(workId, finalStatus, comments);
       
       // Manual merge to keep row data intact
       setCalendarWorks(prev => prev.map(w => w.id === workId ? { 
         ...w, 
-        head_comment: comments 
+        head_comment: comments,
+        is_head_approved: finalStatus
       } : w));
     } catch (err) {
-      console.error('Failed to update comments:', err);
+      console.error('Failed to update comments and status:', err);
     } finally {
       setUpdatingWorkId(null);
     }
@@ -307,28 +325,57 @@ const parseIds = (data: unknown): number[] => {
     return names.join(', ');
   };
 
-  // Filter works based on search term and approval status
-  const filteredCalendarWorks = calendarWorks.filter(work => {
-    // Hide works that are already approved by the head (Manager)
-    if (work.is_head_approved === true) return false;
+  const renderInitialBadge = (work: CalendarWork, type: 'designer' | 'content') => {
+    const assignedTo = type === 'designer' ? work.assigned_to : work.content_assigned_to;
+    const assignedNames = type === 'designer' ? work.assigned_to_names : work.content_assigned_to_names;
+    const ids = parseIds(assignedTo);
 
-    // Only show works that are in approval pending status or have been submitted for approval
-    const isApprovalPending = work.designer_status === 'approval_pending' ||
-                             work.designer_status === 'completed' ||
-                             work.client_approved_status === 'pending' ||
-                             !work.client_approved_status ||
-                             work.client_approved_status === 'needed_edit';
+    if (ids.length === 0) return <span className="text-[8px] text-slate-300 italic">None</span>;
 
-    if (!isApprovalPending) return false;
+    const names = ids.map(id => {
+      if (assignedNames && assignedNames[id.toString()]) return assignedNames[id.toString()];
+      return users.find(u => u.id === Number(id))?.name;
+    }).filter(Boolean);
 
-    const searchLower = searchTerm.toLowerCase();
+    if (names.length === 0) return <span className="text-[8px] text-slate-300 italic">None</span>;
+
+    const colors = [
+      'bg-slate-600', 'bg-blue-600', 'bg-indigo-600', 'bg-violet-600', 
+      'bg-slate-500', 'bg-blue-500', 'bg-indigo-500', 'bg-violet-500'
+    ];
+
     return (
+      <div className="flex -space-x-1.5 items-center justify-center hover:space-x-0.5 transition-all duration-300 group/badges">
+        {names.map((name, idx) => {
+          const initials = name!.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+          // Simple hash-based color selection
+          const colorIndex = (name!.charCodeAt(0) + name!.length) % colors.length;
+          return (
+            <div 
+              key={idx}
+              className={`w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold text-white border border-white shadow-sm ${colors[colorIndex]} transition-transform hover:scale-110 hover:z-10`}
+              title={name}
+            >
+              {initials}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // Filter works based on search term and client
+  const filteredCalendarWorks = calendarWorks.filter(work => {
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = (
       work.client?.company_name?.toLowerCase().includes(searchLower) ||
       work.client?.name?.toLowerCase().includes(searchLower) ||
       work.content_description?.toLowerCase().includes(searchLower) ||
       work.notes?.toLowerCase().includes(searchLower) ||
       work.tracking_no?.toLowerCase().includes(searchLower)
     );
+    const matchesClient = selectedClient === '' || work.client?.id.toString() === selectedClient;
+    return matchesSearch && matchesClient;
   });
 
   if (currentUserPosition && !canApprove) {
@@ -373,6 +420,20 @@ const parseIds = (data: unknown): number[] => {
               className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm font-normal"
             />
           </div>
+          <div className="relative">
+            <select
+              value={selectedClient}
+              onChange={(e) => setSelectedClient(e.target.value)}
+              className="px-3 py-2 border border-slate-200 rounded-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm font-normal bg-white min-w-[200px]"
+            >
+              <option value="">All Clients</option>
+              {uniqueClients.map(client => (
+                <option key={client.id} value={client.id.toString()}>
+                  {client.company_name}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="flex items-center border border-slate-200 bg-white p-1 ml-1 shrink-0 h-[38px]">
             <button 
               onClick={() => setViewMode('table')}
@@ -408,85 +469,82 @@ const parseIds = (data: unknown): number[] => {
           </div>
         ) : viewMode === 'table' ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[1400px] border border-slate-200">
-              <thead className="bg-slate-50/80 border-b border-slate-200">
-                <tr className="text-[8.5px] font-bold text-slate-500 uppercase tracking-[0.05em]">
-                  <th className="px-3 py-2.5 w-10 text-left border border-slate-200/60">#</th>
-                  <th className="px-3 py-2.5 w-24 border border-slate-200/60">Tracking</th>
-                  <th className="px-3 py-2.5 w-20 border border-slate-200/60">Date</th>
-                  <th className="px-3 py-2.5 w-20 border border-slate-200/60">Type</th>
-                  <th className="px-3 py-2.5 w-44 border border-slate-200/60">Client</th>
-                  <th className="px-3 py-2.5 min-w-[200px] border border-slate-200/60">Content Description</th>
-                  <th className="px-3 py-2.5 w-24 border border-slate-200/60">Creative</th>
-                  <th className="px-3 py-2.5 w-32 border border-slate-200/60">Designer</th>
-                  <th className="px-3 py-2.5 w-32 border border-slate-200/60">Writer</th>
-                  <th className="px-3 py-2.5 w-28 border border-slate-200/60">Design</th>
-                  <th className="px-3 py-2.5 w-28 border border-slate-200/60">Status</th>
-                  <th className="px-3 py-2.5 w-28 border border-slate-200/60">Client Appr</th>
-                  <th className="px-3 py-2.5 w-28 border border-slate-200/60">Head Appr</th>
-                  <th className="px-3 py-2.5 w-20 border border-slate-200/60 text-center">Cmd</th>
+            <table className="w-full text-left border-collapse min-w-[1400px]">
+              <thead className="bg-[#fcfcfd] border-b border-slate-200">
+                <tr className="text-[9.5px] font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="px-3 py-3 w-10 text-center">#</th>
+                  <th className="px-3 py-3 w-24">Tracking</th>
+                  <th className="px-3 py-3 w-20">Date</th>
+                  <th className="px-3 py-3 w-20 text-center">Type</th>
+                  <th className="px-3 py-3 w-48">Client</th>
+                  <th className="px-3 py-3 min-w-[200px]">Content Description</th>
+                  <th className="px-3 py-3 w-24">Creative</th>
+                  <th className="px-3 py-3 w-28 text-center">Designer</th>
+                  <th className="px-3 py-3 w-28 text-center">Writer</th>
+                  <th className="px-3 py-3 w-28">Design</th>
+                  <th className="px-3 py-3 w-24 text-center">Des Status</th>
+                  <th className="px-3 py-3 w-24 text-center">Client Appr</th>
+                  <th className="px-3 py-3 w-32 text-center">Head Approval</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
+              <tbody className="divide-y divide-slate-200 bg-white">
                 {filteredCalendarWorks.length > 0 ? (
                   filteredCalendarWorks.map((work, index) => (
-                    <tr key={work.id} className="hover:bg-blue-50/20 transition-colors group">
-                      <td className="px-3 py-2 text-left align-top text-[9px] font-medium text-slate-400 border border-slate-100/80">{index + 1}</td>
-                      <td className="px-3 py-2 align-top border border-slate-100/80">
+                    <tr key={work.id} className="hover:bg-[#f9fafb] transition-colors group">
+                      <td className="px-2 py-3 text-center align-middle text-[9px] font-medium text-slate-400">{index + 1}</td>
+                      <td className="px-3 py-3 align-middle">
                         <div className="text-[10px] font-bold text-blue-600 tracking-tight">
                           {work.tracking_no || 'N/A'}
                         </div>
                       </td>
-                      <td className="px-3 py-2 align-top border border-slate-100/80 whitespace-nowrap">
-                        <div className="text-[10px] font-medium text-slate-600">
+                      <td className="px-3 py-3 align-middle whitespace-nowrap">
+                        <div className="text-[10px] text-slate-600">
                           {work.date ? (() => {
                             const date = new Date(work.date);
                             return isNaN(date.getTime()) ? 'Invalid' : date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
                           })() : 'No Date'}
                         </div>
                       </td>
-                      <td className="px-3 py-2 align-top border border-slate-100/80">
-                        <div className="flex items-start">
-                          {work.is_special_day ? (
-                            <span className="text-[8px] font-extrabold text-purple-600 uppercase tracking-tighter bg-purple-50 px-1 rounded-sm border border-purple-100">
-                              Special
-                            </span>
-                          ) : (
-                            <span className="text-[8px] font-medium text-slate-400 uppercase tracking-tighter">Norm</span>
-                          )}
-                        </div>
+                      <td className="px-3 py-3 align-middle text-center">
+                        {work.is_special_day ? (
+                          <span className="text-[8px] font-bold text-purple-600 uppercase bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100">
+                            Spec
+                          </span>
+                        ) : (
+                          <span className="text-[8px] font-medium text-slate-400 uppercase tracking-tighter">Norm</span>
+                        )}
                       </td>
-                      <td className="px-3 py-2 align-top border border-slate-100/80">
+                      <td className="px-3 py-3 align-middle">
                         <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-800 leading-tight truncate">
+                          <p className="text-[10px] font-bold text-slate-900 leading-tight">
                             {work.client?.company_name || 'N/A'}
                           </p>
-                          <p className="text-[9px] text-slate-400 mt-0.5 truncate uppercase tracking-tighter">
+                          <p className="text-[9px] text-slate-400 mt-0.5 truncate uppercase tracking-tighter font-semibold">
                             {work.client?.name || 'N/A'}
                           </p>
                         </div>
                       </td>
-                      <td className="px-3 py-2 align-top border border-slate-100/80">
+                      <td className="px-3 py-3 align-middle">
                         <div
-                          className={`text-[10px] text-slate-500 rich-text-content leading-relaxed ${expandedRows[work.id] ? 'expanded' : ''}`}
+                          className={`text-[10.5px] text-slate-600 rich-text-content leading-relaxed ${expandedRows[work.id] ? 'expanded' : ''}`}
                           dangerouslySetInnerHTML={{ __html: work.content_description || 'No description' }}
                         />
                         {work.content_description && work.content_description.length > 50 && (
                           <button
                             onClick={() => toggleRowExpansion(work.id)}
-                            className="text-[8px] text-blue-500 hover:text-blue-700 font-bold mt-1 uppercase tracking-widest"
+                            className="text-[8.5px] text-blue-500 hover:text-blue-700 font-bold mt-1 uppercase"
                           >
                             {expandedRows[work.id] ? '[-] Less' : '[+] More'}
                           </button>
                         )}
                       </td>
-                      <td className="px-3 py-2 align-top border border-slate-100/80">
+                      <td className="px-3 py-3 align-middle">
                         <div className="flex flex-col gap-0.5">
                           {work.creatives && work.creatives.length > 0 ? (
                             work.creatives.slice(0, 2).map((creative, index) => (
-                              <div key={index} className="text-[9px] text-slate-600 whitespace-nowrap">
+                              <div key={index} className="text-[9.5px] text-slate-600 whitespace-nowrap font-medium">
                                 <span className="font-bold text-slate-400 mr-1">{creative.nos}x</span>
-                                {creative.name.length > 12 ? creative.name.substring(0, 12) + '..' : creative.name}
+                                {creative.name.length > 10 ? creative.name.substring(0, 9) + '.' : creative.name}
                               </div>
                             ))
                           ) : (
@@ -497,18 +555,18 @@ const parseIds = (data: unknown): number[] => {
                           )}
                         </div>
                       </td>
-                      <td className="px-3 py-2 align-top border border-slate-100/80">
-                        <div className="text-[9px] text-indigo-600 font-medium leading-tight">
+                      <td className="px-3 py-3 align-middle text-center">
+                        <div className="text-[9px] text-slate-600 font-medium leading-tight">
                           {getAssignedNames(work, 'designer')}
                         </div>
                       </td>
-                      <td className="px-3 py-2 align-top border border-slate-100/80">
-                        <div className="text-[9px] text-emerald-600 font-medium leading-tight">
+                      <td className="px-3 py-3 align-middle text-center">
+                        <div className="text-[9px] text-slate-600 font-medium leading-tight">
                           {getAssignedNames(work, 'content')}
                         </div>
                       </td>
-                      <td className="px-3 py-2 align-top border border-slate-100/80">
-                        <div className="flex flex-wrap items-start gap-1">
+                      <td className="px-3 py-3 align-middle">
+                        <div className="flex flex-wrap items-center gap-1.5">
                           {(() => {
                             const files = parseFiles(work.designer_files || work.designer_file);
                             return files.length > 0 ? (
@@ -518,14 +576,14 @@ const parseIds = (data: unknown): number[] => {
                                   <button
                                     key={idx}
                                     onClick={() => setLightboxImage(imageUrl)}
-                                    className="block group/img relative"
+                                    className="block relative hover:scale-105 transition-transform"
                                   >
                                     <img
                                       src={imageUrl}
                                       alt="Design"
-                                      className="h-8 w-8 object-cover rounded shadow-sm border border-slate-200 group-hover/img:border-blue-400 transition-all cursor-zoom-in"
+                                      className="h-9 w-9 object-cover rounded shadow-sm border border-slate-200 cursor-zoom-in"
                                       onError={(e) => {
-                                        (e.target as HTMLImageElement).src = 'https://placehold.co/32x32?text=Err';
+                                        (e.target as HTMLImageElement).src = 'https://placehold.co/36x36?text=Err';
                                       }}
                                     />
                                   </button>
@@ -538,87 +596,96 @@ const parseIds = (data: unknown): number[] => {
                             );
                           })()}
                           {parseFiles(work.designer_files || work.designer_file).length > 2 && (
-                            <span className="text-[8px] text-slate-400 self-center">+{parseFiles(work.designer_files || work.designer_file).length - 2}</span>
+                            <span className="text-[8px] text-slate-400 self-center font-bold">+{parseFiles(work.designer_files || work.designer_file).length - 2}</span>
                           )}
                         </div>
                       </td>
-                      <td className="px-3 py-2 align-top border border-slate-100/80">
-                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-tight text-white ${
-                          work.designer_status === 'completed' ? 'bg-green-500' :
-                          work.designer_status === 'working_progress' ? 'bg-blue-500' :
-                          work.designer_status === 'approval_pending' ? 'bg-violet-500' :
-                          'bg-slate-400'
-                        }`}>
-                          {work.designer_status?.replace('_', ' ') || 'Pending'}
-                        </span>
+                      <td className="px-3 py-3 align-middle">
+                        <div className="flex justify-center">
+                          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase transition-all ring-1 ring-inset ${
+                            work.designer_status === 'completed' ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20' :
+                            work.designer_status === 'working_progress' ? 'bg-blue-50 text-blue-700 ring-blue-600/20' :
+                            work.designer_status === 'approval_pending' ? 'bg-indigo-50 text-indigo-700 ring-indigo-600/20' :
+                            'bg-slate-50 text-slate-600 ring-slate-400/20'
+                          }`}>
+                            <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${
+                            work.designer_status === 'completed' ? 'bg-emerald-500' :
+                            work.designer_status === 'working_progress' ? 'bg-blue-500' :
+                            work.designer_status === 'approval_pending' ? 'bg-indigo-500' :
+                            'bg-slate-500'
+                            }`} />
+                            {work.designer_status === 'completed' ? 'Done' :
+                             work.designer_status === 'working_progress' ? 'Work' :
+                             work.designer_status === 'approval_pending' ? 'Rev' : 'Pend'}
+                          </span>
+                        </div>
                       </td>
-                      <td className="px-3 py-2 align-top border border-slate-100/80">
-                        <div className="flex flex-col gap-1">
+                      <td className="px-3 py-3 align-middle">
+                        <div className="flex justify-center">
                           <select
                             value={work.client_approved_status || 'pending'}
                             onChange={(e) => handleApprovalChange(work.id, e.target.value)}
                             disabled={updatingWorkId === work.id}
-                            className={`text-[8.5px] font-bold px-2 py-1 rounded border outline-none cursor-pointer w-full transition-all text-center appearance-none ${
-                              work.client_approved_status === 'approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' :
-                              work.client_approved_status === 'not_approved' ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100' :
-                              work.client_approved_status === 'needed_edit' ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' :
-                              work.client_approved_status === 'images_changed' ? 'bg-cyan-50 text-cyan-700 border-cyan-200 hover:bg-cyan-100' :
-                              'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
+                            className={`text-[8.5px] font-bold px-1.5 py-1 rounded border outline-none cursor-pointer w-full transition-all text-center appearance-none bg-white hover:border-slate-300 focus:border-blue-400 shadow-sm ${
+                              work.client_approved_status === 'approved' ? 'text-emerald-700 border-emerald-100 bg-emerald-50' :
+                              work.client_approved_status === 'not_approved' ? 'text-rose-700 border-rose-100 bg-rose-50' :
+                              work.client_approved_status === 'needed_edit' ? 'text-amber-700 border-amber-100 bg-amber-50' :
+                              work.client_approved_status === 'images_changed' ? 'text-cyan-700 border-cyan-100 bg-cyan-50' :
+                              'text-slate-600 border-slate-200'
                             }`}
                           >
                             <option value="pending">PENDING</option>
-                            <option value="approved">APPROVED</option>
-                            <option value="not_approved">REJECTED</option>
+                            <option value="approved">APPR</option>
+                            <option value="not_approved">REJECT</option>
                             <option value="needed_edit">EDIT</option>
-                            <option value="images_changed">IMAGES</option>
+                            <option value="images_changed">IMG</option>
                           </select>
                         </div>
                       </td>
-                      <td className="px-3 py-2 align-top border border-slate-100/80">
-                        <div className="flex flex-col gap-1">
-                          <select
-                            value={
-                              work.is_head_approved === true ? 'approved' : 
-                              (work.is_head_approved === false && work.head_comment) ? 'edit_needed' : 
-                              'pending'
-                            }
-                            onChange={(e) => handleApprovalChange(work.id, e.target.value, 'head')}
+                      <td className="px-3 py-3 align-middle">
+                        <div className="flex flex-col gap-1 items-center justify-center min-h-[30px]">
+                          <button
+                            onClick={() => openCommentModal(work)}
                             disabled={updatingWorkId === work.id}
-                            className={`text-[8.5px] font-bold px-2 py-1 rounded border outline-none cursor-pointer w-full transition-all text-center appearance-none ${
-                              work.is_head_approved === true ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' :
-                              (work.is_head_approved === false && work.head_comment) ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100' :
-                              'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
+                            className={`text-[9px] font-bold py-1.5 rounded border outline-none cursor-pointer w-full transition-all flex items-center justify-center gap-2 group/btn ${
+                              work.is_head_approved === 'Approved' ? 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50' :
+                              work.is_head_approved === 'Re-Edit' ? 'bg-white text-orange-700 border-orange-200 hover:bg-orange-50' :
+                              'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
                             }`}
                           >
-                            <option value="pending">PENDING</option>
-                            <option value="approved">APPROVED</option>
-                            <option value="edit_needed">RE-EDIT</option>
-                          </select>
+                            {updatingWorkId === work.id ? (
+                              <Loader2 size={12} className="animate-spin text-blue-600" />
+                            ) : (
+                               <div className="flex items-center gap-1.5">
+                                <span className={`w-2 h-2 rounded-full ${
+                                  work.is_head_approved === 'Approved' ? 'bg-emerald-500' : 
+                                  work.is_head_approved === 'Re-Edit' ? 'bg-orange-500' : 
+                                  'bg-slate-400'
+                                }`} />
+                                <span className="uppercase tracking-tighter">
+                                  {work.is_head_approved === 'Approved' ? 'Approved' : 
+                                   work.is_head_approved === 'Re-Edit' ? 'Re-Edit' : 
+                                   'Review'}
+                                </span>
+                               </div>
+                            )}
+                          </button>
                         </div>
-                      </td>
-                      <td className="px-3 py-2 align-top border border-slate-100/80 text-center">
-                        <button
-                          onClick={() => openCommentModal(work)}
-                          className={`p-1 rounded-full transition-colors ${work.head_comment ? 'text-blue-600 bg-blue-50' : 'text-slate-300 hover:text-slate-500 active:bg-slate-100'}`}
-                          title={work.head_comment || "Add Command"}
-                        >
-                          <FileText size={14} />
-                        </button>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={14} className="px-6 py-20 text-center align-top border border-slate-100/80">
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="p-3 bg-slate-50 rounded text-slate-200">
-                          <Clipboard size={20} />
+                    <td colSpan={13} className="px-6 py-24 text-center align-middle">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="p-4 bg-slate-50 rounded-full text-slate-200 ring-8 ring-slate-50/50">
+                          <Clipboard size={24} />
                         </div>
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                          Clear Queue
+                        <p className="text-[12px] font-bold text-slate-500 uppercase tracking-widest">
+                          Queue Empty
                         </p>
-                        <p className="text-[9px] text-slate-300 uppercase tracking-tighter">
-                          All works processed
+                        <p className="text-[10px] text-slate-400 uppercase tracking-tighter">
+                          All calendar works have been processed
                         </p>
                       </div>
                     </td>
@@ -631,87 +698,81 @@ const parseIds = (data: unknown): number[] => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCalendarWorks.length > 0 ? (
               filteredCalendarWorks.map((work) => (
-                <div key={work.id} className="bg-white border border-slate-200 rounded-lg overflow-hidden hover:shadow-lg transition-all flex flex-col group">
+                <div key={work.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-md transition-all flex flex-col group">
                   {/* Header Section */}
-                  <div className="p-4 border-b border-slate-100 bg-slate-50 group-hover:bg-blue-50/30 transition-colors">
+                  <div className="p-4 border-b border-slate-100 bg-[#fcfcfd]">
                     <div className="flex justify-between items-start mb-3">
-                      <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-md uppercase tracking-widest border border-blue-100">
+                      <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full uppercase tracking-wider border border-blue-100/50">
                         {work.tracking_no || 'UNT-000'}
                       </span>
                       <div className="flex items-center gap-2">
                         {work.is_special_day && (
-                          <span className="text-xs font-bold bg-purple-600 text-white px-2 py-1 rounded-md uppercase tracking-wider">
-                            Special Day
+                          <span className="text-[9px] font-bold bg-purple-50 text-purple-600 px-2 py-0.5 rounded-full border border-purple-100">
+                            SPECIAL
                           </span>
                         )}
-                        <div className="flex items-center gap-1 text-slate-500">
+                        <div className="flex items-center gap-1 text-slate-400">
                           <CalendarIcon size={12} />
-                          <span className="text-xs font-medium">
-                            {work.date ? new Date(work.date).toLocaleDateString() : 'No Date'}
+                          <span className="text-[10px] font-medium">
+                            {work.date ? new Date(work.date).toLocaleDateString('en-GB') : 'No Date'}
                           </span>
                         </div>
                       </div>
                     </div>
                     <h3 className="text-sm font-bold text-slate-900 leading-tight mb-1">{work.client?.company_name || 'N/A'}</h3>
-                    <p className="text-xs text-slate-500">{work.client?.name || 'N/A'}</p>
+                    <p className="text-[11px] text-slate-400 font-medium uppercase tracking-tight">{work.client?.name || 'N/A'}</p>
                   </div>
 
                   {/* Content Section */}
                   <div className="p-4 flex-1 space-y-4">
                     {/* Content Description */}
                     <div className="space-y-1.5">
-                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                        <FileText size={10} className="text-blue-500" /> Content Description
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                        Content Description
                       </label>
                       <div
-                        className={`text-xs text-slate-600 rich-text-content leading-relaxed ${expandedRows[work.id] ? 'expanded' : ''}`}
+                        className={`text-[11px] text-slate-600 rich-text-content leading-relaxed ${expandedRows[work.id] ? 'expanded' : ''}`}
                         dangerouslySetInnerHTML={{ __html: work.content_description || 'No description provided' }}
                       />
                       {work.content_description && work.content_description.length > 100 && (
                         <button
                           onClick={() => toggleRowExpansion(work.id)}
-                          className="text-xs text-blue-600 font-bold uppercase hover:underline"
+                          className="text-[10px] text-blue-600 font-bold uppercase hover:underline mt-1"
                         >
-                          {expandedRows[work.id] ? 'Less' : 'More'}
+                          {expandedRows[work.id] ? '[-] Less' : '[+] More'}
                         </button>
                       )}
                     </div>
 
-                    {/* Creatives */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Creatives</label>
-                      <div className="flex flex-wrap gap-1">
-                        {work.creatives && work.creatives.length > 0 ? (
-                          work.creatives.map((creative, idx) => (
-                            <span key={idx} className="bg-green-50 border border-green-200 rounded px-2 py-1 text-xs font-medium text-green-800">
-                              {creative.name} ({creative.nos})
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-xs text-slate-400 italic">No creatives</span>
-                        )}
+                    {/* Creatives and Assignments */}
+                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-50">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Creatives</label>
+                        <div className="flex flex-wrap gap-1">
+                          {work.creatives && work.creatives.length > 0 ? (
+                            work.creatives.slice(0, 3).map((creative, idx) => (
+                              <span key={idx} className="bg-slate-50 border border-slate-200 rounded-md px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                {creative.nos}x {creative.name}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-[10px] text-slate-300 italic">No items</span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-
-                    {/* Assignments */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <p className="text-xs font-black text-slate-400 uppercase tracking-tighter">Designer</p>
-                        <p className="text-xs font-semibold text-indigo-800 bg-indigo-50 p-2 border border-indigo-200 rounded truncate">
-                          {getAssignedNames(work, 'designer')}
-                        </p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs font-black text-slate-400 uppercase tracking-tighter">Content Writer</p>
-                        <p className="text-xs font-semibold text-emerald-800 bg-emerald-50 p-2 border border-emerald-200 rounded truncate">
-                          {getAssignedNames(work, 'content')}
-                        </p>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Assigned</label>
+                        <div className="flex items-center gap-2">
+                           {renderInitialBadge(work, 'designer')}
+                           <span className="text-slate-300 font-light">|</span>
+                           {renderInitialBadge(work, 'content')}
+                        </div>
                       </div>
                     </div>
 
                     {/* Design Files */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Design Files</label>
+                    <div className="space-y-2 pt-2 border-t border-slate-50">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Designs</label>
                       <div className="flex flex-wrap gap-2">
                         {parseFiles(work.designer_files || work.designer_file).map((file, idx) => {
                           const imageUrl = file.startsWith('http') ? file : `${import.meta.env.VITE_API_BASE_URL || ''}/${file.replace(/^\//, '')}`;
@@ -719,119 +780,76 @@ const parseIds = (data: unknown): number[] => {
                             <img
                               key={idx}
                               src={imageUrl}
-                              className="h-12 w-12 object-cover border border-slate-200 cursor-zoom-in hover:border-blue-500 transition-all rounded"
+                              className="h-14 w-14 object-cover border border-slate-200 cursor-zoom-in hover:border-blue-400 transition-all rounded-lg shadow-sm"
                               onClick={() => setLightboxImage(imageUrl)}
                             />
                           );
                         })}
                         {parseFiles(work.designer_files || work.designer_file).length === 0 && (
-                          <div className="flex items-center gap-1 text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded border border-slate-200">
-                            <ImageIcon size={12} />
-                            No designs uploaded
+                          <div className="w-full py-3 bg-slate-50 rounded-lg border border-dashed border-slate-200 flex items-center justify-center text-[10px] text-slate-400 gap-2">
+                            <ImageIcon size={12} /> No designs uploaded
                           </div>
                         )}
-                      </div>
-                    </div>
-
-                    {/* Status Badges */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-black text-slate-400 uppercase tracking-tighter">Designer Status</span>
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-bold text-white ${
-                          work.designer_status === 'completed' ? 'bg-green-600' :
-                          work.designer_status === 'working_progress' ? 'bg-blue-600' :
-                          work.designer_status === 'approval_pending' ? 'bg-purple-600' :
-                          'bg-slate-500'
-                        }`}>
-                          <div className={`w-1.5 h-1.5 rounded-full ${
-                            work.designer_status === 'completed' ? 'bg-green-200' :
-                            work.designer_status === 'working_progress' ? 'bg-blue-200' :
-                            work.designer_status === 'approval_pending' ? 'bg-purple-200' :
-                            'bg-slate-200'
-                          }`}></div>
-                          {work.designer_status?.replace('_', ' ').toUpperCase() || 'PENDING'}
-                        </span>
                       </div>
                     </div>
                   </div>
 
                   {/* Approval Section */}
                   <div className="p-4 bg-slate-50 border-t border-slate-100 mt-auto space-y-3">
-                    {/* Client Approval */}
-                    <div className="space-y-1.5">
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Client Approval Status</p>
-                      <select
-                        value={work.client_approved_status || 'pending'}
-                        onChange={(e) => handleApprovalChange(work.id, e.target.value)}
-                        disabled={updatingWorkId === work.id}
-                        className={`text-xs font-bold px-3 py-2 rounded-md border outline-none cursor-pointer w-full transition-all appearance-none text-center ${
-                          work.client_approved_status === 'approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' :
-                          work.client_approved_status === 'not_approved' ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100' :
-                          work.client_approved_status === 'needed_edit' ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' :
-                          work.client_approved_status === 'images_changed' ? 'bg-cyan-50 text-cyan-700 border-cyan-200 hover:bg-cyan-100' :
-                          'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
-                        }`}
-                      >
-                        <option value="pending">Pending Review</option>
-                        <option value="approved">Approved</option>
-                        <option value="not_approved">Rejected</option>
-                        <option value="needed_edit">Edit Needed</option>
-                        <option value="images_changed">Images Changed</option>
-                      </select>
-                    </div>
-
-                    {/* Head Approval */}
-                    <div className="space-y-1.5">
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Head Approval Status</p>
-                      <select
-                        value={
-                          work.is_head_approved === true ? 'approved' : 
-                          (work.is_head_approved === false && work.head_comment) ? 'edit_needed' : 
-                          'pending'
-                        }
-                        onChange={(e) => handleApprovalChange(work.id, e.target.value, 'head')}
-                        disabled={updatingWorkId === work.id}
-                        className={`text-xs font-bold px-3 py-2 rounded-md border outline-none cursor-pointer w-full transition-all appearance-none text-center ${
-                          work.is_head_approved === true ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' :
-                          (work.is_head_approved === false && work.head_comment) ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100' :
-                          'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
-                        }`}
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="approved">Approved</option>
-                        <option value="edit_needed">Re-Edit Needed</option>
-                      </select>
-                    </div>
-
-                    {/* Comments */}
-                    <div className="space-y-1.5 pt-1">
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Approval Feedback</p>
-                      <button
-                        onClick={() => openCommentModal(work)}
-                        className={`w-full py-2 rounded-md text-[11px] font-bold border transition-all flex items-center justify-center gap-2 ${
-                          work.head_comment 
-                          ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' 
-                          : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'
-                        }`}
-                      >
-                        <FileText size={12} />
-                        {work.head_comment ? 'View/Edit Comments' : 'Add Comments'}
-                      </button>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex-1 space-y-1">
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider text-center">Client Status</p>
+                        <select
+                          value={work.client_approved_status || 'pending'}
+                          onChange={(e) => handleApprovalChange(work.id, e.target.value)}
+                          disabled={updatingWorkId === work.id}
+                          className={`text-[10px] font-bold px-2 py-1.5 rounded-lg border outline-none cursor-pointer w-full transition-all appearance-none text-center shadow-sm bg-white hover:border-slate-300 ${
+                            work.client_approved_status === 'approved' ? 'text-emerald-700 border-emerald-100' :
+                            work.client_approved_status === 'not_approved' ? 'text-rose-700 border-rose-100' :
+                            work.client_approved_status === 'needed_edit' ? 'text-amber-700 border-amber-100' :
+                            'text-slate-600 border-slate-200'
+                          }`}
+                        >
+                          <option value="pending">PENDING</option>
+                          <option value="approved">APPROVED</option>
+                          <option value="not_approved">REJECTED</option>
+                          <option value="needed_edit">EDIT NEEDED</option>
+                        </select>
+                      </div>
+                      <div className="flex-1 space-y-1">
+                         <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider text-center">Head Approval</p>
+                         <button
+                           onClick={() => openCommentModal(work)}
+                           className={`text-[10px] font-bold px-2 py-1.5 rounded-lg border outline-none cursor-pointer w-full transition-all text-center shadow-sm flex items-center justify-center gap-2 bg-white ${
+                            work.is_head_approved === 'Approved' ? 'text-emerald-700 border-emerald-100 hover:bg-emerald-50' :
+                            work.is_head_approved === 'Re-Edit' ? 'text-orange-700 border-orange-100 hover:bg-orange-50' :
+                            'text-slate-600 border-slate-200 hover:bg-slate-50'
+                           }`}
+                         >
+                            <span className={`w-2 h-2 rounded-full ${
+                              work.is_head_approved === 'Approved' ? 'bg-emerald-500' : 
+                              work.is_head_approved === 'Re-Edit' ? 'bg-orange-500' : 
+                              'bg-slate-400'
+                            }`} />
+                            {work.is_head_approved === 'Approved' ? 'APPROVED' : 
+                             work.is_head_approved === 'Re-Edit' ? 'RE-EDIT' : 
+                             'REVIEW'}
+                         </button>
+                      </div>
                     </div>
 
                     {/* Loading State */}
                     {updatingWorkId === work.id && (
-                      <div className="flex items-center justify-center gap-2 text-xs text-blue-600 font-bold bg-blue-50 px-3 py-1.5 rounded-md border border-blue-200">
-                        <div className="animate-spin h-3 w-3 border border-blue-600 border-t-transparent rounded-full" />
-                        UPDATING...
+                      <div className="flex items-center justify-center gap-2 text-[10px] text-blue-600 font-bold bg-blue-50 py-2 rounded-lg border border-blue-100 animate-pulse">
+                        <Loader2 size={12} className="animate-spin" /> UPDATING...
                       </div>
                     )}
                   </div>
                 </div>
               ))
             ) : (
-              <div className="col-span-full bg-white border border-slate-100 p-20 text-center italic text-slate-400 text-sm">
-                No works found matching your filter.
+              <div className="col-span-full py-20 bg-white border border-slate-200 rounded-xl text-center">
+                <p className="text-slate-400 text-sm font-medium">No results found.</p>
               </div>
             )}
           </div>
@@ -841,12 +859,19 @@ const parseIds = (data: unknown): number[] => {
       <CommentModal
         isOpen={commentModal.isOpen}
         onClose={() => setCommentModal(prev => ({ ...prev, isOpen: false }))}
-        onSave={(comments) => {
+        onSave={(comments, status) => {
           if (commentModal.work) {
-            handleCommentChange(commentModal.work.id, comments);
+            handleCommentChange(commentModal.work.id, comments, status);
           }
         }}
         initialComments={commentModal.work?.head_comment || ''}
+        initialStatus={
+          commentModal.work?.is_head_approved === 'Approved' ? 'approved' : 
+          commentModal.work?.is_head_approved === 'Re-Edit' ? 'edit_needed' : 
+          'pending'
+        }
+        showStatusSelector={true}
+        title="Manager Board Approval"
       />
 
       {lightboxImage && (

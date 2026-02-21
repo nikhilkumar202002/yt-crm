@@ -671,7 +671,7 @@ export const updateHeadApprovalComments = async (id: number, comments: string) =
  * PUT Update head approval for a calendar work
  * Endpoint: PUT /calendar-works/{id}/head-approval
  */
-export const updateHeadApproval = async (id: number, isHeadApproved: boolean | null, headComment: string) => {
+export const updateHeadApproval = async (id: number, isHeadApproved: string | null, headComment: string) => {
   const response = await apiClient.put(`/calendar-works/${id}/head-approval`, {
     is_head_approved: isHeadApproved,
     head_comment: headComment

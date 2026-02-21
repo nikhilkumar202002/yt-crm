@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Play, Square, Clock, Coffee, LogOut, Loader2 } from 'lucide-react';
+import { Play, Square, Clock, Coffee, LogOut, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { punchIn, punchOut, getAttendanceStatus } from '../../api/services/authService';
 
 interface BreakTrackerProps {
@@ -16,6 +16,7 @@ export const BreakTracker = ({ onBreakIn, onBreakOut, onPunchIn, onPunchOut }: B
   const [isWorking, setIsWorking] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [loading, setLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   // Fetch initial status on mount
   useEffect(() => {
@@ -125,102 +126,120 @@ export const BreakTracker = ({ onBreakIn, onBreakOut, onPunchIn, onPunchOut }: B
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-40">
-      <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-3 min-w-[240px]">
-        {/* Header with Status */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <Clock size={14} className="text-gray-500" />
-            <span className="text-xs font-normal text-gray-700">Time Tracker</span>
-          </div>
-          <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor()}`}>
-            {getStatusText()}
-          </div>
-        </div>
-
-        {/* Current Time Display */}
-        <div className="text-center mb-3">
-          <div className="text-base font-medium text-gray-800">
-            {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </div>
-          <div className="text-xs text-gray-500">
-            {currentTime.toLocaleDateString()}
-          </div>
-        </div>
-
-        {/* Work Time Display */}
-        {isWorking && workInTime && (
-          <div className="bg-blue-50 rounded p-1.5 mb-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-blue-700 font-normal">Started:</span>
-              <span className="text-blue-800 font-medium">{workInTime}</span>
-            </div>
-          </div>
+    <>
+      {/* Arrow Toggle Button - Always visible on right side */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="fixed bottom-6 right-6 z-50 bg-white border border-gray-200 rounded-full shadow-lg p-3 transition-all duration-300 hover:bg-gray-50 hover:scale-105"
+        title={isOpen ? 'Hide Time Tracker' : 'Show Time Tracker'}
+      >
+        {isOpen ? (
+          <ChevronRight size={18} className="text-gray-600" />
+        ) : (
+          <ChevronLeft size={18} className="text-gray-600" />
         )}
+      </button>
 
-        {/* Break Time Display */}
-        {isOnBreak && breakInTime && (
-          <div className="bg-orange-50 rounded p-1.5 mb-2 animate-pulse">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-orange-700 font-normal">Break:</span>
-              <span className="text-orange-800 font-medium">{breakInTime}</span>
+      {/* Main Component - Only renders when open */}
+      {isOpen && (
+        <div className="fixed bottom-6 right-20 z-40 animate-in slide-in-from-right duration-300">
+          <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-3 min-w-[240px]">
+            {/* Header with Status */}
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Clock size={14} className="text-gray-500" />
+                <span className="text-xs font-normal text-gray-700">Time Tracker</span>
+              </div>
+              <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor()}`}>
+                {getStatusText()}
+              </div>
             </div>
-          </div>
-        )}
 
-        {/* Action Buttons */}
-        <div className="space-y-1.5">
-          {!isWorking ? (
-            <button
-              onClick={handlePunchIn}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white py-1.5 px-3 rounded transition-colors font-normal text-sm"
-            >
-              {loading ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <Clock size={14} />
-              )}
-              {loading ? 'Processing...' : 'Start Work'}
-            </button>
-          ) : (
-            <>
-              {!isOnBreak ? (
-                <div className="grid grid-cols-2 gap-1.5">
-                  <button
-                    onClick={handleBreakIn}
-                    disabled={loading}
-                    className="flex items-center justify-center gap-1 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white py-1.5 px-2 rounded transition-colors font-normal text-xs"
-                  >
-                    <Coffee size={12} />
-                    Break
-                  </button>
-                  <button
-                    onClick={handlePunchOut}
-                    disabled={loading}
-                    className="flex items-center justify-center gap-1 bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white py-1.5 px-2 rounded transition-colors font-normal text-xs"
-                  >
-                    {loading ? (
-                      <Loader2 size={12} className="animate-spin" />
-                    ) : (
-                      <LogOut size={12} />
-                    )}
-                    {loading ? '...' : 'End'}
-                  </button>
+            {/* Current Time Display */}
+            <div className="text-center mb-3">
+              <div className="text-base font-medium text-gray-800">
+                {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </div>
+              <div className="text-xs text-gray-500">
+                {currentTime.toLocaleDateString()}
+              </div>
+            </div>
+
+            {/* Work Time Display */}
+            {isWorking && workInTime && (
+              <div className="bg-blue-50 rounded p-1.5 mb-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-blue-700 font-normal">Started:</span>
+                  <span className="text-blue-800 font-medium">{workInTime}</span>
                 </div>
-              ) : (
+              </div>
+            )}
+
+            {/* Break Time Display */}
+            {isOnBreak && breakInTime && (
+              <div className="bg-orange-50 rounded p-1.5 mb-2 animate-pulse">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-orange-700 font-normal">Break:</span>
+                  <span className="text-orange-800 font-medium">{breakInTime}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="space-y-1.5">
+              {!isWorking ? (
                 <button
-                  onClick={handleBreakOut}
-                  className="w-full flex items-center justify-center gap-1.5 bg-green-600 hover:bg-green-700 text-white py-1.5 px-3 rounded transition-colors font-normal text-sm"
+                  onClick={handlePunchIn}
+                  disabled={loading}
+                  className="w-full flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white py-1.5 px-3 rounded transition-colors font-normal text-sm"
                 >
-                  <Play size={14} />
-                  Resume
+                  {loading ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Clock size={14} />
+                  )}
+                  {loading ? 'Processing...' : 'Start Work'}
                 </button>
+              ) : (
+                <>
+                  {!isOnBreak ? (
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        onClick={handleBreakIn}
+                        disabled={loading}
+                        className="flex items-center justify-center gap-1 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white py-1.5 px-2 rounded transition-colors font-normal text-xs"
+                      >
+                        <Coffee size={12} />
+                        Break
+                      </button>
+                      <button
+                        onClick={handlePunchOut}
+                        disabled={loading}
+                        className="flex items-center justify-center gap-1 bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white py-1.5 px-2 rounded transition-colors font-normal text-xs"
+                      >
+                        {loading ? (
+                          <Loader2 size={12} className="animate-spin" />
+                        ) : (
+                          <LogOut size={12} />
+                        )}
+                        {loading ? '...' : 'End'}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleBreakOut}
+                      className="w-full flex items-center justify-center gap-1.5 bg-green-600 hover:bg-green-700 text-white py-1.5 px-3 rounded transition-colors font-normal text-sm"
+                    >
+                      <Play size={14} />
+                      Resume
+                    </button>
+                  )}
+                </>
               )}
-            </>
-          )}
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 };
