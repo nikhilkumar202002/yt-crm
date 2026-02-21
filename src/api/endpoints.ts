@@ -12,6 +12,10 @@ export const ENDPOINTS = {
   ROLES: {
     BASE: '/roles',
     DETAIL: (id: number) => `/roles/${id}`,
+    PERMISSIONS: (id: number) => `/roles/${id}/permissions`,
+    PERMISSIONS_ASSIGN: (id: number) => `/roles/${id}/permissions/assign`,
+    PERMISSIONS_REMOVE: (id: number) => `/roles/${id}/permissions/remove`,
+    PERMISSIONS_SYNC: (id: number) => `/roles/${id}/permissions/sync`,
   },  
   DEPARTMENTS: {
     BASE: '/departments',
@@ -73,6 +77,10 @@ PROPOSALS: {
   PERMISSIONS: {
     BASE: '/permissions',
     DETAIL: (id: number) => `/permissions/${id}`,
+    ROLES: (id: number) => `/permissions/${id}/roles`,
+  },
+  ROLE_PERMISSIONS: {
+    BASE: '/role-permissions',
   },
   ATTENDANCE: {
     PUNCH_IN: '/attendance/punch-in',

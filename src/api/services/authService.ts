@@ -15,6 +15,20 @@ export interface PermissionData {
   code: string;
 }
 
+export interface AssignPermissionsData {
+  permission_ids: number[];
+}
+
+export interface RolePermission {
+  id: number;
+  role_id: number;
+  permission_id: number;
+  created_at: string;
+  updated_at: string;
+  role?: RoleData;
+  permission?: PermissionData;
+}
+
 export interface RegistrationData {
   name: string;
   email: string;
@@ -136,5 +150,36 @@ export const updatePermission = async (id: number, data: PermissionData) => {
 
 export const deletePermission = async (id: number) => {
   const response = await apiClient.delete(ENDPOINTS.PERMISSIONS.DETAIL(id));
+  return response.data;
+};
+
+// Role Permission Service Functions
+export const getRolePermissions = async (roleId: number) => {
+  const response = await apiClient.get(ENDPOINTS.ROLES.PERMISSIONS(roleId));
+  return response.data;
+};
+
+export const assignPermissionsToRole = async (roleId: number, data: AssignPermissionsData) => {
+  const response = await apiClient.post(ENDPOINTS.ROLES.PERMISSIONS_ASSIGN(roleId), data);
+  return response.data;
+};
+
+export const removePermissionsFromRole = async (roleId: number, data: AssignPermissionsData) => {
+  const response = await apiClient.post(ENDPOINTS.ROLES.PERMISSIONS_REMOVE(roleId), data);
+  return response.data;
+};
+
+export const syncRolePermissions = async (roleId: number, data: AssignPermissionsData) => {
+  const response = await apiClient.put(ENDPOINTS.ROLES.PERMISSIONS_SYNC(roleId), data);
+  return response.data;
+};
+
+export const getPermissionRoles = async (permissionId: number) => {
+  const response = await apiClient.get(ENDPOINTS.PERMISSIONS.ROLES(permissionId));
+  return response.data;
+};
+
+export const getAllRolePermissions = async () => {
+  const response = await apiClient.get(ENDPOINTS.ROLE_PERMISSIONS.BASE);
   return response.data;
 };

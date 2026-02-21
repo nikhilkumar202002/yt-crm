@@ -24,6 +24,7 @@ import CalendarPage from './pages/Calendar/CalendarPage';
 import WorksheetPage from './pages/Worksheet/WorksheetPage';
 import GroupsPage from './pages/Settings/GroupsPage';
 import PositionsPage from './pages/Settings/PositionsPage';
+import PermissionsPage from './pages/Settings/PermissionsPage';
 
 
 
@@ -66,6 +67,7 @@ function App() {
             <Route path="/worksheet" element={<WorksheetPage />} />
             <Route path="/settings/groups" element={<GroupsPage />} />
             <Route path="/settings/positions" element={<PositionsPage />} />
+            <Route path="/settings/permissions" element={<PermissionsPage />} />
             
             
           </Route>

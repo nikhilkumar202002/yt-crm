@@ -10,6 +10,12 @@ export { EditPositionModal } from './EditPositionModal';
 export { PositionDetailsModal } from './PositionDetailsModal';
 export { DeletePositionModal } from './DeletePositionModal';
 
+// Permission Modals
+export { CreatePermissionModal } from './CreatePermissionModal';
+export { EditPermissionModal } from './EditPermissionModal';
+export { PermissionDetailsModal } from './PermissionDetailsModal';
+export { DeletePermissionModal } from './DeletePermissionModal';
+
 // Department Modals
 export { CreateDepartmentModal } from './CreateDepartmentModal';
 
