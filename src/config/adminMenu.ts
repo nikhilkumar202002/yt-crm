@@ -65,6 +65,7 @@ export const ADMIN_MENU: MenuItem[] = [
       { title: 'Groups', path: '/settings/groups', requiredPermissions: ['canManageGroups'] },
       { title: 'Positions', path: '/settings/positions', requiredPermissions: ['canManageGroups'] },
       { title: 'Permissions', path: '/settings/permissions', requiredPermissions: ['canManageGroups'] },
+      { title: 'Role Permissions', path: '/settings/role-permissions', requiredPermissions: ['canManageGroups'] },
       { title: 'Services', path: '/settings/services', requiredPermissions: ['canManageGroups'] },
       { title: 'Calendar Work Creatives', path: '/settings/calendar-work-creatives', requiredPermissions: ['canManageGroups'] },
     ]

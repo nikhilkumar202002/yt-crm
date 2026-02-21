@@ -5,7 +5,7 @@ export interface RoleData {
   id?: number;
   name: string;
   description: string;
-  status: boolean | number;
+  status: boolean | number | string;
 }
 
 export interface PermissionData {
@@ -179,7 +179,7 @@ export const getPermissionRoles = async (permissionId: number) => {
   return response.data;
 };
 
-export const getAllRolePermissions = async () => {
-  const response = await apiClient.get(ENDPOINTS.ROLE_PERMISSIONS.BASE);
+export const getAllRolePermissions = async (page: number = 1) => {
+  const response = await apiClient.get(`${ENDPOINTS.ROLE_PERMISSIONS.BASE}?page=${page}`);
   return response.data;
 };

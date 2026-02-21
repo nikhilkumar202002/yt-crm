@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Shield, Edit2, Trash2 } from 'lucide-react';
-import { getRoles, deleteRole, type RoleData } from '../../api/services/authService';
+import { getRoles, deleteRole, getAllRolePermissions, type RoleData } from '../../api/services/authService';
 import { CreateRoleModal } from './components/CreateRoleModal';
 
 const RoleManagement = () => {
   const [roles, setRoles] = useState<RoleData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rolePermissions, setRolePermissions] = useState<any[]>([]);
 
   const fetchRoles = useCallback(async () => {
   try {
@@ -27,10 +28,24 @@ const RoleManagement = () => {
     setLoading(false);
   }
 }, []);
-
+  const fetchRolePermissions = useCallback(async () => {
+    try {
+      const result = await getAllRolePermissions();
+      const permissionsList = result?.data?.data || [];
+      setRolePermissions(Array.isArray(permissionsList) ? permissionsList : []);
+    } catch (error) {
+      console.error("Failed to fetch role permissions:", error);
+      setRolePermissions([]);
+    }
+  }, []);
   useEffect(() => {
     fetchRoles();
-  }, [fetchRoles]);
+    fetchRolePermissions();
+  }, [fetchRoles, fetchRolePermissions]);
+
+  const getRolePermissions = (roleId: number) => {
+    return rolePermissions.filter(rp => rp.role_id === roleId.toString());
+  };
 
   const handleDelete = async (id: number) => {
     if (window.confirm("Are you sure you want to delete this role?")) {
@@ -66,6 +81,7 @@ const RoleManagement = () => {
                   <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Role Name</th>
                   <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Description</th>
                   <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
+                  <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Permissions</th>
                   <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
                 </tr>
               </thead>
@@ -82,12 +98,25 @@ const RoleManagement = () => {
                       <td className="px-6 py-4 text-[11px] text-slate-500">{role.description}</td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold border ${
-                          role.status === 1 || role.status === true
+                          role.status == 1 || role.status == "1"
                             ? 'bg-green-50 text-green-600 border-green-100'
                             : 'bg-red-50 text-red-600 border-red-100'
                         }`}>
-                          {role.status === 1 || role.status === true ? 'Active' : 'Inactive'}
+                          {role.status == 1 || role.status == "1" ? 'Active' : 'Inactive'}
                         </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-wrap gap-1">
+                          {getRolePermissions(role.id!).length > 0 ? (
+                            getRolePermissions(role.id!).map((rp: any) => (
+                              <span key={rp.id} className="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[8px] font-medium rounded border border-blue-100">
+                                {rp.permission.code}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-[10px] text-slate-400">No permissions</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-right space-x-2">
                         <button className="text-slate-400 hover:text-blue-600"><Edit2 size={14} /></button>
@@ -99,7 +128,7 @@ const RoleManagement = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={4} className="px-6 py-10 text-center text-slate-400 italic text-sm">
+                    <td colSpan={5} className="px-6 py-10 text-center text-slate-400 italic text-sm">
                       No roles found in the system.
                     </td>
                   </tr>
