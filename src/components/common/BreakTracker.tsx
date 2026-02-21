@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Play, Square, Clock, Coffee, LogOut } from 'lucide-react';
+import { Play, Square, Clock, Coffee, LogOut, Loader2 } from 'lucide-react';
+import { punchIn, punchOut, getAttendanceStatus } from '../../api/services/authService';
 
 interface BreakTrackerProps {
   onBreakIn?: () => void;
@@ -14,6 +15,29 @@ export const BreakTracker = ({ onBreakIn, onBreakOut, onPunchIn, onPunchOut }: B
   const [workInTime, setWorkInTime] = useState<string | null>(null);
   const [isWorking, setIsWorking] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [loading, setLoading] = useState(false);
+
+  // Fetch initial status on mount
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        setLoading(true);
+        const response = await getAttendanceStatus();
+        const data = response.data || response;
+        
+        if (data.is_punched_in) {
+          setIsWorking(true);
+          const punchTime = data.punch_in_at ? new Date(data.punch_in_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+          setWorkInTime(punchTime);
+        }
+      } catch (error) {
+        console.error('Failed to fetch attendance status:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStatus();
+  }, []);
 
   // Update current time every minute
   useEffect(() => {
@@ -23,19 +47,56 @@ export const BreakTracker = ({ onBreakIn, onBreakOut, onPunchIn, onPunchOut }: B
     return () => clearInterval(timer);
   }, []);
 
-  const handlePunchIn = () => {
-    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    setWorkInTime(now);
-    setIsWorking(true);
-    onPunchIn?.();
+  const handlePunchIn = async () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      navigator.geolocation.getCurrentPosition(async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          await punchIn({ latitude, longitude });
+          
+          const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          setWorkInTime(now);
+          setIsWorking(true);
+          onPunchIn?.();
+        } catch (error) {
+          console.error('Punch in failed:', error);
+          alert('Failed to punch in. Please try again.');
+        } finally {
+          setLoading(false);
+        }
+      }, (error) => {
+        setLoading(false);
+        console.error('Geolocation error:', error);
+        alert('Could not get your location. Please enable location services.');
+      });
+    } catch (error) {
+      setLoading(false);
+      console.error('Setup error:', error);
+    }
   };
 
-  const handlePunchOut = () => {
-    setIsWorking(false);
-    setIsOnBreak(false);
-    setWorkInTime(null);
-    setBreakInTime(null);
-    onPunchOut?.();
+  const handlePunchOut = async () => {
+    try {
+      setLoading(true);
+      await punchOut();
+      
+      setIsWorking(false);
+      setIsOnBreak(false);
+      setWorkInTime(null);
+      setBreakInTime(null);
+      onPunchOut?.();
+    } catch (error) {
+      console.error('Punch out failed:', error);
+      alert('Failed to punch out. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleBreakIn = () => {
@@ -112,10 +173,15 @@ export const BreakTracker = ({ onBreakIn, onBreakOut, onPunchIn, onPunchOut }: B
           {!isWorking ? (
             <button
               onClick={handlePunchIn}
-              className="w-full flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white py-1.5 px-3 rounded transition-colors font-normal text-sm"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white py-1.5 px-3 rounded transition-colors font-normal text-sm"
             >
-              <Clock size={14} />
-              Start Work
+              {loading ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Clock size={14} />
+              )}
+              {loading ? 'Processing...' : 'Start Work'}
             </button>
           ) : (
             <>
@@ -123,17 +189,23 @@ export const BreakTracker = ({ onBreakIn, onBreakOut, onPunchIn, onPunchOut }: B
                 <div className="grid grid-cols-2 gap-1.5">
                   <button
                     onClick={handleBreakIn}
-                    className="flex items-center justify-center gap-1 bg-orange-500 hover:bg-orange-600 text-white py-1.5 px-2 rounded transition-colors font-normal text-xs"
+                    disabled={loading}
+                    className="flex items-center justify-center gap-1 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white py-1.5 px-2 rounded transition-colors font-normal text-xs"
                   >
                     <Coffee size={12} />
                     Break
                   </button>
                   <button
                     onClick={handlePunchOut}
-                    className="flex items-center justify-center gap-1 bg-red-600 hover:bg-red-700 text-white py-1.5 px-2 rounded transition-colors font-normal text-xs"
+                    disabled={loading}
+                    className="flex items-center justify-center gap-1 bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white py-1.5 px-2 rounded transition-colors font-normal text-xs"
                   >
-                    <LogOut size={12} />
-                    End
+                    {loading ? (
+                      <Loader2 size={12} className="animate-spin" />
+                    ) : (
+                      <LogOut size={12} />
+                    )}
+                    {loading ? '...' : 'End'}
                   </button>
                 </div>
               ) : (

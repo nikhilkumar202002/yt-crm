@@ -649,9 +649,32 @@ export const updateCalendarWorkStatus = async (id: number, status: string) => {
  * PUT Update client approval status for a calendar work
  * Endpoint: PUT /calendar-works/{id}/client-approved-status
  */
-export const updateClientApprovedStatus = async (id: number, status: string) => {
-  const response = await apiClient.put(`/calendar-works/${id}/client-approved-status`, { 
-    client_approved_status: status 
+export const updateClientApprovedStatus = async (id: number, status: string, field: string = 'client_approved_status') => {
+  const response = await apiClient.put(`/calendar-works/${id}/client-approved-status`, {
+    [field]: status
+  });
+  return response.data;
+};
+
+/**
+ * PUT Update head approval comments for a calendar work
+ * Endpoint: PUT /calendar-works/{id}/head-approval-comments
+ */
+export const updateHeadApprovalComments = async (id: number, comments: string) => {
+  const response = await apiClient.put(`/calendar-works/${id}/head-approval-comments`, {
+    head_approval_comments: comments
+  });
+  return response.data;
+};
+
+/**
+ * PUT Update head approval for a calendar work
+ * Endpoint: PUT /calendar-works/{id}/head-approval
+ */
+export const updateHeadApproval = async (id: number, isHeadApproved: boolean | null, headComment: string) => {
+  const response = await apiClient.put(`/calendar-works/${id}/head-approval`, {
+    is_head_approved: isHeadApproved,
+    head_comment: headComment
   });
   return response.data;
 };

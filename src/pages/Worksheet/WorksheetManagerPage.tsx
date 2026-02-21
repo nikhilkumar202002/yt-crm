@@ -7,9 +7,10 @@ import {
   LayoutGrid, List, Calendar as CalendarIcon, FileText, Upload,
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
-import { getCalendarWorks, updateClientApprovedStatus } from '../../api/services/microService';
+import { getCalendarWorks, updateClientApprovedStatus, updateHeadApproval } from '../../api/services/microService';
 import { getUsersList } from '../../api/services/authService';
 import ImageLightbox from '../../components/common/ImageLightbox';
+import CommentModal from '../../components/common/CommentModal';
 import { POSITION_PERMISSIONS } from '../../config/positionPermissions';
 
 interface Creative {
@@ -76,6 +77,8 @@ interface CalendarWork {
   status?: string;
   designer_status?: string;
   client_approved_status?: string;
+  is_head_approved?: boolean | null;
+  head_comment?: string | null;
 }
 
 const WorksheetManagerPage = () => {
@@ -91,9 +94,17 @@ const WorksheetManagerPage = () => {
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
 
   const [expandedRows, setExpandedRows] = useState<{ [key: number]: boolean }>({});
+  const [commentModal, setCommentModal] = useState<{ isOpen: boolean; work: CalendarWork | null }>({
+    isOpen: false,
+    work: null
+  });
 
   const toggleRowExpansion = (id: number) => {
     setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const openCommentModal = (work: CalendarWork) => {
+    setCommentModal({ isOpen: true, work });
   };
 
   // Check if user can approve
@@ -137,18 +148,53 @@ const WorksheetManagerPage = () => {
     fetchUsers();
   }, [user?.id]);
 
-  const handleApprovalChange = async (workId: number, newStatus: string) => {
+  const handleApprovalChange = async (workId: number, newStatus: string, type: 'client' | 'head' = 'client') => {
     if (!canApprove) return;
 
     try {
       setUpdatingWorkId(workId);
-      const response = await updateClientApprovedStatus(workId, newStatus);
-      const updatedWork = response.data || response;
-      if (updatedWork) {
-        setCalendarWorks(prev => prev.map(w => w.id === workId ? updatedWork : w));
+      if (type === 'head') {
+        const work = calendarWorks.find(w => w.id === workId);
+        // Map UI string to boolean/null
+        const apiStatus = newStatus === 'approved' ? true : newStatus === 'edit_needed' ? false : null;
+        await updateHeadApproval(workId, apiStatus, work?.head_comment || '');
+        
+        // Manual merge to prevent data loss and ensure visibility
+        setCalendarWorks(prev => prev.map(w => w.id === workId ? { 
+          ...w, 
+          is_head_approved: apiStatus 
+        } : w));
+      } else {
+        await updateClientApprovedStatus(workId, newStatus, 'client_approved_status');
+        
+        // Manual merge to keep client and creatives info
+        setCalendarWorks(prev => prev.map(w => w.id === workId ? { 
+          ...w, 
+          client_approved_status: newStatus 
+        } : w));
       }
     } catch (err) {
       console.error('Failed to update approval status:', err);
+    } finally {
+      setUpdatingWorkId(null);
+    }
+  };
+
+  const handleCommentChange = async (workId: number, comments: string) => {
+    try {
+      setUpdatingWorkId(workId);
+      const work = calendarWorks.find(w => w.id === workId);
+      // Keep existing bool or default to null for pending
+      const currentStatus = work?.is_head_approved === undefined ? null : work.is_head_approved;
+      await updateHeadApproval(workId, currentStatus, comments);
+      
+      // Manual merge to keep row data intact
+      setCalendarWorks(prev => prev.map(w => w.id === workId ? { 
+        ...w, 
+        head_comment: comments 
+      } : w));
+    } catch (err) {
+      console.error('Failed to update comments:', err);
     } finally {
       setUpdatingWorkId(null);
     }
@@ -263,8 +309,12 @@ const parseIds = (data: unknown): number[] => {
 
   // Filter works based on search term and approval status
   const filteredCalendarWorks = calendarWorks.filter(work => {
+    // Hide works that are already approved by the head (Manager)
+    if (work.is_head_approved === true) return false;
+
     // Only show works that are in approval pending status or have been submitted for approval
     const isApprovalPending = work.designer_status === 'approval_pending' ||
+                             work.designer_status === 'completed' ||
                              work.client_approved_status === 'pending' ||
                              !work.client_approved_status ||
                              work.client_approved_status === 'needed_edit';
@@ -359,109 +409,110 @@ const parseIds = (data: unknown): number[] => {
         ) : viewMode === 'table' ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[1400px] border border-slate-200">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-                  <th className="px-4 py-3 w-12 text-left border border-slate-200">#</th>
-                  <th className="px-4 py-3 w-28 border border-slate-200">Tracking No</th>
-                  <th className="px-4 py-3 w-24 border border-slate-200">Date</th>
-                  <th className="px-4 py-3 w-24 border border-slate-200">Special Day</th>
-                  <th className="px-4 py-3 w-48 border border-slate-200">Client</th>
-                  <th className="px-4 py-3 min-w-[250px] border border-slate-200">Content Description</th>
-                  <th className="px-4 py-3 w-32 border border-slate-200">Creatives</th>
-                  <th className="px-4 py-3 w-40 border border-slate-200">Designer</th>
-                  <th className="px-4 py-3 w-40 border border-slate-200">Content Writer</th>
-                  <th className="px-4 py-3 w-32 border border-slate-200">Design Files</th>
-                  <th className="px-4 py-3 w-32 border border-slate-200">Designer Status</th>
-                  <th className="px-4 py-3 w-40 border border-slate-200">Client Approval</th>
+              <thead className="bg-slate-50/80 border-b border-slate-200">
+                <tr className="text-[8.5px] font-bold text-slate-500 uppercase tracking-[0.05em]">
+                  <th className="px-3 py-2.5 w-10 text-left border border-slate-200/60">#</th>
+                  <th className="px-3 py-2.5 w-24 border border-slate-200/60">Tracking</th>
+                  <th className="px-3 py-2.5 w-20 border border-slate-200/60">Date</th>
+                  <th className="px-3 py-2.5 w-20 border border-slate-200/60">Type</th>
+                  <th className="px-3 py-2.5 w-44 border border-slate-200/60">Client</th>
+                  <th className="px-3 py-2.5 min-w-[200px] border border-slate-200/60">Content Description</th>
+                  <th className="px-3 py-2.5 w-24 border border-slate-200/60">Creative</th>
+                  <th className="px-3 py-2.5 w-32 border border-slate-200/60">Designer</th>
+                  <th className="px-3 py-2.5 w-32 border border-slate-200/60">Writer</th>
+                  <th className="px-3 py-2.5 w-28 border border-slate-200/60">Design</th>
+                  <th className="px-3 py-2.5 w-28 border border-slate-200/60">Status</th>
+                  <th className="px-3 py-2.5 w-28 border border-slate-200/60">Client Appr</th>
+                  <th className="px-3 py-2.5 w-28 border border-slate-200/60">Head Appr</th>
+                  <th className="px-3 py-2.5 w-20 border border-slate-200/60 text-center">Cmd</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-slate-100 bg-white">
                 {filteredCalendarWorks.length > 0 ? (
                   filteredCalendarWorks.map((work, index) => (
-                    <tr key={work.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-4 py-3 text-left align-top text-[10px] font-medium text-slate-400 border border-slate-200">{index + 1}</td>
-                      <td className="px-4 py-3 align-top border border-slate-200">
-                        <div className="text-[11px] font-bold text-slate-900">
+                    <tr key={work.id} className="hover:bg-blue-50/20 transition-colors group">
+                      <td className="px-3 py-2 text-left align-top text-[9px] font-medium text-slate-400 border border-slate-100/80">{index + 1}</td>
+                      <td className="px-3 py-2 align-top border border-slate-100/80">
+                        <div className="text-[10px] font-bold text-blue-600 tracking-tight">
                           {work.tracking_no || 'N/A'}
                         </div>
                       </td>
-                      <td className="px-4 py-3 align-top border border-slate-200">
-                        <div className="text-[11px] font-medium text-slate-900">
+                      <td className="px-3 py-2 align-top border border-slate-100/80 whitespace-nowrap">
+                        <div className="text-[10px] font-medium text-slate-600">
                           {work.date ? (() => {
                             const date = new Date(work.date);
-                            return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString();
+                            return isNaN(date.getTime()) ? 'Invalid' : date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
                           })() : 'No Date'}
                         </div>
                       </td>
-                      <td className="px-4 py-3 align-top border border-slate-200">
-                        <div className="flex items-start gap-2">
+                      <td className="px-3 py-2 align-top border border-slate-100/80">
+                        <div className="flex items-start">
                           {work.is_special_day ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-none text-[9px] font-bold bg-purple-600 text-white uppercase tracking-wider">
-                              Special Day
+                            <span className="text-[8px] font-extrabold text-purple-600 uppercase tracking-tighter bg-purple-50 px-1 rounded-sm border border-purple-100">
+                              Special
                             </span>
                           ) : (
-                            <span className="text-[10px] text-slate-400">Regular</span>
+                            <span className="text-[8px] font-medium text-slate-400 uppercase tracking-tighter">Norm</span>
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 align-top border border-slate-200">
+                      <td className="px-3 py-2 align-top border border-slate-100/80">
                         <div className="min-w-0">
-                          <p className="text-[11px] font-bold text-slate-900 leading-none truncate max-w-37.5">
+                          <p className="text-[10px] font-bold text-slate-800 leading-tight truncate">
                             {work.client?.company_name || 'N/A'}
                           </p>
-                          <p className="text-[9px] text-slate-500 mt-1.5 truncate max-w-37.5">
+                          <p className="text-[9px] text-slate-400 mt-0.5 truncate uppercase tracking-tighter">
                             {work.client?.name || 'N/A'}
                           </p>
                         </div>
                       </td>
-                      <td className="px-4 py-3 align-top border border-slate-200">
+                      <td className="px-3 py-2 align-top border border-slate-100/80">
                         <div
-                          className={`text-[11px] text-slate-700 rich-text-content ${expandedRows[work.id] ? 'expanded' : ''}`}
-                          title={work.content_description?.replace(/<[^>]*>/g, '')}
+                          className={`text-[10px] text-slate-500 rich-text-content leading-relaxed ${expandedRows[work.id] ? 'expanded' : ''}`}
                           dangerouslySetInnerHTML={{ __html: work.content_description || 'No description' }}
                         />
-                        {work.content_description && work.content_description.length > 60 && (
+                        {work.content_description && work.content_description.length > 50 && (
                           <button
                             onClick={() => toggleRowExpansion(work.id)}
-                            className="text-[9px] text-blue-600 hover:text-blue-800 font-bold mt-1 uppercase tracking-tighter"
+                            className="text-[8px] text-blue-500 hover:text-blue-700 font-bold mt-1 uppercase tracking-widest"
                           >
-                            {expandedRows[work.id] ? 'Show Less' : 'Read More'}
+                            {expandedRows[work.id] ? '[-] Less' : '[+] More'}
                           </button>
                         )}
                       </td>
-                      <td className="px-4 py-3 align-top border border-slate-200">
-                        <div className="space-y-1">
+                      <td className="px-3 py-2 align-top border border-slate-100/80">
+                        <div className="flex flex-col gap-0.5">
                           {work.creatives && work.creatives.length > 0 ? (
                             work.creatives.slice(0, 2).map((creative, index) => (
-                              <div key={index} className="text-[10px] text-slate-600">
-                                {creative.name} ({creative.nos})
+                              <div key={index} className="text-[9px] text-slate-600 whitespace-nowrap">
+                                <span className="font-bold text-slate-400 mr-1">{creative.nos}x</span>
+                                {creative.name.length > 12 ? creative.name.substring(0, 12) + '..' : creative.name}
                               </div>
                             ))
                           ) : (
-                            <span className="text-[10px] text-slate-400">No creatives</span>
+                            <span className="text-[9px] text-slate-300 italic">None</span>
                           )}
                           {work.creatives && work.creatives.length > 2 && (
-                            <span className="text-[9px] text-slate-400">+{work.creatives.length - 2} more</span>
+                            <span className="text-[8px] text-slate-400 font-semibold">+{work.creatives.length - 2} items</span>
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 align-top border border-slate-200">
-                        <div className="text-[10px] text-slate-600">
+                      <td className="px-3 py-2 align-top border border-slate-100/80">
+                        <div className="text-[9px] text-indigo-600 font-medium leading-tight">
                           {getAssignedNames(work, 'designer')}
                         </div>
                       </td>
-                      <td className="px-4 py-3 align-top border border-slate-200">
-                        <div className="text-[10px] text-slate-600">
+                      <td className="px-3 py-2 align-top border border-slate-100/80">
+                        <div className="text-[9px] text-emerald-600 font-medium leading-tight">
                           {getAssignedNames(work, 'content')}
                         </div>
                       </td>
-                      <td className="px-4 py-3 align-top border border-slate-200">
-                        <div className="flex flex-wrap items-start gap-2">
+                      <td className="px-3 py-2 align-top border border-slate-100/80">
+                        <div className="flex flex-wrap items-start gap-1">
                           {(() => {
-                            // Check both designer_files and designer_file (fallback for singular naming)
                             const files = parseFiles(work.designer_files || work.designer_file);
                             return files.length > 0 ? (
-                              files.map((file, idx) => {
+                              files.slice(0, 2).map((file, idx) => {
                                 const imageUrl = file.startsWith('http') ? file : `${import.meta.env.VITE_API_BASE_URL || ''}/${file.replace(/^\//, '')}`;
                                 return (
                                   <button
@@ -472,75 +523,102 @@ const parseIds = (data: unknown): number[] => {
                                     <img
                                       src={imageUrl}
                                       alt="Design"
-                                      className="h-16 w-16 object-cover rounded-none border border-slate-200 shadow-sm group-hover/img:border-blue-400 transition-all cursor-zoom-in"
+                                      className="h-8 w-8 object-cover rounded shadow-sm border border-slate-200 group-hover/img:border-blue-400 transition-all cursor-zoom-in"
                                       onError={(e) => {
-                                        (e.target as HTMLImageElement).src = 'https://placehold.co/64x64?text=Error';
+                                        (e.target as HTMLImageElement).src = 'https://placehold.co/32x32?text=Err';
                                       }}
                                     />
                                   </button>
                                 );
                               })
                             ) : (
-                              <div className="flex items-center gap-1 text-[10px] text-slate-400">
-                                <ImageIcon size={12} />
-                                No files
+                              <div className="flex items-center gap-1 text-[8px] text-slate-300">
+                                No Files
                               </div>
                             );
                           })()}
+                          {parseFiles(work.designer_files || work.designer_file).length > 2 && (
+                            <span className="text-[8px] text-slate-400 self-center">+{parseFiles(work.designer_files || work.designer_file).length - 2}</span>
+                          )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 align-top border border-slate-200">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-none text-[9px] font-bold uppercase tracking-wider text-white ${
-                          work.designer_status === 'completed' ? 'bg-green-600' :
-                          work.designer_status === 'working_progress' ? 'bg-blue-600' :
-                          work.designer_status === 'approval_pending' ? 'bg-purple-600' :
-                          'bg-slate-500'
+                      <td className="px-3 py-2 align-top border border-slate-100/80">
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-tight text-white ${
+                          work.designer_status === 'completed' ? 'bg-green-500' :
+                          work.designer_status === 'working_progress' ? 'bg-blue-500' :
+                          work.designer_status === 'approval_pending' ? 'bg-violet-500' :
+                          'bg-slate-400'
                         }`}>
                           {work.designer_status?.replace('_', ' ') || 'Pending'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 align-top border border-slate-200">
-                        <div className="flex flex-col gap-2">
+                      <td className="px-3 py-2 align-top border border-slate-100/80">
+                        <div className="flex flex-col gap-1">
                           <select
                             value={work.client_approved_status || 'pending'}
                             onChange={(e) => handleApprovalChange(work.id, e.target.value)}
                             disabled={updatingWorkId === work.id}
-                            className={`text-[9px] font-bold px-2 py-1 rounded-none border-none outline-none cursor-pointer w-full min-w-[120px] text-white ${
-                              work.client_approved_status === 'approved' ? 'bg-green-600' :
-                              work.client_approved_status === 'not_approved' ? 'bg-red-600' :
-                              work.client_approved_status === 'needed_edit' ? 'bg-orange-600' :
-                              work.client_approved_status === 'images_changed' ? 'bg-blue-600' :
-                              'bg-slate-500'
+                            className={`text-[8.5px] font-bold px-2 py-1 rounded border outline-none cursor-pointer w-full transition-all text-center appearance-none ${
+                              work.client_approved_status === 'approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' :
+                              work.client_approved_status === 'not_approved' ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100' :
+                              work.client_approved_status === 'needed_edit' ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' :
+                              work.client_approved_status === 'images_changed' ? 'bg-cyan-50 text-cyan-700 border-cyan-200 hover:bg-cyan-100' :
+                              'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
                             }`}
                           >
-                            <option value="pending">Pending</option>
-                            <option value="approved">Approved</option>
-                            <option value="not_approved">Not Approved</option>
-                            <option value="needed_edit">Needs Edit</option>
-                            <option value="images_changed">Images Changed</option>
+                            <option value="pending">PENDING</option>
+                            <option value="approved">APPROVED</option>
+                            <option value="not_approved">REJECTED</option>
+                            <option value="needed_edit">EDIT</option>
+                            <option value="images_changed">IMAGES</option>
                           </select>
-                          {updatingWorkId === work.id && (
-                            <div className="flex items-center gap-1 text-[9px] text-blue-600">
-                              <div className="animate-spin h-3 w-3 border border-blue-600 border-t-transparent rounded-full" />
-                              Updating...
-                            </div>
-                          )}
                         </div>
+                      </td>
+                      <td className="px-3 py-2 align-top border border-slate-100/80">
+                        <div className="flex flex-col gap-1">
+                          <select
+                            value={
+                              work.is_head_approved === true ? 'approved' : 
+                              (work.is_head_approved === false && work.head_comment) ? 'edit_needed' : 
+                              'pending'
+                            }
+                            onChange={(e) => handleApprovalChange(work.id, e.target.value, 'head')}
+                            disabled={updatingWorkId === work.id}
+                            className={`text-[8.5px] font-bold px-2 py-1 rounded border outline-none cursor-pointer w-full transition-all text-center appearance-none ${
+                              work.is_head_approved === true ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' :
+                              (work.is_head_approved === false && work.head_comment) ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100' :
+                              'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
+                            }`}
+                          >
+                            <option value="pending">PENDING</option>
+                            <option value="approved">APPROVED</option>
+                            <option value="edit_needed">RE-EDIT</option>
+                          </select>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 align-top border border-slate-100/80 text-center">
+                        <button
+                          onClick={() => openCommentModal(work)}
+                          className={`p-1 rounded-full transition-colors ${work.head_comment ? 'text-blue-600 bg-blue-50' : 'text-slate-300 hover:text-slate-500 active:bg-slate-100'}`}
+                          title={work.head_comment || "Add Command"}
+                        >
+                          <FileText size={14} />
+                        </button>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={12} className="px-6 py-20 text-center align-top border border-slate-200">
+                    <td colSpan={14} className="px-6 py-20 text-center align-top border border-slate-100/80">
                       <div className="flex flex-col items-center gap-2">
-                        <div className="p-3 bg-slate-50 rounded-none text-slate-300">
-                          <Clipboard size={24} />
+                        <div className="p-3 bg-slate-50 rounded text-slate-200">
+                          <Clipboard size={20} />
                         </div>
-                        <p className="text-sm font-medium text-slate-400">
-                          No works pending approval
+                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                          Clear Queue
                         </p>
-                        <p className="text-[10px] text-slate-300 uppercase tracking-widest font-medium">
-                          Works will appear here when submitted for approval
+                        <p className="text-[9px] text-slate-300 uppercase tracking-tighter">
+                          All works processed
                         </p>
                       </div>
                     </td>
@@ -553,110 +631,201 @@ const parseIds = (data: unknown): number[] => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCalendarWorks.length > 0 ? (
               filteredCalendarWorks.map((work) => (
-                <div key={work.id} className="bg-white border border-slate-200 rounded-none overflow-hidden hover:shadow-lg transition-all flex flex-col group">
+                <div key={work.id} className="bg-white border border-slate-200 rounded-lg overflow-hidden hover:shadow-lg transition-all flex flex-col group">
+                  {/* Header Section */}
                   <div className="p-4 border-b border-slate-100 bg-slate-50 group-hover:bg-blue-50/30 transition-colors">
                     <div className="flex justify-between items-start mb-3">
-                      <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-none uppercase tracking-widest border border-blue-100">
+                      <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-md uppercase tracking-widest border border-blue-100">
                         {work.tracking_no || 'UNT-000'}
                       </span>
-                      {work.is_special_day && (
-                        <span className="text-[9px] font-bold bg-purple-600 text-white px-2 py-1 rounded-none uppercase tracking-wider">
-                          Special Day
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {work.is_special_day && (
+                          <span className="text-xs font-bold bg-purple-600 text-white px-2 py-1 rounded-md uppercase tracking-wider">
+                            Special Day
+                          </span>
+                        )}
+                        <div className="flex items-center gap-1 text-slate-500">
+                          <CalendarIcon size={12} />
+                          <span className="text-xs font-medium">
+                            {work.date ? new Date(work.date).toLocaleDateString() : 'No Date'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                     <h3 className="text-sm font-bold text-slate-900 leading-tight mb-1">{work.client?.company_name || 'N/A'}</h3>
-                    <div className="flex items-center gap-2 text-slate-500">
-                      <CalendarIcon size={12} />
-                      <span className="text-[11px] font-medium">
-                         {work.date ? new Date(work.date).toLocaleDateString() : 'No Date'}
-                      </span>
-                    </div>
+                    <p className="text-xs text-slate-500">{work.client?.name || 'N/A'}</p>
                   </div>
 
+                  {/* Content Section */}
                   <div className="p-4 flex-1 space-y-4">
+                    {/* Content Description */}
                     <div className="space-y-1.5">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                         <FileText size={10} className="text-blue-500" /> Content Description
                       </label>
-                      <div 
-                        className={`text-[11px] text-slate-600 rich-text-content leading-relaxed ${expandedRows[work.id] ? 'expanded' : ''}`} 
-                        dangerouslySetInnerHTML={{ __html: work.content_description || 'No description provided' }} 
+                      <div
+                        className={`text-xs text-slate-600 rich-text-content leading-relaxed ${expandedRows[work.id] ? 'expanded' : ''}`}
+                        dangerouslySetInnerHTML={{ __html: work.content_description || 'No description provided' }}
                       />
                       {work.content_description && work.content_description.length > 100 && (
-                        <button 
-                          onClick={() => toggleRowExpansion(work.id)} 
-                          className="text-[9px] text-blue-600 font-bold uppercase hover:underline"
+                        <button
+                          onClick={() => toggleRowExpansion(work.id)}
+                          className="text-xs text-blue-600 font-bold uppercase hover:underline"
                         >
                           {expandedRows[work.id] ? 'Less' : 'More'}
                         </button>
                       )}
                     </div>
 
+                    {/* Creatives */}
                     <div className="space-y-1.5">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Design Files</label>
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Creatives</label>
+                      <div className="flex flex-wrap gap-1">
+                        {work.creatives && work.creatives.length > 0 ? (
+                          work.creatives.map((creative, idx) => (
+                            <span key={idx} className="bg-green-50 border border-green-200 rounded px-2 py-1 text-xs font-medium text-green-800">
+                              {creative.name} ({creative.nos})
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-slate-400 italic">No creatives</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Assignments */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-tighter">Designer</p>
+                        <p className="text-xs font-semibold text-indigo-800 bg-indigo-50 p-2 border border-indigo-200 rounded truncate">
+                          {getAssignedNames(work, 'designer')}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-tighter">Content Writer</p>
+                        <p className="text-xs font-semibold text-emerald-800 bg-emerald-50 p-2 border border-emerald-200 rounded truncate">
+                          {getAssignedNames(work, 'content')}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Design Files */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Design Files</label>
                       <div className="flex flex-wrap gap-2">
                         {parseFiles(work.designer_files || work.designer_file).map((file, idx) => {
                           const imageUrl = file.startsWith('http') ? file : `${import.meta.env.VITE_API_BASE_URL || ''}/${file.replace(/^\//, '')}`;
                           return (
-                            <img 
-                              key={idx} 
-                              src={imageUrl} 
-                              className="h-12 w-12 object-cover border border-slate-200 cursor-zoom-in hover:border-blue-500 transition-all"
+                            <img
+                              key={idx}
+                              src={imageUrl}
+                              className="h-12 w-12 object-cover border border-slate-200 cursor-zoom-in hover:border-blue-500 transition-all rounded"
                               onClick={() => setLightboxImage(imageUrl)}
                             />
                           );
                         })}
                         {parseFiles(work.designer_files || work.designer_file).length === 0 && (
-                          <span className="text-[10px] text-slate-300">No designs uploaded</span>
+                          <div className="flex items-center gap-1 text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded border border-slate-200">
+                            <ImageIcon size={12} />
+                            No designs uploaded
+                          </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 pt-2">
-                        <div className="space-y-1">
-                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Designer</p>
-                          <p className="text-[10px] font-bold text-slate-700 bg-slate-50 p-1.5 border border-slate-200 truncate">
-                            {getAssignedNames(work, 'designer')}
-                          </p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Content</p>
-                          <p className="text-[10px] font-bold text-slate-700 bg-slate-50 p-1.5 border border-slate-200 truncate">
-                            {getAssignedNames(work, 'content')}
-                          </p>
-                        </div>
+                    {/* Status Badges */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black text-slate-400 uppercase tracking-tighter">Designer Status</span>
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-bold text-white ${
+                          work.designer_status === 'completed' ? 'bg-green-600' :
+                          work.designer_status === 'working_progress' ? 'bg-blue-600' :
+                          work.designer_status === 'approval_pending' ? 'bg-purple-600' :
+                          'bg-slate-500'
+                        }`}>
+                          <div className={`w-1.5 h-1.5 rounded-full ${
+                            work.designer_status === 'completed' ? 'bg-green-200' :
+                            work.designer_status === 'working_progress' ? 'bg-blue-200' :
+                            work.designer_status === 'approval_pending' ? 'bg-purple-200' :
+                            'bg-slate-200'
+                          }`}></div>
+                          {work.designer_status?.replace('_', ' ').toUpperCase() || 'PENDING'}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="p-4 bg-slate-50 border-t border-slate-100 mt-auto">
-                    <div className="flex flex-col gap-1.5">
-                      <p className="text-[8px] text-slate-400 font-bold uppercase mb-0.5">Approval Decision</p>
+                  {/* Approval Section */}
+                  <div className="p-4 bg-slate-50 border-t border-slate-100 mt-auto space-y-3">
+                    {/* Client Approval */}
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Client Approval Status</p>
                       <select
                         value={work.client_approved_status || 'pending'}
                         onChange={(e) => handleApprovalChange(work.id, e.target.value)}
                         disabled={updatingWorkId === work.id}
-                        className={`text-[10px] font-black px-2 py-1.5 rounded-none border-none outline-none cursor-pointer w-full text-white shadow-sm transition-all ${
-                          work.client_approved_status === 'approved' ? 'bg-green-600 hover:bg-green-700' :
-                          work.client_approved_status === 'not_approved' ? 'bg-red-600 hover:bg-red-700' :
-                          work.client_approved_status === 'needed_edit' ? 'bg-orange-600 hover:bg-orange-700' :
-                          work.client_approved_status === 'images_changed' ? 'bg-blue-600 hover:bg-blue-700' :
-                          'bg-slate-500 hover:bg-slate-600'
+                        className={`text-xs font-bold px-3 py-2 rounded-md border outline-none cursor-pointer w-full transition-all appearance-none text-center ${
+                          work.client_approved_status === 'approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' :
+                          work.client_approved_status === 'not_approved' ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100' :
+                          work.client_approved_status === 'needed_edit' ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' :
+                          work.client_approved_status === 'images_changed' ? 'bg-cyan-50 text-cyan-700 border-cyan-200 hover:bg-cyan-100' :
+                          'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
                         }`}
                       >
                         <option value="pending">Pending Review</option>
                         <option value="approved">Approved</option>
-                        <option value="not_approved">Not Approved</option>
-                        <option value="needed_edit">Needed Edit</option>
+                        <option value="not_approved">Rejected</option>
+                        <option value="needed_edit">Edit Needed</option>
                         <option value="images_changed">Images Changed</option>
                       </select>
-                      {updatingWorkId === work.id && (
-                        <div className="flex items-center justify-center gap-1.5 text-[9px] text-blue-600 font-bold mt-1">
-                          <div className="animate-spin h-2 w-2 border border-blue-600 border-t-transparent rounded-full" />
-                          UPDATING...
-                        </div>
-                      )}
                     </div>
+
+                    {/* Head Approval */}
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Head Approval Status</p>
+                      <select
+                        value={
+                          work.is_head_approved === true ? 'approved' : 
+                          (work.is_head_approved === false && work.head_comment) ? 'edit_needed' : 
+                          'pending'
+                        }
+                        onChange={(e) => handleApprovalChange(work.id, e.target.value, 'head')}
+                        disabled={updatingWorkId === work.id}
+                        className={`text-xs font-bold px-3 py-2 rounded-md border outline-none cursor-pointer w-full transition-all appearance-none text-center ${
+                          work.is_head_approved === true ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' :
+                          (work.is_head_approved === false && work.head_comment) ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100' :
+                          'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
+                        }`}
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="edit_needed">Re-Edit Needed</option>
+                      </select>
+                    </div>
+
+                    {/* Comments */}
+                    <div className="space-y-1.5 pt-1">
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Approval Feedback</p>
+                      <button
+                        onClick={() => openCommentModal(work)}
+                        className={`w-full py-2 rounded-md text-[11px] font-bold border transition-all flex items-center justify-center gap-2 ${
+                          work.head_comment 
+                          ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' 
+                          : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        <FileText size={12} />
+                        {work.head_comment ? 'View/Edit Comments' : 'Add Comments'}
+                      </button>
+                    </div>
+
+                    {/* Loading State */}
+                    {updatingWorkId === work.id && (
+                      <div className="flex items-center justify-center gap-2 text-xs text-blue-600 font-bold bg-blue-50 px-3 py-1.5 rounded-md border border-blue-200">
+                        <div className="animate-spin h-3 w-3 border border-blue-600 border-t-transparent rounded-full" />
+                        UPDATING...
+                      </div>
+                    )}
                   </div>
                 </div>
               ))
@@ -668,6 +837,17 @@ const parseIds = (data: unknown): number[] => {
           </div>
         )}
       </div>
+
+      <CommentModal
+        isOpen={commentModal.isOpen}
+        onClose={() => setCommentModal(prev => ({ ...prev, isOpen: false }))}
+        onSave={(comments) => {
+          if (commentModal.work) {
+            handleCommentChange(commentModal.work.id, comments);
+          }
+        }}
+        initialComments={commentModal.work?.head_comment || ''}
+      />
 
       {lightboxImage && (
         <ImageLightbox

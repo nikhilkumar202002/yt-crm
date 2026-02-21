@@ -84,3 +84,24 @@ export const getUsersList = async () => {
   const response = await apiClient.get(ENDPOINTS.USERS.LIST);
   return response.data;
 };
+
+// Attendance Service Functions
+export interface PunchInData {
+  latitude: number;
+  longitude: number;
+}
+
+export const punchIn = async (data: PunchInData) => {
+  const response = await apiClient.post(ENDPOINTS.ATTENDANCE.PUNCH_IN, data);
+  return response.data;
+};
+
+export const punchOut = async () => {
+  const response = await apiClient.post(ENDPOINTS.ATTENDANCE.PUNCH_OUT);
+  return response.data;
+};
+
+export const getAttendanceStatus = async () => {
+  const response = await apiClient.get(ENDPOINTS.ATTENDANCE.STATUS);
+  return response.data;
+};
