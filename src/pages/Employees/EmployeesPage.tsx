@@ -132,12 +132,12 @@ const EmployeesPage = () => {
                             {emp.department_name || ''}
                           </p>
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-bold border ${
-                            emp.status === true || emp.is_active === 1
+                            emp.status === true || Number(emp.is_active) === 1
                               ? 'bg-green-50 text-green-600 border-green-100' 
                               : 'bg-red-50 text-red-600 border-red-100'
                           }`}>
-                            <span className={`h-1 w-1 rounded-full mr-1.5 ${emp.status === true || emp.is_active === 1 ? 'bg-green-500' : 'bg-red-500'}`} />
-                            {emp.status === true || emp.is_active === 1 ? 'Active' : 'Inactive'}
+                            <span className={`h-1 w-1 rounded-full mr-1.5 ${emp.status === true || Number(emp.is_active) === 1 ? 'bg-green-500' : 'bg-red-500'}`} />
+                            {emp.status === true || Number(emp.is_active) === 1 ? 'Active' : 'Inactive'}
                           </span>
                           <p className="text-[10px] text-slate-400 mt-1">
                             Joined {emp.created_at ? format(new Date(emp.created_at), 'MMM dd, yyyy') : ''}

@@ -84,7 +84,7 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
         onClick={() => setIsOpen(false)}
       />
 
-      <aside className={`fixed left-0 top-0 h-screen bg-white z-[70] font-sans border-r border-slate-200 transition-transform duration-300 ease-in-out w-64 flex flex-col 
+      <aside className={`fixed left-0 top-0 h-screen bg-white z-[70] font-sans border-r border-slate-200 transition-transform duration-300 ease-in-out w-56 flex flex-col 
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
         {/* Brand Header */}

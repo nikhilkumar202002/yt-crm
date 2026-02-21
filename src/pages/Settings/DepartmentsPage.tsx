@@ -81,11 +81,11 @@ const DepartmentsPage = () => {
                       <td className="px-6 py-4 text-[11px] text-slate-500">{dept.description}</td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold border ${
-                          dept.status === 1 || dept.status === true 
+                          Number(dept.status) === 1 
                             ? 'bg-green-50 text-green-600 border-green-100' 
                             : 'bg-red-50 text-red-600 border-red-100'
                         }`}>
-                          {dept.status === 1 || dept.status === true ? 'Active' : 'Inactive'}
+                          {Number(dept.status) === 1 ? 'Active' : 'Inactive'}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right space-x-2">
