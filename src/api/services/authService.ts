@@ -8,6 +8,13 @@ export interface RoleData {
   status: boolean | number;
 }
 
+export interface PermissionData {
+  id?: number;
+  module_name: string;
+  permission: string;
+  code: string;
+}
+
 export interface RegistrationData {
   name: string;
   email: string;
@@ -103,5 +110,31 @@ export const punchOut = async () => {
 
 export const getAttendanceStatus = async () => {
   const response = await apiClient.get(ENDPOINTS.ATTENDANCE.STATUS);
+  return response.data;
+};
+
+// Permission Service Functions
+export const getPermissions = async (page: number = 1) => {
+  const response = await apiClient.get(`${ENDPOINTS.PERMISSIONS.BASE}?page=${page}`);
+  return response.data;
+};
+
+export const getPermission = async (id: number) => {
+  const response = await apiClient.get(ENDPOINTS.PERMISSIONS.DETAIL(id));
+  return response.data;
+};
+
+export const createPermission = async (data: PermissionData) => {
+  const response = await apiClient.post(ENDPOINTS.PERMISSIONS.BASE, data);
+  return response.data;
+};
+
+export const updatePermission = async (id: number, data: PermissionData) => {
+  const response = await apiClient.put(ENDPOINTS.PERMISSIONS.DETAIL(id), data);
+  return response.data;
+};
+
+export const deletePermission = async (id: number) => {
+  const response = await apiClient.delete(ENDPOINTS.PERMISSIONS.DETAIL(id));
   return response.data;
 };

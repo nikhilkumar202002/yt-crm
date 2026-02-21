@@ -70,6 +70,10 @@ PROPOSALS: {
     BASE: '/positions',
     DETAIL: (id: number) => `/positions/${id}`,
   },
+  PERMISSIONS: {
+    BASE: '/permissions',
+    DETAIL: (id: number) => `/permissions/${id}`,
+  },
   ATTENDANCE: {
     PUNCH_IN: '/attendance/punch-in',
     PUNCH_OUT: '/attendance/punch-out',

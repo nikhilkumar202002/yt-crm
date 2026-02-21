@@ -4,10 +4,11 @@ import {
   Clipboard, Plus, Search, LayoutGrid, List, Calendar as CalendarIcon, FileText, Upload
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
-import { getCalendarWorks, assignCalendarWorkContent, assignDesignersToWork, updateClientApprovedStatus } from '../../api/services/microService';
+import { getCalendarWorks, assignCalendarWorkContent, assignDesignersToWork, updateClientApprovedStatus, updateHeadApproval } from '../../api/services/microService';
 import { getUsersList } from '../../api/services/authService';
 import AssignmentModal from './components/AssignmentModal';
 import ImageLightbox from '../../components/common/ImageLightbox';
+import CommentModal from '../../components/common/CommentModal';
 
 interface Creative {
   id: string;
@@ -73,6 +74,8 @@ interface CalendarWork {
   designer_status?: string;
   status?: string;
   client_approved_status?: string;
+  is_head_approved?: string | null;
+  head_comment?: string | null;
 }
 
 const WorksheetDMPage = () => {
@@ -103,6 +106,38 @@ const WorksheetDMPage = () => {
     initialIds: [],
     type: 'designer'
   });
+
+  const [commentModal, setCommentModal] = useState<{ isOpen: boolean; work: CalendarWork | null }>({
+    isOpen: false,
+    work: null
+  });
+
+  const openCommentModal = (work: CalendarWork) => {
+    setCommentModal({ isOpen: true, work });
+  };
+
+  const handleCommentChange = async (workId: number, comments: string, newStatus?: string) => {
+    try {
+      const work = calendarWorks.find(w => w.id === workId);
+      
+      // Determine final status
+      let finalStatus = work?.is_head_approved === undefined ? null : work.is_head_approved;
+      if (newStatus) {
+        finalStatus = newStatus === 'approved' ? 'Approved' : newStatus === 'edit_needed' ? 'Re-Edit' : null;
+      }
+
+      await updateHeadApproval(workId, finalStatus, comments);
+      
+      // Manual merge to keep row data intact
+      setCalendarWorks(prev => prev.map(w => w.id === workId ? { 
+        ...w, 
+        head_comment: comments,
+        is_head_approved: finalStatus
+      } : w));
+    } catch (err) {
+      console.error('Failed to update comments and status:', err);
+    }
+  };
 
   // For DM roles, show all columns including content assign
   useEffect(() => {
@@ -363,6 +398,7 @@ const WorksheetDMPage = () => {
                   <th className="px-4 py-3 w-32 border border-slate-200">Designs</th>
                   <th className="px-4 py-3 w-32 text-left border border-slate-200">Work Status</th>
                   <th className="px-4 py-3 w-32 border border-slate-200">Client Approval</th>
+                  <th className="px-4 py-3 w-32 border border-slate-200">Head Approval</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
@@ -568,11 +604,55 @@ const WorksheetDMPage = () => {
                           <option value="images_changed">Images Changed</option>
                         </select>
                       </td>
+                      <td className="px-4 py-3 align-top border border-slate-200">
+                        <div className="flex flex-col gap-1 items-center justify-center min-h-[30px]">
+                          {isHead ? (
+                            <button
+                              onClick={() => openCommentModal(work)}
+                              className={`text-[9px] font-bold py-1.5 rounded border outline-none cursor-pointer w-full transition-all flex items-center justify-center gap-2 group/btn ${
+                                work.is_head_approved === 'Approved' ? 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50' :
+                                work.is_head_approved === 'Re-Edit' ? 'bg-white text-orange-700 border-orange-200 hover:bg-orange-50' :
+                                'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                              }`}
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <span className={`w-2 h-2 rounded-full ${
+                                  work.is_head_approved === 'Approved' ? 'bg-emerald-500' : 
+                                  work.is_head_approved === 'Re-Edit' ? 'bg-orange-500' : 
+                                  'bg-slate-400'
+                                }`} />
+                                <span className="uppercase tracking-tighter">
+                                  {work.is_head_approved === 'Approved' ? 'Approved' : 
+                                   work.is_head_approved === 'Re-Edit' ? 'Re-Edit' : 
+                                   'Review'}
+                                </span>
+                              </div>
+                            </button>
+                          ) : (
+                            <div className={`text-[9px] font-bold py-1.5 rounded border w-full flex items-center justify-center gap-2 ${
+                              work.is_head_approved === 'Approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                              work.is_head_approved === 'Re-Edit' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                              'bg-slate-50 text-slate-500 border-slate-200'
+                            }`}>
+                              <span className={`w-2 h-2 rounded-full ${
+                                work.is_head_approved === 'Approved' ? 'bg-emerald-500' : 
+                                work.is_head_approved === 'Re-Edit' ? 'bg-orange-500' : 
+                                'bg-slate-400'
+                              }`} />
+                              <span className="uppercase tracking-tighter">
+                                {work.is_head_approved === 'Approved' ? 'Approved' : 
+                                 work.is_head_approved === 'Re-Edit' ? 'Re-Edit' : 
+                                 'Review'}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={13} className="px-6 py-20 text-center align-top border border-slate-200">
+                    <td colSpan={14} className="px-6 py-20 text-center align-top border border-slate-200">
                       <div className="flex flex-col items-center gap-2">
                         <div className="p-3 bg-slate-50 rounded-none text-slate-300">
                           <Clipboard size={24} />
@@ -691,7 +771,7 @@ const WorksheetDMPage = () => {
                   <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col gap-2">
                     <div className="flex justify-between items-center gap-2">
                         <div className="flex-1">
-                           <p className="text-[8px] text-slate-400 font-bold uppercase mb-1">Approval Status</p>
+                           <p className="text-[8px] text-slate-400 font-bold uppercase mb-1">Client Approval</p>
                            <select
                               value={clientApprovedStatuses[work.id] || work.client_approved_status || 'pending'}
                               onChange={(e) => handleClientApprovedStatusChange(work.id, e.target.value)}
@@ -706,6 +786,43 @@ const WorksheetDMPage = () => {
                               <option value="needed_edit">Needed Edit</option>
                               <option value="images_changed">Images Changed</option>
                             </select>
+                        </div>
+                        <div className="flex-1">
+                           <p className="text-[8px] text-slate-400 font-bold uppercase mb-1">Head Approval</p>
+                           {isHead ? (
+                             <button
+                               onClick={() => openCommentModal(work)}
+                               className={`text-[9px] font-bold px-2 py-1.5 rounded-none border outline-none cursor-pointer w-full transition-all text-center flex items-center justify-center gap-1 ${
+                                 work.is_head_approved === 'Approved' ? 'bg-emerald-600 text-white border-emerald-600' :
+                                 work.is_head_approved === 'Re-Edit' ? 'bg-orange-600 text-white border-orange-600' :
+                                 'bg-slate-500 text-white border-slate-500'
+                               }`}
+                             >
+                               <span className={`w-2 h-2 rounded-full ${
+                                 work.is_head_approved === 'Approved' ? 'bg-white' : 
+                                 work.is_head_approved === 'Re-Edit' ? 'bg-white' : 
+                                 'bg-slate-300'
+                               }`} />
+                               {work.is_head_approved === 'Approved' ? 'Approved' : 
+                                work.is_head_approved === 'Re-Edit' ? 'Re-Edit' : 
+                                'Review'}
+                             </button>
+                           ) : (
+                             <div className={`text-[9px] font-bold px-2 py-1.5 rounded-none border w-full text-center flex items-center justify-center gap-1 ${
+                               work.is_head_approved === 'Approved' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
+                               work.is_head_approved === 'Re-Edit' ? 'bg-orange-100 text-orange-700 border-orange-200' :
+                               'bg-slate-100 text-slate-500 border-slate-200'
+                             }`}>
+                               <span className={`w-2 h-2 rounded-full ${
+                                 work.is_head_approved === 'Approved' ? 'bg-emerald-500' : 
+                                 work.is_head_approved === 'Re-Edit' ? 'bg-orange-500' : 
+                                 'bg-slate-400'
+                               }`} />
+                               {work.is_head_approved === 'Approved' ? 'Approved' : 
+                                work.is_head_approved === 'Re-Edit' ? 'Re-Edit' : 
+                                'Review'}
+                             </div>
+                           )}
                         </div>
                     </div>
                   </div>
@@ -735,6 +852,24 @@ const WorksheetDMPage = () => {
         users={assignmentModal.type === 'designer' ? designerUsers : contentUsers}
         initialSelectedIds={assignmentModal.initialIds}
         title={assignmentModal.type === 'designer' ? "Assign Designers" : "Assign Content Writers"}
+      />
+
+      <CommentModal
+        isOpen={commentModal.isOpen}
+        onClose={() => setCommentModal(prev => ({ ...prev, isOpen: false }))}
+        onSave={(comments, status) => {
+          if (commentModal.work) {
+            handleCommentChange(commentModal.work.id, comments, status);
+          }
+        }}
+        initialComments={commentModal.work?.head_comment || ''}
+        initialStatus={
+          commentModal.work?.is_head_approved === 'Approved' ? 'approved' : 
+          commentModal.work?.is_head_approved === 'Re-Edit' ? 'edit_needed' : 
+          'pending'
+        }
+        showStatusSelector={true}
+        title="DM Head Approval"
       />
 
       {lightboxImage && (

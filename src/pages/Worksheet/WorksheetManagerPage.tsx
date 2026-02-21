@@ -82,7 +82,7 @@ interface CalendarWork {
 }
 
 const WorksheetManagerPage = () => {
-  const { user } = useAppSelector((state) => state.auth);
+  const { user, roleName, group, position, token, isAuthenticated } = useAppSelector((state) => state.auth);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState<string>('');
   const [calendarWorks, setCalendarWorks] = useState<CalendarWork[]>([]);
@@ -90,9 +90,32 @@ const WorksheetManagerPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [currentUserPosition, setCurrentUserPosition] = useState<string>('');
+  const [currentUserGroup, setCurrentUserGroup] = useState<string>('');
+  const [tokenValid, setTokenValid] = useState<boolean | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [updatingWorkId, setUpdatingWorkId] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
+
+  // Validate token on component mount
+  useEffect(() => {
+    const validateToken = async () => {
+      if (!token) {
+        setTokenValid(false);
+        return;
+      }
+
+      try {
+        // You can add a token validation API call here if needed
+        // For now, we'll just check if token exists and user is authenticated
+        setTokenValid(isAuthenticated && !!user);
+      } catch (error) {
+        console.error('Token validation failed:', error);
+        setTokenValid(false);
+      }
+    };
+
+    validateToken();
+  }, [token, isAuthenticated, user]);
 
   const [expandedRows, setExpandedRows] = useState<{ [key: number]: boolean }>({});
   const [commentModal, setCommentModal] = useState<{ isOpen: boolean; work: CalendarWork | null }>({
@@ -124,8 +147,86 @@ const WorksheetManagerPage = () => {
     if (!currentUserPosition) return false;
     const positionKey = currentUserPosition.toLowerCase().trim();
     const permissions = (POSITION_PERMISSIONS as any)[positionKey] || (POSITION_PERMISSIONS as any)[currentUserPosition];
-    return permissions?.canApprove || false;
-  }, [currentUserPosition]);
+    const hasPermission = permissions?.canApprove || false;
+
+    // Staff role should not have approval permissions
+    if (roleName === 'staff') {
+      return false;
+    }
+
+    // Special case: allow manager role with head position
+    if (roleName === 'manager' && currentUserPosition === 'head') {
+      return true;
+    }
+
+    return hasPermission;
+  }, [currentUserPosition, roleName]);
+
+  // Determine table view based on user role/department/position
+  const tableViewConfig = useMemo(() => {
+    const groupLower = currentUserGroup.toLowerCase().trim();
+    const positionLower = currentUserPosition.toLowerCase().trim();
+    const roleLower = roleName?.toLowerCase().trim() || '';
+
+    // Default view for managers
+    let config = {
+      showSLno: true,
+      showTracking: true,
+      showDate: true,
+      showType: true,
+      showClient: true,
+      showContentDescription: true,
+      showCreative: true,
+      showDesigner: true,
+      showWriter: true,
+      showDesign: true,
+      showDesStatus: true,
+      showClientApproval: true,
+      showHeadApproval: true,
+      showClientFilter: true,
+      title: 'Manager Approval',
+      subtitle: 'Review and approve creative works'
+    };
+
+    // Customize based on department/role/position
+    if (groupLower.includes('creative')) {
+      // Creative department manager
+      config = {
+        ...config,
+        showDesign: true,
+        showDesStatus: true,
+        showWriter: false, // Hide writer column for creative managers
+        title: 'Creative Manager Approval',
+        subtitle: 'Review and approve design works'
+      };
+    } else if (groupLower.includes('graphics')) {
+      // Graphics department manager - show full manager view
+      config = {
+        ...config,
+        title: 'Graphics Manager Approval',
+        subtitle: 'Review and approve graphics works'
+      };
+    } else if (groupLower.includes('content')) {
+      // Content department manager
+      config = {
+        ...config,
+        showWriter: true,
+        showDesign: false, // Hide design column for content managers
+        showDesStatus: false,
+        title: 'Content Manager Approval',
+        subtitle: 'Review and approve content works'
+      };
+    } else if (positionLower.includes('head') && !groupLower.includes('creative') && !groupLower.includes('content')) {
+      // General head/manager
+      config = {
+        ...config,
+        title: 'Department Head Approval',
+        subtitle: 'Oversee all department approvals'
+      };
+    }
+
+    return config;
+  }, [currentUserGroup, currentUserPosition, roleName]);
 
   useEffect(() => {
     const fetchCalendarWorks = async () => {
@@ -148,11 +249,15 @@ const WorksheetManagerPage = () => {
         const response = await getUsersList();
         const usersData = response.data?.data || response.data || [];
         setUsers(usersData);
-        // Set current user position
+        // Set current user position and group
         const currentUser = user?.id ? usersData.find((u: User) => u.id === user.id) : null;
-        setCurrentUserPosition(currentUser?.position_name || '');
+        setCurrentUserPosition(currentUser?.position_name || position || '');
+        setCurrentUserGroup(currentUser?.group_name || group || '');
       } catch (error) {
         console.error('Failed to fetch users:', error);
+        // Fallback to auth state values
+        setCurrentUserPosition(position || '');
+        setCurrentUserGroup(group || '');
       }
     };
 
@@ -378,6 +483,32 @@ const parseIds = (data: unknown): number[] => {
     return matchesSearch && matchesClient;
   });
 
+  // Check if user is authenticated and has valid token
+  if (!isAuthenticated || !token || !user || tokenValid === false) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-500 font-sans">
+        <div className="flex flex-col items-center justify-center p-20 gap-3">
+          <AlertTriangle size={48} className="text-orange-500" />
+          <h1 className="text-xl font-bold text-slate-900">Authentication Required</h1>
+          <p className="text-slate-500 text-center">Please log in to access the manager worksheet.</p>
+          <p className="text-[11px] text-slate-400 text-center">You need to be authenticated with a valid token to view this page.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading while validating token
+  if (tokenValid === null) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-500 font-sans">
+        <div className="flex flex-col items-center justify-center p-20 gap-3">
+          <div className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-none" />
+          <p className="text-xs font-medium text-slate-500 uppercase tracking-widest">Validating Authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (currentUserPosition && !canApprove) {
     return (
       <div className="space-y-6 animate-in fade-in duration-500 font-sans">
@@ -403,8 +534,8 @@ const parseIds = (data: unknown): number[] => {
 
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Manager Approval</h1>
-          <p className="text-[11px] text-slate-500 font-medium">Review and approve creative works</p>
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight">{tableViewConfig.title}</h1>
+          <p className="text-[11px] text-slate-500 font-medium">{tableViewConfig.subtitle}</p>
         </div>
       </div>
 
@@ -420,20 +551,22 @@ const parseIds = (data: unknown): number[] => {
               className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm font-normal"
             />
           </div>
-          <div className="relative">
-            <select
-              value={selectedClient}
-              onChange={(e) => setSelectedClient(e.target.value)}
-              className="px-3 py-2 border border-slate-200 rounded-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm font-normal bg-white min-w-[200px]"
-            >
-              <option value="">All Clients</option>
-              {uniqueClients.map(client => (
-                <option key={client.id} value={client.id.toString()}>
-                  {client.company_name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {tableViewConfig.showClientFilter && (
+            <div className="relative">
+              <select
+                value={selectedClient}
+                onChange={(e) => setSelectedClient(e.target.value)}
+                className="px-3 py-2 border border-slate-200 rounded-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm font-normal bg-white min-w-[200px]"
+              >
+                <option value="">All Clients</option>
+                {uniqueClients.map(client => (
+                  <option key={client.id} value={client.id.toString()}>
+                    {client.company_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="flex items-center border border-slate-200 bg-white p-1 ml-1 shrink-0 h-[38px]">
             <button 
               onClick={() => setViewMode('table')}
@@ -476,14 +609,14 @@ const parseIds = (data: unknown): number[] => {
                   <th className="px-3 py-3 w-24">Tracking</th>
                   <th className="px-3 py-3 w-20">Date</th>
                   <th className="px-3 py-3 w-20 text-center">Type</th>
-                  <th className="px-3 py-3 w-48">Client</th>
+                  {tableViewConfig.showClientFilter && <th className="px-3 py-3 w-48">Client</th>}
                   <th className="px-3 py-3 min-w-[200px]">Content Description</th>
                   <th className="px-3 py-3 w-24">Creative</th>
-                  <th className="px-3 py-3 w-28 text-center">Designer</th>
-                  <th className="px-3 py-3 w-28 text-center">Writer</th>
-                  <th className="px-3 py-3 w-28">Design</th>
-                  <th className="px-3 py-3 w-24 text-center">Des Status</th>
-                  <th className="px-3 py-3 w-24 text-center">Client Appr</th>
+                  {tableViewConfig.showDesigner && <th className="px-3 py-3 w-28 text-center">Designer</th>}
+                  {tableViewConfig.showWriter && <th className="px-3 py-3 w-28 text-center">Writer</th>}
+                  {tableViewConfig.showDesign && <th className="px-3 py-3 w-28">Design</th>}
+                  {tableViewConfig.showDesStatus && <th className="px-3 py-3 w-24 text-center">Des Status</th>}
+                  {tableViewConfig.showClientApproval && <th className="px-3 py-3 w-24 text-center">Client Appr</th>}
                   <th className="px-3 py-3 w-32 text-center">Head Approval</th>
                 </tr>
               </thead>
@@ -514,16 +647,18 @@ const parseIds = (data: unknown): number[] => {
                           <span className="text-[8px] font-medium text-slate-400 uppercase tracking-tighter">Norm</span>
                         )}
                       </td>
-                      <td className="px-3 py-3 align-middle">
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-bold text-slate-900 leading-tight">
-                            {work.client?.company_name || 'N/A'}
-                          </p>
-                          <p className="text-[9px] text-slate-400 mt-0.5 truncate uppercase tracking-tighter font-semibold">
-                            {work.client?.name || 'N/A'}
-                          </p>
-                        </div>
-                      </td>
+                      {tableViewConfig.showClientFilter && (
+                        <td className="px-3 py-3 align-middle">
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-bold text-slate-900 leading-tight">
+                              {work.client?.company_name || 'N/A'}
+                            </p>
+                            <p className="text-[9px] text-slate-400 mt-0.5 truncate uppercase tracking-tighter font-semibold">
+                              {work.client?.name || 'N/A'}
+                            </p>
+                          </div>
+                        </td>
+                      )}
                       <td className="px-3 py-3 align-middle">
                         <div
                           className={`text-[10.5px] text-slate-600 rich-text-content leading-relaxed ${expandedRows[work.id] ? 'expanded' : ''}`}
@@ -555,93 +690,103 @@ const parseIds = (data: unknown): number[] => {
                           )}
                         </div>
                       </td>
-                      <td className="px-3 py-3 align-middle text-center">
-                        <div className="text-[9px] text-slate-600 font-medium leading-tight">
-                          {getAssignedNames(work, 'designer')}
-                        </div>
-                      </td>
-                      <td className="px-3 py-3 align-middle text-center">
-                        <div className="text-[9px] text-slate-600 font-medium leading-tight">
-                          {getAssignedNames(work, 'content')}
-                        </div>
-                      </td>
-                      <td className="px-3 py-3 align-middle">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          {(() => {
-                            const files = parseFiles(work.designer_files || work.designer_file);
-                            return files.length > 0 ? (
-                              files.slice(0, 2).map((file, idx) => {
-                                const imageUrl = file.startsWith('http') ? file : `${import.meta.env.VITE_API_BASE_URL || ''}/${file.replace(/^\//, '')}`;
-                                return (
-                                  <button
-                                    key={idx}
-                                    onClick={() => setLightboxImage(imageUrl)}
-                                    className="block relative hover:scale-105 transition-transform"
-                                  >
-                                    <img
-                                      src={imageUrl}
-                                      alt="Design"
-                                      className="h-9 w-9 object-cover rounded shadow-sm border border-slate-200 cursor-zoom-in"
-                                      onError={(e) => {
-                                        (e.target as HTMLImageElement).src = 'https://placehold.co/36x36?text=Err';
-                                      }}
-                                    />
-                                  </button>
-                                );
-                              })
-                            ) : (
-                              <div className="flex items-center gap-1 text-[8px] text-slate-300">
-                                No Files
-                              </div>
-                            );
-                          })()}
-                          {parseFiles(work.designer_files || work.designer_file).length > 2 && (
-                            <span className="text-[8px] text-slate-400 self-center font-bold">+{parseFiles(work.designer_files || work.designer_file).length - 2}</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-3 py-3 align-middle">
-                        <div className="flex justify-center">
-                          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase transition-all ring-1 ring-inset ${
-                            work.designer_status === 'completed' ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20' :
-                            work.designer_status === 'working_progress' ? 'bg-blue-50 text-blue-700 ring-blue-600/20' :
-                            work.designer_status === 'approval_pending' ? 'bg-indigo-50 text-indigo-700 ring-indigo-600/20' :
-                            'bg-slate-50 text-slate-600 ring-slate-400/20'
-                          }`}>
-                            <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${
-                            work.designer_status === 'completed' ? 'bg-emerald-500' :
-                            work.designer_status === 'working_progress' ? 'bg-blue-500' :
-                            work.designer_status === 'approval_pending' ? 'bg-indigo-500' :
-                            'bg-slate-500'
-                            }`} />
-                            {work.designer_status === 'completed' ? 'Done' :
-                             work.designer_status === 'working_progress' ? 'Work' :
-                             work.designer_status === 'approval_pending' ? 'Rev' : 'Pend'}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-3 align-middle">
-                        <div className="flex justify-center">
-                          <select
-                            value={work.client_approved_status || 'pending'}
-                            onChange={(e) => handleApprovalChange(work.id, e.target.value)}
-                            disabled={updatingWorkId === work.id}
-                            className={`text-[8.5px] font-bold px-1.5 py-1 rounded border outline-none cursor-pointer w-full transition-all text-center appearance-none bg-white hover:border-slate-300 focus:border-blue-400 shadow-sm ${
-                              work.client_approved_status === 'approved' ? 'text-emerald-700 border-emerald-100 bg-emerald-50' :
-                              work.client_approved_status === 'not_approved' ? 'text-rose-700 border-rose-100 bg-rose-50' :
-                              work.client_approved_status === 'needed_edit' ? 'text-amber-700 border-amber-100 bg-amber-50' :
-                              work.client_approved_status === 'images_changed' ? 'text-cyan-700 border-cyan-100 bg-cyan-50' :
-                              'text-slate-600 border-slate-200'
-                            }`}
-                          >
-                            <option value="pending">PENDING</option>
-                            <option value="approved">APPR</option>
-                            <option value="not_approved">REJECT</option>
-                            <option value="needed_edit">EDIT</option>
-                            <option value="images_changed">IMG</option>
-                          </select>
-                        </div>
-                      </td>
+                      {tableViewConfig.showDesigner && (
+                        <td className="px-3 py-3 align-middle text-center">
+                          <div className="text-[9px] text-slate-600 font-medium leading-tight">
+                            {getAssignedNames(work, 'designer')}
+                          </div>
+                        </td>
+                      )}
+                      {tableViewConfig.showWriter && (
+                        <td className="px-3 py-3 align-middle text-center">
+                          <div className="text-[9px] text-slate-600 font-medium leading-tight">
+                            {getAssignedNames(work, 'content')}
+                          </div>
+                        </td>
+                      )}
+                      {tableViewConfig.showDesign && (
+                        <td className="px-3 py-3 align-middle">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {(() => {
+                              const files = parseFiles(work.designer_files || work.designer_file);
+                              return files.length > 0 ? (
+                                files.slice(0, 2).map((file, idx) => {
+                                  const imageUrl = file.startsWith('http') ? file : `${import.meta.env.VITE_API_BASE_URL || ''}/${file.replace(/^\//, '')}`;
+                                  return (
+                                    <button
+                                      key={idx}
+                                      onClick={() => setLightboxImage(imageUrl)}
+                                      className="block relative hover:scale-105 transition-transform"
+                                    >
+                                      <img
+                                        src={imageUrl}
+                                        alt="Design"
+                                        className="h-9 w-9 object-cover rounded shadow-sm border border-slate-200 cursor-zoom-in"
+                                        onError={(e) => {
+                                          (e.target as HTMLImageElement).src = 'https://placehold.co/36x36?text=Err';
+                                        }}
+                                      />
+                                    </button>
+                                  );
+                                })
+                              ) : (
+                                <div className="flex items-center gap-1 text-[8px] text-slate-300">
+                                  No Files
+                                </div>
+                              );
+                            })()}
+                            {parseFiles(work.designer_files || work.designer_file).length > 2 && (
+                              <span className="text-[8px] text-slate-400 self-center font-bold">+{parseFiles(work.designer_files || work.designer_file).length - 2}</span>
+                            )}
+                          </div>
+                        </td>
+                      )}
+                      {tableViewConfig.showDesStatus && (
+                        <td className="px-3 py-3 align-middle">
+                          <div className="flex justify-center">
+                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase transition-all ring-1 ring-inset ${
+                              work.designer_status === 'completed' ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20' :
+                              work.designer_status === 'working_progress' ? 'bg-blue-50 text-blue-700 ring-blue-600/20' :
+                              work.designer_status === 'approval_pending' ? 'bg-indigo-50 text-indigo-700 ring-indigo-600/20' :
+                              'bg-slate-50 text-slate-600 ring-slate-400/20'
+                            }`}>
+                              <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${
+                              work.designer_status === 'completed' ? 'bg-emerald-500' :
+                              work.designer_status === 'working_progress' ? 'bg-blue-500' :
+                              work.designer_status === 'approval_pending' ? 'bg-indigo-500' :
+                              'bg-slate-500'
+                              }`} />
+                              {work.designer_status === 'completed' ? 'Done' :
+                               work.designer_status === 'working_progress' ? 'Work' :
+                               work.designer_status === 'approval_pending' ? 'Rev' : 'Pend'}
+                            </span>
+                          </div>
+                        </td>
+                      )}
+                      {tableViewConfig.showClientApproval && (
+                        <td className="px-3 py-3 align-middle">
+                          <div className="flex justify-center">
+                            <select
+                              value={work.client_approved_status || 'pending'}
+                              onChange={(e) => handleApprovalChange(work.id, e.target.value)}
+                              disabled={updatingWorkId === work.id}
+                              className={`text-[8.5px] font-bold px-1.5 py-1 rounded border outline-none cursor-pointer w-full transition-all text-center appearance-none bg-white hover:border-slate-300 focus:border-blue-400 shadow-sm ${
+                                work.client_approved_status === 'approved' ? 'text-emerald-700 border-emerald-100 bg-emerald-50' :
+                                work.client_approved_status === 'not_approved' ? 'text-rose-700 border-rose-100 bg-rose-50' :
+                                work.client_approved_status === 'needed_edit' ? 'text-amber-700 border-amber-100 bg-amber-50' :
+                                work.client_approved_status === 'images_changed' ? 'text-cyan-700 border-cyan-100 bg-cyan-50' :
+                                'text-slate-600 border-slate-200'
+                              }`}
+                            >
+                              <option value="pending">PENDING</option>
+                              <option value="approved">APPR</option>
+                              <option value="not_approved">REJECT</option>
+                              <option value="needed_edit">EDIT</option>
+                              <option value="images_changed">IMG</option>
+                            </select>
+                          </div>
+                        </td>
+                      )}
                       <td className="px-3 py-3 align-middle">
                         <div className="flex flex-col gap-1 items-center justify-center min-h-[30px]">
                           <button
@@ -676,7 +821,15 @@ const parseIds = (data: unknown): number[] => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={13} className="px-6 py-24 text-center align-middle">
+                    <td colSpan={
+                      7 + // Always visible: #, Tracking, Date, Type, Content Description, Creative, Head Approval
+                      (tableViewConfig.showClientFilter ? 1 : 0) +
+                      (tableViewConfig.showDesigner ? 1 : 0) +
+                      (tableViewConfig.showWriter ? 1 : 0) +
+                      (tableViewConfig.showDesign ? 1 : 0) +
+                      (tableViewConfig.showDesStatus ? 1 : 0) +
+                      (tableViewConfig.showClientApproval ? 1 : 0)
+                    } className="px-6 py-24 text-center align-middle">
                       <div className="flex flex-col items-center gap-3">
                         <div className="p-4 bg-slate-50 rounded-full text-slate-200 ring-8 ring-slate-50/50">
                           <Clipboard size={24} />

@@ -76,6 +76,7 @@ interface CalendarWork {
   status?: string;
   designer_status?: string;
   client_approved_status?: string;
+  is_head_approved?: string | null;
 }
 
 const WorksheetCreativePage = () => {
@@ -135,6 +136,7 @@ const WorksheetCreativePage = () => {
   const shouldShowDesignUpload = !isContentWriter;
   const shouldShowStatus = true;
   const shouldShowClientApproval = true;
+  const shouldShowHeadApproval = true;
   const shouldShowActions = false;
 
   const totalVisibleCols = 
@@ -150,6 +152,7 @@ const WorksheetCreativePage = () => {
     (shouldShowAssignContent ? 1 : 0) +
     (shouldShowDesignUpload ? 1 : 0) +
     (shouldShowClientApproval ? 1 : 0) +
+    (shouldShowHeadApproval ? 1 : 0) +
     (shouldShowStatus ? 1 : 0) +
     (shouldShowActions ? 1 : 0);
 
@@ -507,6 +510,9 @@ const WorksheetCreativePage = () => {
                   {shouldShowClientApproval && (
                     <th className="px-4 py-3 w-32 border border-slate-200">Client Approval</th>
                   )}
+                  {shouldShowHeadApproval && (
+                    <th className="px-4 py-3 w-32 border border-slate-200">Head Approval</th>
+                  )}
                   {shouldShowStatus && (
                     <th className="px-4 py-3 w-24 text-left border border-slate-200">Status</th>
                   )}
@@ -718,23 +724,47 @@ const WorksheetCreativePage = () => {
                           </span>
                         </td>
                       )}
+                      {shouldShowHeadApproval && (
+                        <td className="px-4 py-3 align-top border border-slate-200">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-none text-[9px] font-bold uppercase tracking-wider text-white ${
+                            work.is_head_approved === 'Approved' ? 'bg-emerald-600' :
+                            work.is_head_approved === 'Re-Edit' ? 'bg-orange-600' :
+                            'bg-slate-500'
+                          }`}>
+                            {work.is_head_approved || 'Pending'}
+                          </span>
+                        </td>
+                      )}
                       {shouldShowStatus && (
                         <td className="px-4 py-3 text-left align-top border border-slate-200">
-                          <select
-                            value={workStatuses[work.id] || work.designer_status || 'pending'}
-                            onChange={(e) => handleStatusChange(work.id, e.target.value)}
-                            className={`text-[9px] font-bold px-2 py-1 rounded-none border-none outline-none cursor-pointer transition-all w-full min-w-[100px] text-white ${
+                          {isHead ? (
+                            // Read-only display for head users
+                            <span className={`inline-flex items-center px-2 py-1 rounded-none text-[9px] font-bold uppercase tracking-wider text-white ${
                               (workStatuses[work.id] || work.designer_status) === 'completed' ? 'bg-green-600' :
                               (workStatuses[work.id] || work.designer_status) === 'working_progress' ? 'bg-blue-600' :
                               (workStatuses[work.id] || work.designer_status) === 'approval_pending' ? 'bg-purple-600' :
                               'bg-slate-500'
-                            }`}
-                          >
-                            <option value="pending">Pending</option>
-                            <option value="working_progress">In Progress</option>
-                            <option value="approval_pending">Approval</option>
-                            <option value="completed">Completed</option>
-                          </select>
+                            }`}>
+                              {(workStatuses[work.id] || work.designer_status || 'pending').replace('_', ' ')}
+                            </span>
+                          ) : (
+                            // Editable select for staff users
+                            <select
+                              value={workStatuses[work.id] || work.designer_status || 'pending'}
+                              onChange={(e) => handleStatusChange(work.id, e.target.value)}
+                              className={`text-[9px] font-bold px-2 py-1 rounded-none border-none outline-none cursor-pointer transition-all w-full min-w-[100px] text-white ${
+                                (workStatuses[work.id] || work.designer_status) === 'completed' ? 'bg-green-600' :
+                                (workStatuses[work.id] || work.designer_status) === 'working_progress' ? 'bg-blue-600' :
+                                (workStatuses[work.id] || work.designer_status) === 'approval_pending' ? 'bg-purple-600' :
+                                'bg-slate-500'
+                              }`}
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="working_progress">In Progress</option>
+                              <option value="approval_pending">Approval</option>
+                              <option value="completed">Completed</option>
+                            </select>
+                          )}
                         </td>
                       )}
                       {shouldShowActions && (
@@ -903,25 +933,46 @@ const WorksheetCreativePage = () => {
                     <div className="flex justify-between items-center gap-2">
                       {shouldShowStatus && (
                         <div className="flex-1">
-                          <select 
-                            value={workStatuses[work.id] || work.designer_status || 'pending'} 
-                            onChange={(e) => handleStatusChange(work.id, e.target.value)}
-                            className={`w-full text-[9px] font-black uppercase tracking-widest p-1.5 border-none rounded-none text-white ${(workStatuses[work.id] || work.designer_status) === 'completed' ? 'bg-green-600' : 'bg-slate-500'}`}
-                          >
-                            <option value="pending">Pending</option>
-                            <option value="working_progress">In Progress</option>
-                            <option value="approval_pending">Approval</option>
-                            <option value="completed">Completed</option>
-                          </select>
+                          {isHead ? (
+                            // Read-only display for head users
+                            <span className={`inline-flex items-center px-2 py-1.5 rounded-none text-[9px] font-black uppercase tracking-widest text-white w-full justify-center ${
+                              (workStatuses[work.id] || work.designer_status) === 'completed' ? 'bg-green-600' :
+                              (workStatuses[work.id] || work.designer_status) === 'working_progress' ? 'bg-blue-600' :
+                              (workStatuses[work.id] || work.designer_status) === 'approval_pending' ? 'bg-purple-600' :
+                              'bg-slate-500'
+                            }`}>
+                              {(workStatuses[work.id] || work.designer_status || 'pending').replace('_', ' ')}
+                            </span>
+                          ) : (
+                            // Editable select for staff users
+                            <select 
+                              value={workStatuses[work.id] || work.designer_status || 'pending'} 
+                              onChange={(e) => handleStatusChange(work.id, e.target.value)}
+                              className={`w-full text-[9px] font-black uppercase tracking-widest p-1.5 border-none rounded-none text-white ${(workStatuses[work.id] || work.designer_status) === 'completed' ? 'bg-green-600' : 'bg-slate-500'}`}
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="working_progress">In Progress</option>
+                              <option value="approval_pending">Approval</option>
+                              <option value="completed">Completed</option>
+                            </select>
+                          )}
                         </div>
                       )}
                     </div>
                     <div className="flex justify-between items-center bg-white p-2 border border-slate-200">
-                      <div className="flex items-center gap-2 flex-1">
-                        <p className="text-[9px] font-black text-slate-400 uppercase whitespace-nowrap">Approve:</p>
-                        <span className={`text-[9px] font-bold ${(work.client_approved_status) === 'approved' ? 'text-green-600' : 'text-slate-500'}`}>
-                           {work.client_approved_status?.replace('_', ' ') || 'Pending'}
-                        </span>
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-[9px] font-black text-slate-400 uppercase whitespace-nowrap">Client:</p>
+                          <span className={`text-[9px] font-bold ${(work.client_approved_status) === 'approved' ? 'text-green-600' : 'text-slate-500'}`}>
+                             {work.client_approved_status?.replace('_', ' ') || 'Pending'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-[9px] font-black text-slate-400 uppercase whitespace-nowrap">Head:</p>
+                          <span className={`text-[9px] font-bold ${work.is_head_approved === 'Approved' ? 'text-emerald-600' : work.is_head_approved === 'Re-Edit' ? 'text-orange-600' : 'text-slate-500'}`}>
+                             {work.is_head_approved || 'Pending'}
+                          </span>
+                        </div>
                       </div>
                       <div className="flex gap-1 ml-4 border-l border-slate-100 pl-2">
                         {isContentWriter && !isHead && (

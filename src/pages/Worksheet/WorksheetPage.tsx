@@ -50,30 +50,36 @@ const WorksheetPage = () => {
     const groupLower = currentUserGroup.toLowerCase().trim();
     const positionLower = currentUserPosition.toLowerCase().trim();
 
-    // Check if user can approve (manager)
-    const canApprove = (() => {
-      const permissions = (POSITION_PERMISSIONS as any)[positionLower] || (POSITION_PERMISSIONS as any)[currentUserPosition];
-      return permissions?.canApprove || false;
-    })();
-
     // Admin role
     if (roleName?.toUpperCase() === 'ADMIN') {
       return <AllWorksheetPage />;
     }
 
-    // Manager roles (can approve)
+    // Special case: heads in creative groups should see creative page, not manager page
+    const creativeGroups = ['creative designers', 'creative team lead', 'graphics department', 'graphics'];
+    if (positionLower === 'head' && creativeGroups.includes(groupLower)) {
+      return <WorksheetCreativePage />;
+    }
+
+    // Manager roles (can approve) - check before group-based routing
+    const canApprove = (() => {
+      // Staff role should not have approval permissions
+      if (roleName === 'staff') return false;
+      const permissions = (POSITION_PERMISSIONS as any)[positionLower] || (POSITION_PERMISSIONS as any)[currentUserPosition];
+      return permissions?.canApprove || false;
+    })();
+
     if (canApprove) {
       return <WorksheetManagerPage />;
     }
 
-    // Content roles
+    // Content roles - prioritize group over approval permissions
     const contentGroups = ['content creator', 'content'];
     if (contentGroups.includes(groupLower)) {
       return <WorksheetContentPage />;
     }
 
     // Creative roles: Creative Designers, Creative Team Lead, Graphics Department, Graphics
-    const creativeGroups = ['creative designers', 'creative team lead', 'graphics department', 'graphics'];
     if (creativeGroups.includes(groupLower)) {
       return <WorksheetCreativePage />;
     }
