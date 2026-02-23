@@ -82,7 +82,8 @@ interface CalendarWork {
 }
 
 const WorksheetManagerPage = () => {
-  const { user, roleName, group, position, token, isAuthenticated } = useAppSelector((state) => state.auth);
+  const { user, roleName, group, position, isAuthenticated } = useAppSelector((state) => state.auth);
+  const token = localStorage.getItem('token');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState<string>('');
   const [calendarWorks, setCalendarWorks] = useState<CalendarWork[]>([]);

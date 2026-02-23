@@ -8,6 +8,13 @@ export const ENDPOINTS = {
   },
   USERS: {
     LIST: '/users/list',
+    PERMISSIONS: (id: number) => `/users/${id}/permissions`,
+    PERMISSIONS_ASSIGN: (id: number) => `/users/${id}/permissions/assign`,
+    PERMISSIONS_REMOVE: (id: number) => `/users/${id}/permissions/remove`,
+    PERMISSIONS_SYNC: (id: number) => `/users/${id}/permissions/sync`,
+  },
+  USER_PERMISSIONS: {
+    BASE: '/user-permissions',
   },
   ROLES: {
     BASE: '/roles',
@@ -78,6 +85,7 @@ PROPOSALS: {
     BASE: '/permissions',
     DETAIL: (id: number) => `/permissions/${id}`,
     ROLES: (id: number) => `/permissions/${id}/roles`,
+    USERS: (id: number) => `/permissions/${id}/users`,
   },
   ROLE_PERMISSIONS: {
     BASE: '/role-permissions',

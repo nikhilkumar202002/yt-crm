@@ -39,19 +39,40 @@ const Login = () => {
     if (!validateForm()) return;
     
     setLoading(true);
+    console.log('=== LOGIN STARTED ===');
+    console.log('Email:', email);
+    console.log('Password length:', password.length);
 
     try {
       const data = await loginUser({ email, password });
+      console.log('Login response:', data);
+      console.log('User object:', data.user);
+
+      // Extract user permissions from login response
+      // The permissions are already returned in the user object from login API
+      const permissions = data.user.permissions || [];
+      console.log('User permissions extracted from login response:', permissions);
+      console.log('Total permissions assigned to user:', permissions.length);
+
+      // Update user object with permissions
+      const userWithPermissions = {
+        ...data.user,
+        role_permissions: permissions, // Store in role_permissions key that authSlice expects
+        permissions: permissions // Also store in permissions for compatibility
+      };
+
+      console.log('Final user object with permissions:', userWithPermissions);
 
       dispatch(setLoginData({
-        user: data.user,
+        user: userWithPermissions,
         token: data.token,
         rememberMe
       }));
 
+      console.log('=== LOGIN SUCCESSFUL - NAVIGATING TO DASHBOARD ===');
       navigate('/dashboard');
     } catch (error: unknown) {
-      console.error("Login Error:", error);
+      console.error("=== LOGIN ERROR ===", error);
       let message = 'Login failed. Please try again.';
       if (error && typeof error === 'object' && 'response' in error) {
         const axiosError = error as { response?: { data?: { message?: string } } };
@@ -60,6 +81,7 @@ const Login = () => {
       setError(message);
     } finally {
       setLoading(false);
+      console.log('=== LOGIN PROCESS COMPLETED ===');
     }
   };
 

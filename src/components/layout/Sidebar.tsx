@@ -38,37 +38,65 @@ const iconMap: Record<string, React.JSX.Element> = {
 };
 
 const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
+  console.log('🖥️ SIDEBAR COMPONENT RENDERED');
   const { permissions, roleName } = useAppSelector((state) => state.auth);
+  console.log('Sidebar - Redux state permissions:', permissions);
+  console.log('Sidebar - Redux state roleName:', roleName);
   const location = useLocation();
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
 
-  // Wrap in useMemo so it only recalculates if permissions or role actually change
+  // Resolve permissions based on role and database permissions
   const userPermissions = useMemo(() => {
-    return resolvePermissions({
+    console.log('Sidebar - About to resolve permissions for role:', roleName, 'with permissions:', permissions);
+    const resolved = resolvePermissions({
       role: roleName || '',
       permissions: permissions as any[]
     });
+    console.log('Sidebar - Resolved permissions:', resolved);
+    return resolved;
   }, [roleName, permissions]);
 
-  // Wrap in useMemo so the menu doesn't re-filter every time you open a dropdown
+  // Filter menu based on resolved permissions
   const filteredMenu = useMemo(() => {
-    return MAIN_MENU
-      .filter(item => hasMenuAccess(userPermissions, item.requiredPermissions))
+    console.log('🎛️ Filtering menu with resolved permissions:', userPermissions);
+    const result = MAIN_MENU
+      .filter(item => {
+        const hasAccess = hasMenuAccess(userPermissions, item.requiredPermissions);
+        console.log(`Menu item '${item.title}' access: ${hasAccess}`);
+        return hasAccess;
+      })
       .map(item => ({
         ...item,
-        submenu: item.submenu?.filter(sub => hasMenuAccess(userPermissions, sub.requiredPermissions))
+        submenu: item.submenu?.filter(sub => {
+          const hasSubAccess = hasMenuAccess(userPermissions, sub.requiredPermissions);
+          console.log(`Submenu item '${sub.title}' access: ${hasSubAccess}`);
+          return hasSubAccess;
+        })
       }))
       .filter(item => {
         const hasDefinedSubmenu = item.submenu !== undefined;
         const hasActiveSubmenu = hasDefinedSubmenu && (item.submenu?.length || 0) > 0;
-        
-        // Hide empty parent menus (e.g. if they have no allowed submenus and no direct path)
-        if (hasDefinedSubmenu && !hasActiveSubmenu && (!item.path || item.path === '')) {
+
+        // Hide parent menus entirely if they have submenu array but all items filtered out
+        if (hasDefinedSubmenu && !hasActiveSubmenu) {
           return false;
         }
         return true;
       });
+
+    console.log('📋 Final filtered menu:', result);
+    return result;
   }, [userPermissions]);
+
+  // Debug logging for menu filtering by role
+  console.log('=== MENU DEBUG FOR ROLE:', roleName || 'No Role');
+  console.log('Filtered Menu Items:', filteredMenu.map(item => ({
+    title: item.title,
+    path: item.path,
+    hasSubmenu: item.submenu ? item.submenu.length > 0 : false,
+    submenuCount: item.submenu?.length || 0
+  })));
+  console.log('=== END MENU DEBUG ===');
 
   const toggleExpand = (title: string) => {
     setExpandedMenu(expandedMenu === title ? null : title);

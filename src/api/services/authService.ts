@@ -184,3 +184,34 @@ export const getAllRolePermissions = async (page: number = 1) => {
   const response = await apiClient.get(`${ENDPOINTS.ROLE_PERMISSIONS.BASE}?page=${page}`);
   return response.data;
 };
+
+// User Permission Service Functions
+export const assignPermissionsToUser = async (userId: number, data: AssignPermissionsData) => {
+  const response = await apiClient.post(ENDPOINTS.USERS.PERMISSIONS_ASSIGN(userId), data);
+  return response.data;
+};
+
+export const removePermissionsFromUser = async (userId: number, data: AssignPermissionsData) => {
+  const response = await apiClient.post(ENDPOINTS.USERS.PERMISSIONS_REMOVE(userId), data);
+  return response.data;
+};
+
+export const syncUserPermissions = async (userId: number, data: AssignPermissionsData) => {
+  const response = await apiClient.patch(ENDPOINTS.USERS.PERMISSIONS_SYNC(userId), data);
+  return response.data;
+};
+
+export const getUserPermissions = async (userId: number) => {
+  const response = await apiClient.get(ENDPOINTS.USERS.PERMISSIONS(userId));
+  return response.data;
+};
+
+export const getAllUserPermissions = async (page: number = 1) => {
+  const response = await apiClient.get(`${ENDPOINTS.USER_PERMISSIONS.BASE}?page=${page}`);
+  return response.data;
+};
+
+export const getPermissionUsers = async (permissionId: number) => {
+  const response = await apiClient.get(ENDPOINTS.PERMISSIONS.USERS(permissionId));
+  return response.data;
+};

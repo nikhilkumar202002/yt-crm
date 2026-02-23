@@ -6,10 +6,22 @@ export interface MenuItem {
 }
 
 export function hasMenuAccess(userPermissions: Record<string, boolean>, requiredPermissions?: string[]): boolean {
+  console.log('🔍 hasMenuAccess called with permissions:', userPermissions);
+  console.log('Required permissions:', requiredPermissions);
+
   if (!requiredPermissions || requiredPermissions.length === 0) {
-    return true; 
+    console.log('No required permissions - access granted');
+    return true;
   }
-  return requiredPermissions.some(perm => userPermissions[perm] === true);
+
+  const hasAccess = requiredPermissions.some(perm => {
+    const hasPerm = userPermissions[perm] === true;
+    console.log(`Checking permission '${perm}': ${hasPerm}`);
+    return hasPerm;
+  });
+
+  console.log('Final access decision:', hasAccess);
+  return hasAccess;
 }
 
 export const MAIN_MENU: MenuItem[] = [
@@ -55,12 +67,7 @@ export const MAIN_MENU: MenuItem[] = [
     // FIXED: Changed general.view_all to general.view-all
     requiredPermissions: ['general.view-all', 'worksheet.view']
   },
-  {
-    title: 'Asset Hub',
-    path: '/assets',
-    // FIXED: Changed general.view_all to general.view-all
-    requiredPermissions: ['general.view-all', 'worksheet.view']
-  },
+
   {
     title: 'Finance & Billing',
     path: '/finance',
@@ -76,7 +83,7 @@ export const MAIN_MENU: MenuItem[] = [
   {
     title: 'Settings',
     path: '/settings',
-    requiredPermissions: [], // Always visible, submenus filtered by permissions
+    requiredPermissions: ['settings.manage'], // Only visible to users with settings management permissions
     submenu: [
       { title: 'Role Management', path: '/settings/roles', requiredPermissions: ['settings.manage'] },
       { title: 'Departments', path: '/settings/departments', requiredPermissions: ['settings.manage'] },
@@ -85,6 +92,7 @@ export const MAIN_MENU: MenuItem[] = [
       { title: 'Positions', path: '/settings/positions', requiredPermissions: ['settings.manage'] },
       { title: 'Permissions', path: '/settings/permissions', requiredPermissions: ['settings.manage'] },
       { title: 'Role Permissions', path: '/settings/role-permissions', requiredPermissions: ['settings.manage'] },
+      { title: 'User Permissions', path: '/settings/user-permissions', requiredPermissions: ['settings.manage'] },
       { title: 'Services', path: '/settings/services', requiredPermissions: ['settings.manage'] }
     ]
   }

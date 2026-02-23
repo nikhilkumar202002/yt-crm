@@ -16,6 +16,10 @@ export { EditPermissionModal } from './EditPermissionModal';
 export { PermissionDetailsModal } from './PermissionDetailsModal';
 export { DeletePermissionModal } from './DeletePermissionModal';
 
+// User Permission Modals
+export { AssignUserPermissionsModal } from './AssignUserPermissionsModal';
+export { RemoveUserPermissionsModal } from './RemoveUserPermissionsModal';
+
 // Department Modals
 export { CreateDepartmentModal } from './CreateDepartmentModal';
 

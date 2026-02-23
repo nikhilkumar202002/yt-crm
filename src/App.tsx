@@ -26,6 +26,7 @@ import GroupsPage from './pages/Settings/GroupsPage';
 import PositionsPage from './pages/Settings/PositionsPage';
 import PermissionsPage from './pages/Settings/PermissionsPage';
 import RolePermissionsPage from './pages/Settings/RolePermissionsPage';
+import UserPermissionsPage from './pages/Settings/UserPermissionsPage';
 
 
 
@@ -70,6 +71,7 @@ function App() {
             <Route path="/settings/positions" element={<PositionsPage />} />
             <Route path="/settings/permissions" element={<PermissionsPage />} />
             <Route path="/settings/role-permissions" element={<RolePermissionsPage />} />
+            <Route path="/settings/user-permissions" element={<UserPermissionsPage />} />
             
             
           </Route>
