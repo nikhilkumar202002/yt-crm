@@ -197,7 +197,7 @@ export const removePermissionsFromUser = async (userId: number, data: AssignPerm
 };
 
 export const syncUserPermissions = async (userId: number, data: AssignPermissionsData) => {
-  const response = await apiClient.patch(ENDPOINTS.USERS.PERMISSIONS_SYNC(userId), data);
+  const response = await apiClient.put(ENDPOINTS.USERS.PERMISSIONS_SYNC(userId), data);
   return response.data;
 };
 

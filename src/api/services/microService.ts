@@ -316,6 +316,18 @@ export const updateLeadServices = async (
   });
   return response.data;
 };
+
+/**
+ * Update the priority of an assigned lead.
+ * Endpoint: PUT /lead-assigns/{id}/status
+ */
+export const updateLeadPriority = async (id: number, priority: string) => {
+  const response = await apiClient.put(`/lead-assigns/${id}/status`, { 
+    priority: priority.toLowerCase()
+  });
+  return response.data;
+};
+
 /**
  * GET All services with pagination
  */

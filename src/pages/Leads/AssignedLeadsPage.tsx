@@ -8,6 +8,7 @@ import {
   getServices, 
   getSubServices, // Ensure this is imported
   updateLeadServices,
+  updateLeadPriority,
   getProposals 
 } from '../../api/services/microService';
 import { LeadDescriptionModal } from './components/LeadDescriptionModal';
@@ -107,6 +108,14 @@ const AssignedLeadsPage = () => {
     } catch (error) { alert("Error updating status"); }
   };
 
+  const handlePriorityChange = async (id: number, newPriority: string) => {
+    if (newPriority === "") return;
+    try {
+      await updateLeadPriority(id, newPriority);
+      fetchData(currentPage, selectedService);
+    } catch (error) { alert("Error updating priority"); }
+  };
+
   const handleSaveData = async () => {
     if (!commentModal.id) return;
     try {
@@ -169,6 +178,7 @@ const AssignedLeadsPage = () => {
                 <th className="px-5 py-3">Lead Identity</th>
                 {isAdminOrHead && <th className="px-5 py-3">Assignee</th>}
                 <th className="px-5 py-3 text-center">Status</th>
+                <th className="px-5 py-3 text-center">Priority</th>
                 <th className="px-5 py-3 text-center">Approval</th>
                 <th className="px-5 py-3">Services</th>
                 <th className="px-5 py-3">Notes</th>
@@ -213,14 +223,14 @@ const AssignedLeadsPage = () => {
                     )}
 
                     <td className="px-5 py-3 text-center">
-                      {isAdminOrHead || isLocked ? (
-                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold border uppercase tracking-tighter ${
+                      {isLocked ? (
+                        <span className={`px-2 py-1 rounded text-[9px] font-bold border uppercase tracking-tighter inline-block ${
                           item.user_status?.toLowerCase() === 'hot' 
-                            ? 'bg-red-50 text-red-600 border-red-100' 
+                            ? 'bg-rose-50 text-rose-600 border-rose-100' 
                             : item.user_status?.toLowerCase() === 'warm'
-                            ? 'bg-orange-50 text-orange-600 border-orange-100'
+                            ? 'bg-amber-50 text-amber-600 border-amber-100'
                             : item.user_status?.toLowerCase() === 'cold'
-                            ? 'bg-blue-50 text-blue-600 border-blue-100'
+                            ? 'bg-sky-50 text-sky-600 border-sky-100'
                             : 'bg-slate-50 text-slate-500 border-slate-200'
                         }`}>
                           {item.user_status || 'New'}
@@ -229,17 +239,34 @@ const AssignedLeadsPage = () => {
                         <select 
                           value={item.user_status?.toLowerCase() || ''}
                           onChange={(e) => handleStatusChange(item.id, e.target.value)}
-                          className={`text-[10px] font-bold py-0.5 px-1 rounded border outline-none uppercase cursor-pointer ${
-                            item.user_status?.toLowerCase() === 'hot' 
-                              ? 'bg-red-50 text-red-600 border-red-100' 
-                              : item.user_status?.toLowerCase() === 'warm'
-                              ? 'bg-orange-50 text-orange-600 border-orange-100'
-                              : item.user_status?.toLowerCase() === 'cold'
-                              ? 'bg-blue-50 text-blue-600 border-blue-100'
-                              : 'bg-white text-slate-700 border-slate-200 focus:border-blue-500'
-                          }`}
+                          style={{
+                            backgroundColor: item.user_status?.toLowerCase() === 'hot' ? '#f8f3f3' :
+                                           item.user_status?.toLowerCase() === 'warm' ? '#faf8f3' :
+                                           item.user_status?.toLowerCase() === 'cold' ? '#f0f8fc' : '#ffffff',
+                            color: item.user_status?.toLowerCase() === 'hot' ? '#b85c5c' :
+                                   item.user_status?.toLowerCase() === 'warm' ? '#a87f44' :
+                                   item.user_status?.toLowerCase() === 'cold' ? '#4a7ba7' : '#5a6b6f',
+                            border: item.user_status?.toLowerCase() === 'hot' ? '1px solid #e6d5d5' :
+                                   item.user_status?.toLowerCase() === 'warm' ? '1px solid #e8dcc4' :
+                                   item.user_status?.toLowerCase() === 'cold' ? '1px solid #c5e1f5' : '1px solid #d1d5db',
+                            padding: '6px 8px',
+                            fontSize: '10px',
+                            fontWeight: 700,
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            appearance: 'none',
+                            webkitAppearance: 'none',
+                            mozAppearance: 'none',
+                            backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPositionX: 'right 8px',
+                            backgroundPositionY: 'center',
+                            backgroundSize: '16px',
+                            paddingRight: '32px',
+                            transition: 'all 0.2s'
+                          }}
                         >
-                          <option value="">Set</option>
+                          <option value="">Set Status</option>
                           <option value="hot">Hot</option>
                           <option value="warm">Warm</option>
                           <option value="cold">Cold</option>
@@ -248,8 +275,60 @@ const AssignedLeadsPage = () => {
                     </td>
 
                     <td className="px-5 py-3 text-center">
+                      {isAdminOrHead ? (
+                        <select 
+                          value={item.priority?.toLowerCase() || ''}
+                          onChange={(e) => handlePriorityChange(item.id, e.target.value)}
+                          style={{
+                            backgroundColor: item.priority?.toLowerCase() === 'high' ? '#f8f3f3' :
+                                           item.priority?.toLowerCase() === 'medium' ? '#faf8f3' :
+                                           item.priority?.toLowerCase() === 'low' ? '#f3f8f3' : '#ffffff',
+                            color: item.priority?.toLowerCase() === 'high' ? '#b85c5c' :
+                                   item.priority?.toLowerCase() === 'medium' ? '#a87f44' :
+                                   item.priority?.toLowerCase() === 'low' ? '#5a8a5a' : '#5a6b6f',
+                            border: item.priority?.toLowerCase() === 'high' ? '1px solid #e6d5d5' :
+                                   item.priority?.toLowerCase() === 'medium' ? '1px solid #e8dcc4' :
+                                   item.priority?.toLowerCase() === 'low' ? '1px solid #d5e6d5' : '1px solid #d1d5db',
+                            padding: '6px 8px',
+                            fontSize: '10px',
+                            fontWeight: 700,
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            appearance: 'none',
+                            webkitAppearance: 'none',
+                            mozAppearance: 'none',
+                            backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPositionX: 'right 8px',
+                            backgroundPositionY: 'center',
+                            backgroundSize: '16px',
+                            paddingRight: '32px',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          <option value="">Set Priority</option>
+                          <option value="high">High</option>
+                          <option value="medium">Medium</option>
+                          <option value="low">Low</option>
+                        </select>
+                      ) : (
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold border uppercase tracking-tighter inline-block ${
+                          item.priority?.toLowerCase() === 'high' 
+                            ? 'bg-rose-50 text-rose-600 border-rose-100' 
+                            : item.priority?.toLowerCase() === 'medium'
+                            ? 'bg-amber-50 text-amber-600 border-amber-100'
+                            : item.priority?.toLowerCase() === 'low'
+                            ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                            : 'bg-slate-50 text-slate-500 border-slate-200'
+                        }`}>
+                          {item.priority || '—'}
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="px-5 py-3 text-center">
                       {item.is_approved ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 text-green-600 text-[9px] font-bold border border-green-100">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[9px] font-bold border border-emerald-100">
                           <CheckCircle2 size={10}/> Approved
                         </span>
                       ) : (
@@ -262,7 +341,7 @@ const AssignedLeadsPage = () => {
                     <td className="px-5 py-3">
                       <div className="flex flex-wrap gap-1 max-w-[160px]">
                         {item.services?.map((s: any) => (
-                          <span key={s.id} className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100 text-[8px] font-bold uppercase tracking-tighter">
+                          <span key={s.id} className="px-1.5 py-0.5 rounded bg-sky-50 text-sky-600 border border-sky-100 text-[8px] font-bold uppercase tracking-tighter">
                             {s.name}
                           </span>
                         ))}
@@ -294,7 +373,7 @@ const AssignedLeadsPage = () => {
                   </tr>
                 );
               }) : (
-                <tr><td colSpan={isAdminOrHead ? 8 : 7} className="px-5 py-12 text-center text-[11px] text-slate-400 italic font-medium">No leads assigned yet.</td></tr>
+                <tr><td colSpan={isAdminOrHead ? 9 : 8} className="px-5 py-12 text-center text-[11px] text-slate-400 italic font-medium">No leads assigned yet.</td></tr>
               )}
             </tbody>
           </table>

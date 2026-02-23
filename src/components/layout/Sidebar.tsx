@@ -8,7 +8,7 @@ import {
   FileText, Briefcase, Calendar, Clipboard, UserCheck
 } from 'lucide-react';
 import { useAppSelector } from '../../store/store';
-import { hasMenuAccess, MAIN_MENU } from '../../config/menu';
+import { hasMenuAccess, MAIN_MENU, MenuItem } from '../../config/menu';
 import { resolvePermissions } from '../../config/permissionResolver';
 
 interface SidebarProps {
@@ -45,6 +45,9 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
   const location = useLocation();
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
 
+  // Use MAIN_MENU directly - permissions-based filtering happens below
+  const selectedMenu = MAIN_MENU;
+
   // Resolve permissions based on role and database permissions
   const userPermissions = useMemo(() => {
     console.log('Sidebar - About to resolve permissions for role:', roleName, 'with permissions:', permissions);
@@ -56,7 +59,7 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
     return resolved;
   }, [roleName, permissions]);
 
-  // Filter menu based on resolved permissions
+  // Filter menu based on user permissions
   const filteredMenu = useMemo(() => {
     console.log('🎛️ Filtering menu with resolved permissions:', userPermissions);
     const result = MAIN_MENU
@@ -88,8 +91,9 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
     return result;
   }, [userPermissions]);
 
-  // Debug logging for menu filtering by role
-  console.log('=== MENU DEBUG FOR ROLE:', roleName || 'No Role');
+  // Debug logging for permission-based menu filtering
+  console.log('=== MENU DEBUG - Permission-based Filtering ===');
+  console.log('User Permissions:', userPermissions);
   console.log('Filtered Menu Items:', filteredMenu.map(item => ({
     title: item.title,
     path: item.path,

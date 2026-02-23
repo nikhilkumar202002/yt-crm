@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
 import { getAllUserPermissions, assignPermissionsToUser, removePermissionsFromUser, getRoles } from '../../api/services/authService';
-import { AssignUserPermissionsModal, RemoveUserPermissionsModal } from './components';
+import { AssignUserPermissionsModal, RemoveUserPermissionsModal, EditUserPermissionsModal } from './components';
 
 interface UserPermission {
   id: number;
@@ -39,6 +39,7 @@ const UserPermissionsPage = () => {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const fetchUserPermissions = useCallback(async (page: number) => {
     try {
@@ -129,6 +130,11 @@ const UserPermissionsPage = () => {
   const handleRemovePermissions = (user: any) => {
     setSelectedUser(user);
     setIsRemoveModalOpen(true);
+  };
+
+  const handleEditPermissions = (user: any) => {
+    setSelectedUser(user);
+    setIsEditModalOpen(true);
   };
 
   const handlePageChange = (page: number) => {
@@ -223,6 +229,13 @@ const UserPermissionsPage = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center gap-2">
                         <button
+                          onClick={() => handleEditPermissions(userData.user)}
+                          className="text-slate-600 hover:text-slate-900 p-1"
+                          title="Edit Permissions"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
                           onClick={() => handleAssignPermissions(userData.user)}
                           className="text-blue-600 hover:text-blue-900 p-1"
                           title="Assign Permissions"
@@ -302,6 +315,20 @@ const UserPermissionsPage = () => {
         onSuccess={() => {
           fetchUserPermissions(currentPage);
           setIsRemoveModalOpen(false);
+          setSelectedUser(null);
+        }}
+        selectedUser={selectedUser}
+      />
+
+      <EditUserPermissionsModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedUser(null);
+        }}
+        onSuccess={() => {
+          fetchUserPermissions(currentPage);
+          setIsEditModalOpen(false);
           setSelectedUser(null);
         }}
         selectedUser={selectedUser}

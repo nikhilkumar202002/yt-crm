@@ -28,8 +28,6 @@ import PermissionsPage from './pages/Settings/PermissionsPage';
 import RolePermissionsPage from './pages/Settings/RolePermissionsPage';
 import UserPermissionsPage from './pages/Settings/UserPermissionsPage';
 
-
-
 import { useAppSelector } from './store/store';
 
 function App() {
@@ -61,7 +59,11 @@ function App() {
             } />
             <Route path="/settings/services" element={<ServicesPage />} />
             <Route path="/settings/calendar-work-creatives" element={<CalendarWorkCreativesPage />} />
-            <Route path="/proposals" element={<ProposalPage />} />
+            <Route path="/proposals" element={
+              <PermissionProtectedRoute requiredPermissions={['proposal.view-all', 'proposal.view']}>
+                <ProposalPage />
+              </PermissionProtectedRoute>
+            } />
             <Route path="/clients" element={<ClientPage />} />
             <Route path="/clients/enquiry-clients" element={<EnquiryClientsPage />} />
             <Route path="/clients/leads" element={<LeadClientsPage />} />
@@ -73,6 +75,35 @@ function App() {
             <Route path="/settings/role-permissions" element={<RolePermissionsPage />} />
             <Route path="/settings/user-permissions" element={<UserPermissionsPage />} />
             
+            {/* Intelligence / Analytics */}
+            <Route path="/intelligence" element={<Dashboard />} />
+            
+            {/* Creative / Design Workflow */}
+            <Route path="/creative" element={
+              <PermissionProtectedRoute requiredPermissions={['general.view-all', 'worksheet.view']}>
+                <WorksheetPage />
+              </PermissionProtectedRoute>
+            } />
+            
+            {/* Assets Management */}
+            <Route path="/assets" element={
+              <PermissionProtectedRoute requiredPermissions={['assets.view', 'assets.manage']}>
+                <div className="p-8 text-center">
+                  <h1 className="text-2xl font-bold text-slate-900">Assets Hub</h1>
+                  <p className="text-slate-600 mt-2">Coming soon...</p>
+                </div>
+              </PermissionProtectedRoute>
+            } />
+            
+            {/* Campaigns Management */}
+            <Route path="/campaigns" element={
+              <PermissionProtectedRoute requiredPermissions={['campaigns.view', 'campaigns.manage']}>
+                <div className="p-8 text-center">
+                  <h1 className="text-2xl font-bold text-slate-900">Campaigns</h1>
+                  <p className="text-slate-600 mt-2">Coming soon...</p>
+                </div>
+              </PermissionProtectedRoute>
+            } />
             
           </Route>
         </Route>

@@ -43,12 +43,11 @@ export const MAIN_MENU: MenuItem[] = [
   {
     title: 'Proposal',
     path: '/proposals',
-    requiredPermissions: ['proposals.view', 'proposals.upload', 'leads.upload']
+    requiredPermissions: ['proposal.view', 'proposal.view-all']
   },
   {
     title: 'Onboarded Clients',
     path: '/clients',
-    // FIXED: Changed underscores to hyphens to match DB
     requiredPermissions: ['leads.view-all', 'leads.view']
   },
   {
@@ -62,16 +61,14 @@ export const MAIN_MENU: MenuItem[] = [
     requiredPermissions: ['worksheet.view', 'worksheet.manage']
   },
   {
-    title: 'Creative Workflow',
-    path: '/creative',
-    // FIXED: Changed general.view_all to general.view-all
-    requiredPermissions: ['general.view-all', 'worksheet.view']
+    title: 'Intelligence',
+    path: '/intelligence',
+    requiredPermissions: ['analytics.view', 'analytics.view-all']
   },
 
   {
     title: 'Finance & Billing',
     path: '/finance',
-    // FIXED: Changed general.view_all to general.view-all
     requiredPermissions: ['general.view-all', 'finance.view']
   },
   {
