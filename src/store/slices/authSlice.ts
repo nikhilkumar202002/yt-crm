@@ -1,5 +1,4 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import { setSecureCookie, getSecureCookie, clearSecureCookies } from '../../utils/secureStorage';
 
 interface User {
   id: number;
@@ -11,12 +10,7 @@ interface User {
   designation_id?: string | number; // Designation ID from API
   position_id?: string | number; // Position ID from API
   group_name?: string; // User's group name from API
-  permissions?: {
-    viewAllLeads: boolean;
-    viewAssignedLeads: boolean;
-    assignLeads: boolean;
-    uploadLeads: boolean;
-  };
+  permissions?: any[] | Record<string, boolean>;
 }
 
 interface AuthState {
@@ -26,31 +20,26 @@ interface AuthState {
   position: string | null; // User's position for permission resolution
   group: string | null; // User's group name
   designation_name: string | null; // User's designation name
-  permissions: {
-    viewAllLeads: boolean;
-    viewAssignedLeads: boolean;
-    assignLeads: boolean;
-    uploadLeads: boolean;
-  } | null;
+  permissions: any[] | Record<string, boolean> | null;
   isAuthenticated: boolean;
 }
 
 const initialState: AuthState = {
   user: (() => {
-    const userData = getSecureCookie('user');
+    const userData = localStorage.getItem('user');
     return userData ? JSON.parse(userData) : null;
   })(),
-  token: getSecureCookie('token'),
-  roleName: getSecureCookie('role_name'),
-  position: getSecureCookie('position'),
-  group: getSecureCookie('group'),
-  designation_name: getSecureCookie('designation_name'),
+  token: localStorage.getItem('token'),
+  roleName: localStorage.getItem('role_name'),
+  position: localStorage.getItem('position'),
+  group: localStorage.getItem('group'),
+  designation_name: localStorage.getItem('designation_name'),
   permissions: (() => {
-    const userData = getSecureCookie('user');
+    const userData = localStorage.getItem('user');
     const user = userData ? JSON.parse(userData) : null;
     return user?.permissions || null;
   })(),
-  isAuthenticated: !!getSecureCookie('token'),
+  isAuthenticated: !!localStorage.getItem('token'),
 };
 
 const authSlice = createSlice({
@@ -70,14 +59,12 @@ const authSlice = createSlice({
   state.permissions = user.permissions || null;
   state.isAuthenticated = true;
 
-  const expires = rememberMe ? 7 : 1; // 7 days if remember, 1 day otherwise
-  setSecureCookie('token', token, { expires });
-  setSecureCookie('user', JSON.stringify(user), { expires });
-  setSecureCookie('role_name', user.role_name, { expires });
-  setSecureCookie('position', String(user.designation_id) || '1', { expires });
-  setSecureCookie('group', user.group_name || '', { expires });
-  setSecureCookie('designation_name', user.designation_name || '', { expires });
+  localStorage.setItem('token', token);
   localStorage.setItem('user', JSON.stringify(user));
+  localStorage.setItem('role_name', user.role_name);
+  localStorage.setItem('position', String(user.designation_id) || '1');
+  localStorage.setItem('group', user.group_name || '');
+  localStorage.setItem('designation_name', user.designation_name || '');
 },
     logout: (state) => {
       state.user = null;
@@ -88,7 +75,12 @@ const authSlice = createSlice({
       state.designation_name = null;
       state.permissions = null;
       state.isAuthenticated = false;
-      clearSecureCookies();
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('role_name');
+      localStorage.removeItem('position');
+      localStorage.removeItem('group');
+      localStorage.removeItem('designation_name');
     },
   },
 });

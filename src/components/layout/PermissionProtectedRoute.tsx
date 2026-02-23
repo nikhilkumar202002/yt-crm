@@ -16,11 +16,9 @@ const PermissionProtectedRoute: React.FC<PermissionProtectedRouteProps> = ({
   const { permissions: userPermissions, roleName, position, group, designation_name } = useAppSelector((state) => state.auth);
 
   // Use permissions from state or resolve from user data
-  const permissions = userPermissions || resolvePermissions({
+  const permissions = resolvePermissions({
     role: roleName || 'staff',
-    position: position || '1',
-    group: group || undefined,
-    designation_name: designation_name || undefined,
+    permissions: userPermissions,
   });
 
   if (!permissions) {

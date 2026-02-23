@@ -1,13 +1,14 @@
-import { useState } from 'react';
+// src/components/layout/Sidebar.tsx
+import { useState, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, Rocket, Layers, 
   Palette, FolderOpen, Zap, PieChart, CreditCard, 
   ShieldCheck, X, Settings, ChevronDown, ChevronRight,
-  FileText, Briefcase, Calendar, Clipboard
+  FileText, Briefcase, Calendar, Clipboard, UserCheck
 } from 'lucide-react';
 import { useAppSelector } from '../../store/store';
-import { hasMenuAccess, getMenuByDepartment } from '../../config/menu';
+import { hasMenuAccess, MAIN_MENU } from '../../config/menu';
 import { resolvePermissions } from '../../config/permissionResolver';
 
 interface SidebarProps {
@@ -15,61 +16,59 @@ interface SidebarProps {
   setIsOpen: (open: boolean) => void;
 }
 
+// Icon mapping moved outside the component so it isn't recreated on every render
+const iconMap: Record<string, React.JSX.Element> = {
+  'Dashboard': <LayoutDashboard size={16} />,
+  'All Leads': <Users size={16} />,
+  'Assigned Leads': <UserCheck size={16} />,
+  'Calendar': <Calendar size={16} />,
+  'Worksheet': <Clipboard size={16} />,
+  'Leads & Pipeline': <Users size={16} />, 
+  'Strategy & Pitch': <Rocket size={16} />, 
+  'Proposal': <FileText size={16} />,
+  'Onboarded Clients': <Briefcase size={16} />,
+  'Campaign Setup': <Layers size={16} />, 
+  'Creative Workflow': <Palette size={16} />, 
+  'Asset Hub': <FolderOpen size={16} />, 
+  'Ad Operations': <Zap size={16} />, 
+  'Intelligence': <PieChart size={16} />, 
+  'Finance & Billing': <CreditCard size={16} />, 
+  'Employees': <ShieldCheck size={16} />,
+  'Settings': <Settings size={16} />,
+};
+
 const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
-  const { permissions, roleName, position, group, designation_name } = useAppSelector((state) => state.auth);
+  const { permissions, roleName } = useAppSelector((state) => state.auth);
   const location = useLocation();
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
 
-  // Always resolve permissions to apply department/position overrides
-  const userPermissions = resolvePermissions({
-    role: roleName?.toLowerCase() || 'staff',
-    position: position || 'Member',
-    group: group || undefined,
-    designation_name: designation_name || undefined,
-    permissions: permissions || undefined
-  });
-
-  // Updated iconMap to match the new "Onboarded Clients" title
-  const iconMap: Record<string, React.JSX.Element> = {
-    'Dashboard': <LayoutDashboard size={16} />,
-    'Calendar': <Calendar size={16} />,
-    'Worksheet': <Clipboard size={16} />,
-    'Leads & Pipeline': <Users size={16} />, 
-    'Strategy & Pitch': <Rocket size={16} />, 
-    'Proposal': <FileText size={16} />,
-    'Onboarded Clients': <Briefcase size={16} />, // Renamed key to match menu.ts
-    'Campaign Setup': <Layers size={16} />, 
-    'Creative Workflow': <Palette size={16} />, 
-    'Asset Hub': <FolderOpen size={16} />, 
-    'Ad Operations': <Zap size={16} />, 
-    'Intelligence': <PieChart size={16} />, 
-    'Finance & Billing': <CreditCard size={16} />, 
-    'Employees': <ShieldCheck size={16} />,
-    'Settings': <Settings size={16} />,
-  };
-
-  // Dynamically resolve menu based on department
-  const activeMenu = getMenuByDepartment(roleName || 'staff', group || undefined);
-
-  // Filter menu and submenus based on permissions
-  const filteredMenu = activeMenu
-    .filter(item => hasMenuAccess(userPermissions, item.requiredPermissions))
-    .map(item => ({
-      ...item,
-      submenu: item.submenu?.filter(sub => hasMenuAccess(userPermissions, sub.requiredPermissions))
-    }))
-    // Robustness: Hide parent menu items if they should have submenus but all submenus were filtered out
-    // and they don't have a direct path to navigate to.
-    .filter(item => {
-      const hasDefinedSubmenu = item.submenu !== undefined;
-      const hasActiveSubmenu = hasDefinedSubmenu && (item.submenu?.length || 0) > 0;
-      
-      // If it should have submenus but they are all filtered out, and the parent has no path
-      if (hasDefinedSubmenu && !hasActiveSubmenu && (!item.path || item.path === '')) {
-        return false;
-      }
-      return true;
+  // Wrap in useMemo so it only recalculates if permissions or role actually change
+  const userPermissions = useMemo(() => {
+    return resolvePermissions({
+      role: roleName || '',
+      permissions: permissions as any[]
     });
+  }, [roleName, permissions]);
+
+  // Wrap in useMemo so the menu doesn't re-filter every time you open a dropdown
+  const filteredMenu = useMemo(() => {
+    return MAIN_MENU
+      .filter(item => hasMenuAccess(userPermissions, item.requiredPermissions))
+      .map(item => ({
+        ...item,
+        submenu: item.submenu?.filter(sub => hasMenuAccess(userPermissions, sub.requiredPermissions))
+      }))
+      .filter(item => {
+        const hasDefinedSubmenu = item.submenu !== undefined;
+        const hasActiveSubmenu = hasDefinedSubmenu && (item.submenu?.length || 0) > 0;
+        
+        // Hide empty parent menus (e.g. if they have no allowed submenus and no direct path)
+        if (hasDefinedSubmenu && !hasActiveSubmenu && (!item.path || item.path === '')) {
+          return false;
+        }
+        return true;
+      });
+  }, [userPermissions]);
 
   const toggleExpand = (title: string) => {
     setExpandedMenu(expandedMenu === title ? null : title);
@@ -87,7 +86,6 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
       <aside className={`fixed left-0 top-0 h-screen bg-white z-[70] font-sans border-r border-slate-200 transition-transform duration-300 ease-in-out w-56 flex flex-col 
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
-        {/* Brand Header */}
         <div className="h-16 px-6 flex items-center justify-between border-b border-slate-50">
           <div className="flex items-center gap-2.5">
             <div className="h-7 w-7 bg-blue-600 rounded-none flex items-center justify-center text-white shadow-sm">
@@ -100,7 +98,6 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
           </button>
         </div>
         
-        {/* Main Navigation */}
         <nav className="flex-1 overflow-y-auto px-0 py-5 space-y-5">
           <div>
             <p className="px-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Workflow</p>
@@ -163,7 +160,6 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
           </div>
         </nav>
 
-        {/* Security Status - Bottom */}
         <div className="p-4 border-t border-slate-50">
           <div className="bg-slate-50/80 rounded-none p-2.5 flex items-center gap-3">
             <div className="h-6 w-6 rounded-none bg-blue-100 flex items-center justify-center text-blue-600">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Search, Filter, UserPlus, Download, Clock, 
   CheckCircle2, AlertCircle, Loader2, ChevronLeft, ChevronRight, UserCheck, Mail, Phone, MessageSquare 
@@ -16,21 +16,20 @@ import { resolvePermissions } from '../../config/permissionResolver';
 import { useLocation } from 'react-router-dom';
 
 const LeadsPage = () => {
-  const { permissions: userPermissions, user, roleName, position, group, designation_name } = useAppSelector((state) => state.auth);
+  const { permissions: rawPermissions, user, roleName, position, group, designation_name } = useAppSelector((state) => state.auth);
   const location = useLocation();
   const isAssignedView = location.pathname === '/leads/assigned';
   
-  // Use permissions from state or resolve from user data
-  const permissions = userPermissions || resolvePermissions({
-    role: roleName || 'staff',
-    position: position || '1',
-    group: group || undefined,
-    designation_name: designation_name || undefined,
-  });
-  
-  const canViewAllLeads = permissions.viewAllLeads || false;
+  // Resolve permissions using useMemo to prevent unnecessary recalculations
+  const userPermissions = useMemo(() => {
+    return resolvePermissions({
+      role: roleName || 'staff',
+      permissions: rawPermissions,
+    });
+  }, [roleName, rawPermissions]);
 
-  const canAssignLeads = permissions.assignLeads || false;
+  const canAssignLeads = userPermissions['leads.assign'] === true;
+  const canViewAllLeads = userPermissions['leads.view-all'] || false;
   const isAdmin = roleName?.toUpperCase() === 'ADMIN';
   const isAdminOrHead = ['ADMIN', 'DM HEAD'].includes(roleName?.toUpperCase() || '');
   const isAllLeadsView = canViewAllLeads && !isAssignedView;
@@ -279,14 +278,16 @@ const LeadsPage = () => {
               <tr className="bg-slate-50/80 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
                 {isAllLeadsView ? (
                   <>
-                    <th className="px-5 py-4 w-12 text-center">
-                      <input 
-                        type="checkbox" 
-                        className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500/20 transition-all cursor-pointer" 
-                        checked={selectedLeads.length === leads.length && leads.length > 0}
-                        onChange={toggleSelectAll}
-                      />
-                    </th>
+                    {canAssignLeads && (
+                      <th className="px-5 py-4 w-12 text-center">
+                        <input 
+                          type="checkbox" 
+                          className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500/20 transition-all cursor-pointer" 
+                          checked={selectedLeads.length === leads.length && leads.length > 0}
+                          onChange={toggleSelectAll}
+                        />
+                      </th>
+                    )}
                     <th className="px-5 py-4">Lead Profile</th>
                     <th className="px-5 py-4">Contact</th>
                     <th className="px-5 py-4">Category</th>
@@ -318,6 +319,7 @@ const LeadsPage = () => {
                       onDelete={handleDelete}
                       isSelected={selectedLeads.includes(lead.id)}
                       onSelect={() => toggleSelectLead(lead.id)}
+                      canAssignLeads={canAssignLeads}
                     />
                   ))
                 ) : !loading && (

@@ -1,12 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Shield, Edit2, Trash2 } from 'lucide-react';
-import { getRoles, deleteRole, getAllRolePermissions, type RoleData } from '../../api/services/authService';
+import { Shield, Edit2, Trash2, Plus, X } from 'lucide-react';
+import { getRoles, deleteRole, getAllRolePermissions, removePermissionsFromRole, assignPermissionsToRole, getPermissions, type RoleData } from '../../api/services/authService';
 import { CreateRoleModal } from './components/CreateRoleModal';
 
 const RoleManagement = () => {
   const [roles, setRoles] = useState<RoleData[]>([]);
   const [loading, setLoading] = useState(true);
   const [rolePermissions, setRolePermissions] = useState<any[]>([]);
+  const [selectedRoleForPermissions, setSelectedRoleForPermissions] = useState<RoleData | null>(null);
+  const [showAssignPermissions, setShowAssignPermissions] = useState(false);
 
   const fetchRoles = useCallback(async () => {
   try {
@@ -45,6 +47,24 @@ const RoleManagement = () => {
 
   const getRolePermissions = (roleId: number) => {
     return rolePermissions.filter(rp => rp.role_id === roleId.toString());
+  };
+
+  const handleRemovePermission = async (roleId: number, permissionId: number) => {
+    if (window.confirm("Are you sure you want to remove this permission from the role?")) {
+      try {
+        await removePermissionsFromRole(roleId, { permission_ids: [permissionId] });
+        // Refresh permissions
+        fetchRolePermissions();
+      } catch (error) {
+        console.error("Failed to remove permission:", error);
+        alert("Failed to remove permission");
+      }
+    }
+  };
+
+  const handleAssignPermissions = (role: RoleData) => {
+    setSelectedRoleForPermissions(role);
+    setShowAssignPermissions(true);
   };
 
   const handleDelete = async (id: number) => {
@@ -106,16 +126,32 @@ const RoleManagement = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex flex-wrap gap-1">
-                          {getRolePermissions(role.id!).length > 0 ? (
-                            getRolePermissions(role.id!).map((rp: any) => (
-                              <span key={rp.id} className="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[8px] font-medium rounded border border-blue-100">
-                                {rp.permission.code}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-[10px] text-slate-400">No permissions</span>
-                          )}
+                        <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap gap-1 flex-1">
+                            {getRolePermissions(role.id!).length > 0 ? (
+                              getRolePermissions(role.id!).map((rp: any) => (
+                                <span key={rp.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[8px] font-medium rounded border border-blue-100">
+                                  {rp.permission.code}
+                                  <button
+                                    onClick={() => handleRemovePermission(role.id!, rp.permission.id)}
+                                    className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                                    title="Remove permission"
+                                  >
+                                    <X size={6} />
+                                  </button>
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-[10px] text-slate-400">No permissions</span>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => handleAssignPermissions(role)}
+                            className="text-blue-600 hover:text-blue-800 p-1"
+                            title="Assign permissions"
+                          >
+                            <Plus size={14} />
+                          </button>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right space-x-2">
@@ -137,6 +173,131 @@ const RoleManagement = () => {
             </table>
           </div>
         )}
+      </div>
+
+      {/* Assign Permissions Modal */}
+      {showAssignPermissions && selectedRoleForPermissions && (
+        <AssignPermissionsModal
+          role={selectedRoleForPermissions}
+          rolePermissions={rolePermissions}
+          onClose={() => {
+            setShowAssignPermissions(false);
+            setSelectedRoleForPermissions(null);
+          }}
+          onSuccess={() => {
+            fetchRolePermissions();
+            setShowAssignPermissions(false);
+            setSelectedRoleForPermissions(null);
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+const AssignPermissionsModal = ({ role, rolePermissions, onClose, onSuccess }: { role: RoleData; rolePermissions: any[]; onClose: () => void; onSuccess: () => void }) => {
+  const [permissions, setPermissions] = useState<any[]>([]);
+  const [selectedPermissions, setSelectedPermissions] = useState<number[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchPermissions();
+  }, []);
+
+  const fetchPermissions = async () => {
+    try {
+      const result = await getPermissions();
+      const allPermissions = result?.data?.data || result?.data || [];
+      
+      // Get already assigned permission IDs for this role
+      const assignedPermissionIds = rolePermissions
+        .filter((rp: any) => rp.role_id === role.id?.toString())
+        .map((rp: any) => rp.permission.id);
+      
+      // Filter out already assigned permissions
+      const availablePermissions = allPermissions.filter((p: any) => !assignedPermissionIds.includes(p.id));
+      setPermissions(availablePermissions);
+    } catch (error) {
+      console.error("Failed to fetch permissions:", error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedPermissions.length === 0) return;
+    
+    setLoading(true);
+    try {
+      await assignPermissionsToRole(role.id!, { permission_ids: selectedPermissions });
+      onSuccess();
+    } catch (error) {
+      alert('Failed to assign permissions');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+        <h3 className="text-lg font-bold text-slate-800 mb-4">Assign Permissions to {role.name}</h3>
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-3">
+            <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-lg p-3 bg-slate-50/50">
+              {permissions.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-4">Loading permissions...</p>
+              ) : (
+                <div className="space-y-2">
+                  {permissions.map((permission: any) => (
+                    <div key={permission.id} className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        id={`assign-perm-${permission.id}`}
+                        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        checked={selectedPermissions.includes(permission.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedPermissions(prev => [...prev, permission.id]);
+                          } else {
+                            setSelectedPermissions(prev => prev.filter(id => id !== permission.id));
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor={`assign-perm-${permission.id}`}
+                        className="text-xs font-medium text-slate-700 cursor-pointer flex-1"
+                      >
+                        <div className="font-semibold">{permission.module_name}</div>
+                        <div className="text-slate-500 text-[10px]">{permission.permission} ({permission.code})</div>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {selectedPermissions.length > 0 && (
+              <p className="text-[10px] text-blue-600 font-medium">
+                {selectedPermissions.length} permission{selectedPermissions.length !== 1 ? 's' : ''} selected
+              </p>
+            )}
+          </div>
+          <div className="mt-6 flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading || selectedPermissions.length === 0}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+            >
+              {loading ? 'Assigning...' : 'Assign Permissions'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

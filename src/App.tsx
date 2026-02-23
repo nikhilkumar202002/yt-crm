@@ -49,12 +49,12 @@ function App() {
             <Route path="/employees" element={<EmployeesPage />} />
             <Route path="/employees/register" element={<EmployeeRegistration />} />
             <Route path="/leads" element={
-              <PermissionProtectedRoute requiredPermissions={['viewAllLeads']}>
+              <PermissionProtectedRoute requiredPermissions={['leads.view-all']}>
                 <LeadsPage />
               </PermissionProtectedRoute>
             } />
             <Route path="/leads/assigned" element={
-              <PermissionProtectedRoute requiredPermissions={['viewAssignedLeads']}>
+              <PermissionProtectedRoute requiredPermissions={['leads.assign']}>
                 <LeadsPage />
               </PermissionProtectedRoute>
             } />

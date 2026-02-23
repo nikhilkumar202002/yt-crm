@@ -1,16 +1,18 @@
 
 import { ExternalLink, Trash2, Mail, Phone, Globe } from 'lucide-react';
 
-export const LeadTableRow = ({ lead, onDelete, isSelected, onSelect }: any) => (
+export const LeadTableRow = ({ lead, onDelete, isSelected, onSelect, canAssignLeads }: any) => (
   <tr className={`hover:bg-slate-50/50 transition-all group ${isSelected ? 'bg-blue-50/30' : ''} border-b border-slate-100/60`}>
-    <td className="px-3 py-2 w-10">
-      <input 
-        type="checkbox" 
-        className="h-3 w-3 rounded-none border-slate-300 text-blue-600 focus:ring-blue-500/20 transition-all cursor-pointer" 
-        checked={isSelected}
-        onChange={onSelect}
-      />
-    </td>
+    {canAssignLeads && (
+      <td className="px-3 py-2 w-10">
+        <input 
+          type="checkbox" 
+          className="h-3 w-3 rounded-none border-slate-300 text-blue-600 focus:ring-blue-500/20 transition-all cursor-pointer" 
+          checked={isSelected}
+          onChange={onSelect}
+        />
+      </td>
+    )}
     <td className="px-3 py-2">
       <div className="flex items-center gap-2">
         <div className="h-6 w-6 rounded-none bg-blue-600 text-white flex items-center justify-center font-black text-[9px] shadow-sm uppercase shrink-0 transition-transform group-hover:scale-105 tracking-widest">
